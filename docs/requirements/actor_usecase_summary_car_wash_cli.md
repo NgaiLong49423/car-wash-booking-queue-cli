@@ -431,7 +431,445 @@ Giải thích nhanh:
 
 ---
 
-## 12. Kết luận
+## 12. Quyết định 7 — Cách Customer vào hệ thống
+
+### 12.1 Quyết định đã chọn
+
+Chọn hướng **B — Khi vào Customer Menu, nhập mã khách hàng một lần**.
+
+### 12.2 Cách hiểu chính thức
+
+Khi người dùng chọn **Customer Menu**, hệ thống yêu cầu nhập mã khách hàng để xác định **Customer hiện tại**.
+
+Nếu mã khách hàng hợp lệ, hệ thống cho phép Customer thực hiện các chức năng cá nhân như:
+
+- Xem danh sách dịch vụ.
+- Xem thông tin cá nhân.
+- Tạo booking.
+- Xem booking của tôi.
+- Hủy booking của tôi.
+- Xem lịch sử rửa xe của tôi.
+
+Đây chỉ là cơ chế mô phỏng định danh trong CLI, không phải chức năng đăng nhập bảo mật.
+
+### 12.3 Khái niệm currentCustomer
+
+**currentCustomer** nghĩa là **khách hàng hiện tại đang thao tác trong Customer Menu**.
+
+Sau khi Customer nhập mã hợp lệ, hệ thống lưu tạm Customer đó trong phiên menu hiện tại. Mọi chức năng trong Customer Menu chỉ được thao tác trên dữ liệu thuộc về currentCustomer.
+
+Khi Customer quay lại Main Menu, phiên Customer kết thúc.
+
+### 12.4 Luồng minh họa
+
+```text
+Main Menu
+1. Customer Menu
+2. Admin Menu
+0. Exit
+
+Chọn: 1
+Nhập mã khách hàng: C001
+
+Xin chào Nguyễn Văn A
+
+Customer Menu
+1. Xem danh sách dịch vụ
+2. Xem thông tin cá nhân
+3. Tạo booking
+4. Xem booking của tôi
+5. Hủy booking của tôi
+6. Xem lịch sử rửa xe của tôi
+0. Quay lại
+```
+
+### 12.5 Lý do chọn
+
+Hướng này cân bằng nhất vì:
+
+- Không cần làm đăng nhập thật.
+- Không cần mật khẩu hoặc PIN.
+- Không bắt Customer nhập lại mã khách hàng ở từng chức năng.
+- Dễ viết Use Case vì các chức năng Customer đều hiểu là thao tác trên currentCustomer.
+- Phù hợp với phạm vi app CLI môn CSD.
+
+---
+
+## 13. Quyết định 8 — Cách Admin/Nhân viên vào hệ thống
+
+### 13.1 Quyết định đã chọn
+
+Chọn hướng **A — Admin Menu vào thẳng, không cần xác định ai đang thao tác**.
+
+### 13.2 Cách hiểu chính thức
+
+Khi người dùng chọn **Admin Menu**, hệ thống cho phép truy cập trực tiếp vào các chức năng quản lý dữ liệu và vận hành tiệm.
+
+Hệ thống không xác thực tài khoản Admin vì phạm vi project không bao gồm đăng nhập, phân quyền hoặc bảo mật tài khoản.
+
+### 13.3 Luồng minh họa
+
+```text
+Main Menu
+1. Customer Menu
+2. Admin Menu
+0. Exit
+
+Chọn: 2
+
+Admin Menu
+1. Quản lý khách hàng
+2. Quản lý xe
+3. Quản lý dịch vụ
+4. Thiết lập ngày/buổi hiện tại
+5. Tạo booking cho khách
+6. Kích hoạt buổi rửa xe
+7. Xem hàng chờ
+8. Xử lý booking tiếp theo
+9. Xác nhận thanh toán
+10. Hoàn tất booking
+11. Hủy booking
+12. Xem lịch sử
+13. Hoàn tác booking hoàn tất gần nhất
+0. Quay lại
+```
+
+### 13.4 Ràng buộc phạm vi
+
+Hệ thống không có:
+
+- Username/password cho Admin.
+- Mã nhân viên.
+- Audit log — nhật ký thao tác, nghĩa là ghi lại ai đã thực hiện hành động nào.
+- Phân quyền bảo mật thật.
+
+Admin/Nhân viên chỉ là vai trò mô phỏng để truy cập nhóm chức năng quản lý và vận hành.
+
+### 13.5 Lý do chọn
+
+Hướng này phù hợp nhất với app CLI môn CSD vì trọng tâm của project là mô phỏng booking queue, priority queue, stack, list, file storage và luồng vận hành rửa xe, không phải xây dựng hệ thống tài khoản.
+
+---
+
+## 14. Quyết định 9 — Cấu trúc Main Menu
+
+### 14.1 Quyết định đã chọn
+
+Chọn hướng **A — Main Menu chỉ có Customer Menu và Admin Menu**.
+
+### 14.2 Cách hiểu chính thức
+
+Main Menu của hệ thống gồm hai nhánh chính:
+
+1. **Customer Menu**
+2. **Admin Menu**
+
+Customer Menu dùng cho các thao tác cá nhân của khách hàng sau khi nhập mã khách hàng hợp lệ.
+
+Admin Menu dùng cho các thao tác quản lý dữ liệu và vận hành tiệm, không yêu cầu đăng nhập thật.
+
+### 14.3 Menu tổng đề xuất
+
+```text
+Main Menu
+1. Customer Menu
+2. Admin Menu
+0. Exit
+```
+
+### 14.4 Luồng vào Customer Menu
+
+```text
+Main Menu
+1. Customer Menu
+2. Admin Menu
+0. Exit
+
+Chọn: 1
+Nhập mã khách hàng: C001
+
+Nếu mã hợp lệ:
+→ Hiển thị Customer Menu
+
+Nếu mã không hợp lệ:
+→ Cho phép nhập lại theo giới hạn số lần thử
+```
+
+### 14.5 Luồng vào Admin Menu
+
+```text
+Main Menu
+1. Customer Menu
+2. Admin Menu
+0. Exit
+
+Chọn: 2
+→ Hiển thị Admin Menu ngay
+```
+
+### 14.6 Lý do chọn
+
+Hướng này nhất quán với quyết định hệ thống có 2 actor chính. Customer và Admin/Nhân viên có hành vi khác nhau nên menu cũng nên chia theo actor để dễ dùng, dễ demo và dễ map sang Use Case.
+
+---
+
+## 15. Quyết định 10 — Xử lý khi Customer nhập sai mã khách hàng
+
+### 15.1 Quyết định đã chọn
+
+Chọn hướng **B — Cho nhập lại tối đa 3 lần**.
+
+### 15.2 Cách hiểu chính thức
+
+Khi người dùng chọn Customer Menu, hệ thống yêu cầu nhập mã khách hàng.
+
+Nếu mã khách hàng không tồn tại, hệ thống cho phép nhập lại tối đa 3 lần.
+
+Nếu sau 3 lần vẫn không hợp lệ, hệ thống quay lại Main Menu.
+
+### 15.3 Luồng minh họa
+
+```text
+Main Menu
+1. Customer Menu
+2. Admin Menu
+0. Exit
+
+Chọn: 1
+
+Nhập mã khách hàng: C999
+Không tìm thấy khách hàng. Vui lòng nhập lại. Còn 2 lần thử.
+
+Nhập mã khách hàng: C888
+Không tìm thấy khách hàng. Vui lòng nhập lại. Còn 1 lần thử.
+
+Nhập mã khách hàng: C777
+Không tìm thấy khách hàng. Quay lại Main Menu.
+```
+
+### 15.4 Lý do chọn
+
+Hướng này cân bằng giữa trải nghiệm người dùng và độ đơn giản khi code:
+
+- Không văng người dùng ra Main Menu ngay khi nhập nhầm.
+- Không tạo vòng lặp nhập lại vô hạn.
+- Dễ viết Use Case với luồng ngoại lệ rõ ràng.
+- Dễ demo vì có giới hạn số lần thử cụ thể.
+
+---
+
+## 16. Quyết định 11 — Customer chọn xe khi tạo booking
+
+### 16.1 Quyết định đã chọn
+
+Chọn hướng **B — Hệ thống hiển thị danh sách xe của Customer rồi cho chọn**.
+
+### 16.2 Cách hiểu chính thức
+
+Khi Customer tạo booking, hệ thống chỉ hiển thị danh sách xe thuộc về **currentCustomer**.
+
+Customer chọn một xe trong danh sách này.
+
+Hệ thống không cho phép Customer tạo booking cho xe không thuộc quyền sở hữu của mình.
+
+### 16.3 Luồng minh họa
+
+```text
+Xe của bạn:
+1. V001 - 51A-12345
+2. V002 - 59B-99999
+3. V003 - 60C-88888
+
+Chọn xe: 2
+```
+
+Hệ thống hiểu Customer chọn xe:
+
+```text
+V002 - 59B-99999
+```
+
+### 16.4 Lý do chọn
+
+Hướng này tốt nhất vì:
+
+- Customer không cần nhớ mã xe.
+- Customer chỉ thấy xe thuộc về mình.
+- Giảm nguy cơ chọn nhầm xe của khách hàng khác.
+- Dễ demo trong CLI.
+- Phù hợp với quyền của Customer đã chốt trước đó.
+
+---
+
+## 17. Quyết định 12 — Xử lý khi Customer chưa có xe
+
+### 17.1 Quyết định đã chọn
+
+Chọn hướng **A — Từ chối tạo booking và yêu cầu liên hệ Admin/Nhân viên thêm xe**.
+
+### 17.2 Cách hiểu chính thức
+
+Nếu Customer hiện tại chưa có xe nào trong hệ thống, hệ thống không cho phép tạo booking.
+
+Hệ thống thông báo Customer cần liên hệ Admin/Nhân viên để thêm xe trước khi đặt lịch rửa xe.
+
+### 17.3 Luồng minh họa
+
+```text
+Customer Menu
+3. Tạo booking
+
+Bạn chưa có xe nào trong hệ thống.
+Vui lòng liên hệ Admin/Nhân viên để thêm xe trước khi tạo booking.
+```
+
+### 17.4 Lý do chọn
+
+Hướng này nhất quán với phạm vi đã chốt:
+
+- Customer không tự quản lý xe.
+- Admin/Nhân viên là người quản lý xe của khách hàng.
+- Booking phải gắn với một xe hợp lệ.
+- Không tạo xe giả hoặc dữ liệu không thực tế.
+
+---
+
+## 18. Quyết định 13 — Customer chọn dịch vụ khi tạo booking
+
+### 18.1 Quyết định đã chọn
+
+Chọn hướng **B — Hệ thống hiển thị danh sách dịch vụ rồi cho chọn theo số thứ tự**.
+
+### 18.2 Cách hiểu chính thức
+
+Khi Customer tạo booking, hệ thống hiển thị danh sách dịch vụ hiện có kèm:
+
+- Mã dịch vụ.
+- Tên dịch vụ.
+- Giá tiền.
+- Thời gian thực hiện.
+
+Customer chọn một dịch vụ theo số thứ tự trong danh sách.
+
+Hệ thống chỉ cho phép tạo booking với dịch vụ hợp lệ đang tồn tại trong hệ thống.
+
+### 18.3 Luồng minh họa
+
+```text
+Danh sách dịch vụ:
+1. S001 - Rửa xe cơ bản - 100,000 VND - 30 phút
+2. S002 - Rửa xe cao cấp - 200,000 VND - 45 phút
+3. S003 - Rửa xe + phủ bóng - 350,000 VND - 60 phút
+
+Chọn dịch vụ: 2
+```
+
+Hệ thống hiểu Customer chọn:
+
+```text
+S002 - Rửa xe cao cấp - 200,000 VND - 45 phút
+```
+
+### 18.4 Lý do chọn
+
+Hướng này phù hợp nhất vì:
+
+- Customer không cần nhớ mã dịch vụ.
+- Dễ dùng và dễ demo.
+- Hiển thị được giá tiền trước khi đặt.
+- Hiển thị được thời gian thực hiện, yếu tố có thể ảnh hưởng đến việc hệ thống kiểm tra còn đủ thời gian để kéo booking từ waitlist lên sau khi complete.
+- Tái sử dụng được danh sách service đang có trong hệ thống.
+
+---
+
+## 19. Quyết định 14 — Customer chọn ngày và buổi khi tạo booking
+
+### 19.1 Quyết định đã chọn
+
+Chọn hướng **B — Hiển thị danh sách ngày hợp lệ theo booking window, rồi chọn ngày**.
+
+### 19.2 Cách hiểu chính thức
+
+Khi Customer tạo booking, hệ thống dựa trên hạng thành viên của Customer hiện tại để sinh danh sách ngày hợp lệ.
+
+Danh sách ngày hợp lệ được tính từ ngày hiện tại mô phỏng đến ngày xa nhất mà Customer được phép đặt trước theo booking window.
+
+Customer chọn ngày từ danh sách này, sau đó chọn buổi rửa xe.
+
+Hệ thống không hiển thị hoặc không cho chọn các ngày vượt quá booking window của Customer.
+
+### 19.3 Booking window theo hạng
+
+| Hạng thành viên | Số ngày đặt trước tối đa |
+|---|---:|
+| Member | 7 ngày |
+| Silver | 10 ngày |
+| Gold | 12 ngày |
+| Platinum | 14 ngày |
+
+### 19.4 Luồng minh họa
+
+Ví dụ Customer là Member và được đặt trước tối đa 7 ngày:
+
+```text
+Các ngày có thể đặt:
+1. 2026-06-25
+2. 2026-06-26
+3. 2026-06-27
+4. 2026-06-28
+5. 2026-06-29
+6. 2026-06-30
+7. 2026-07-01
+8. 2026-07-02
+
+Chọn ngày: 6
+
+Chọn buổi:
+1. Sáng
+2. Chiều
+3. Tối
+
+Chọn buổi: 1
+```
+
+### 19.5 Lý do chọn
+
+Hướng này tốt nhất cho nghiệp vụ của app vì:
+
+- Customer không cần nhớ giới hạn booking window.
+- Hệ thống thể hiện rõ quyền lợi theo hạng thành viên.
+- Member, Silver, Gold, Platinum sẽ thấy số ngày đặt trước khác nhau.
+- Dễ demo cho thầy thấy hạng cao được đặt xa hơn.
+- Tránh lỗi nhập ngày vượt giới hạn.
+- Làm Use Case tạo booking rõ hơn và chuyên nghiệp hơn.
+
+---
+
+## 20. Cập nhật luồng Customer tạo booking sau các quyết định mới
+
+Sau các quyết định mới, luồng Customer tạo booking nên được hiểu như sau:
+
+1. Người dùng vào Customer Menu.
+2. Hệ thống yêu cầu nhập mã khách hàng.
+3. Nếu mã khách hàng không hợp lệ, hệ thống cho nhập lại tối đa 3 lần.
+4. Nếu mã hợp lệ, hệ thống xác định currentCustomer.
+5. Customer chọn chức năng tạo booking.
+6. Hệ thống kiểm tra currentCustomer có xe hay không.
+7. Nếu chưa có xe, hệ thống từ chối tạo booking và yêu cầu liên hệ Admin/Nhân viên để thêm xe.
+8. Nếu có xe, hệ thống hiển thị danh sách xe của currentCustomer.
+9. Customer chọn một xe trong danh sách.
+10. Hệ thống hiển thị danh sách dịch vụ hiện có.
+11. Customer chọn một dịch vụ.
+12. Hệ thống sinh danh sách ngày hợp lệ dựa trên booking window của currentCustomer.
+13. Customer chọn ngày muốn rửa xe.
+14. Customer chọn buổi muốn rửa xe: Sáng, Chiều hoặc Tối.
+15. Hệ thống kiểm tra sức chứa của ngày/buổi được chọn.
+16. Nếu hợp lệ, hệ thống tạo booking ở trạng thái `WAITING`.
+17. Nếu không hợp lệ, hệ thống từ chối và thông báo lý do.
+
+---
+
+## 21. Kết luận
 
 Các quyết định đã chốt:
 
@@ -441,5 +879,13 @@ Các quyết định đã chốt:
 4. Use Case được viết theo **hành vi chính của actor**, không quá tổng quát và không quá vụn.
 5. UC **Tạo booking** là một UC chính, có biến thể theo Customer/Admin.
 6. UC **Hủy booking** là một UC chính, có biến thể theo Customer/Admin.
+7. Customer vào Customer Menu bằng cách **nhập mã khách hàng một lần** để xác định currentCustomer.
+8. Admin/Nhân viên vào Admin Menu **trực tiếp**, không cần tài khoản hoặc mật khẩu.
+9. Main Menu chỉ gồm **Customer Menu**, **Admin Menu** và **Exit**.
+10. Nếu Customer nhập sai mã khách hàng, hệ thống cho nhập lại tối đa **3 lần**.
+11. Khi Customer tạo booking, hệ thống **hiển thị danh sách xe thuộc về Customer hiện tại** để chọn.
+12. Nếu Customer chưa có xe, hệ thống **từ chối tạo booking** và yêu cầu liên hệ Admin/Nhân viên để thêm xe.
+13. Khi Customer chọn dịch vụ, hệ thống **hiển thị danh sách dịch vụ** kèm mã, tên, giá và thời gian thực hiện.
+14. Khi Customer chọn ngày đặt lịch, hệ thống **hiển thị danh sách ngày hợp lệ theo booking window** dựa trên hạng thành viên.
 
-Đây là nền phù hợp để tiếp tục viết Use Case chi tiết và bổ sung vào SRSV2.md.
+Đây là nền phù hợp để tiếp tục viết Use Case chi tiết, đặc biệt là UC-03 **Tạo booking**, rồi bổ sung vào SRSV2.md.
