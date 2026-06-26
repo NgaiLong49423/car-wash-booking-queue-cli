@@ -4,6 +4,18 @@ title: "fix: "
 labels: ["🐞 Bug"]
 body:
   - type: textarea
+    id: source_trace
+    attributes:
+      label: "0. Source Trace"
+      description: "Ghi nguồn phát hiện lỗi nếu có. Ví dụ: SRS FR-05, UC-03, Business Rule 3.4, test case, commit, branch hoặc issue liên quan. Nếu không có, ghi 'Không có'."
+      placeholder: |
+        - SRS: FR-xx — ...
+        - UC: UC-xx — ...
+        - Related issue/PR: #...
+    validations:
+      required: false
+
+  - type: textarea
     id: description
     attributes:
       label: "1. Mô tả lỗi"
@@ -11,17 +23,19 @@ body:
       placeholder: "Mô tả chi tiết lỗi tại đây..."
     validations:
       required: true
+
   - type: textarea
     id: steps
     attributes:
       label: "2. Các bước tái hiện lỗi"
       description: "Ghi rõ từng bước để người khác có thể tái hiện (tạo lại) lỗi."
       placeholder: |
-        1. 
-        2. 
-        3. 
+        1.
+        2.
+        3.
     validations:
       required: true
+
   - type: textarea
     id: expected
     attributes:
@@ -30,6 +44,7 @@ body:
       placeholder: "Mô tả kết quả mong muốn tại đây..."
     validations:
       required: true
+
   - type: textarea
     id: actual
     attributes:
@@ -38,28 +53,31 @@ body:
       placeholder: "Mô tả kết quả thực tế tại đây..."
     validations:
       required: true
+
   - type: textarea
-    id: screenshot-logs
+    id: screenshot_logs
     attributes:
       label: "5. Ảnh chụp màn hình hoặc Log"
-      description: "Thêm ảnh chụp màn hình, log lỗi hoặc thông báo lỗi nếu có. (Log là thông tin hệ thống in ra để hỗ trợ kiểm tra và debug. Debug là quá trình tìm và sửa lỗi)."
+      description: "Thêm ảnh chụp màn hình, log lỗi hoặc thông báo lỗi nếu có. Log là thông tin hệ thống in ra để hỗ trợ kiểm tra và debug. Debug là quá trình tìm và sửa lỗi."
       placeholder: "Kéo thả ảnh hoặc dán log lỗi vào đây..."
     validations:
       required: false
+
   - type: textarea
     id: environment
     attributes:
       label: "6. Môi trường chạy"
       description: "Cung cấp thông tin chi tiết về môi trường chạy ứng dụng."
       value: |
-        - Hệ điều hành: 
-        - Trình duyệt: 
-        - Phiên bản Java: 
-        - Server: 
-        - Database: 
-        - Công cụ/IDE: 
+        - Hệ điều hành:
+        - Phiên bản Java:
+        - IDE/Công cụ:
+        - Terminal:
+        - Dữ liệu test/file liên quan:
+        - Branch/Commit:
     validations:
       required: false
+
   - type: dropdown
     id: severity
     attributes:
@@ -72,18 +90,58 @@ body:
         - "Nghiêm trọng: hệ thống không thể sử dụng"
     validations:
       required: true
+
+  - type: textarea
+    id: project_metadata
+    attributes:
+      label: "8. Project Metadata"
+      description: "Thông tin dùng để cập nhật GitHub Project fields. Size là kích thước phạm vi việc; Story Points là điểm ước lượng nỗ lực; Priority Reason là lý do chọn độ ưu tiên."
+      value: |
+        - Type: 🐞 Bug
+        - Size:
+        - Story Points:
+        - Priority:
+        - Priority Reason:
+        - Start Date: TBD
+        - Target Date: TBD
+    validations:
+      required: false
+
+  - type: textarea
+    id: relationships
+    attributes:
+      label: "9. Relationships"
+      description: "Quan hệ với issue khác trong GitHub Project nếu có."
+      value: |
+        - Parent:
+        - Blocked by:
+        - Blocking:
+        - Security alert: None
+    validations:
+      required: false
+
+  - type: input
+    id: suggested_branch
+    attributes:
+      label: "10. Suggested Branch"
+      description: "Tên nhánh gợi ý theo format type/kebab-case-title. Kebab-case là viết thường và nối từ bằng dấu gạch ngang."
+      placeholder: "fix/booking-window-validation-error"
+    validations:
+      required: false
+
   - type: textarea
     id: notes
     attributes:
-      label: "8. Ghi chú thêm"
+      label: "11. Ghi chú thêm"
       description: "Ghi thêm thông tin khác nếu cần."
       placeholder: "Nhập ghi chú thêm..."
     validations:
       required: false
+
   - type: checkboxes
     id: checklist
     attributes:
-      label: "9. Checklist xác nhận"
+      label: "12. Checklist xác nhận"
       options:
         - label: "Tôi xác nhận lỗi này chưa được báo cáo trước đây."
           required: true

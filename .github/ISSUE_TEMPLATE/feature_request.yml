@@ -1,24 +1,39 @@
-name: Feature Request
-description: Đề xuất hoặc ghi nhận yêu cầu chức năng mới (FR - Functional Requirement)
+name: Functional Requirement
+description: Tạo issue từ yêu cầu chức năng đã được mô tả trong SRS/PRD
 title: "feat: "
 labels: ["🚀 Feature"]
 body:
+  - type: textarea
+    id: source_trace
+    attributes:
+      label: "0. Source Trace"
+      description: "Ghi nguồn yêu cầu từ tài liệu. Trace là dấu vết nguồn để biết issue này lấy từ FR, UC hoặc quy tắc nghiệp vụ nào."
+      placeholder: |
+        - PRD: ...
+        - SRS: FR-05 — Tạo booking rửa xe
+        - UC: UC-03 — Tạo booking
+        - Business Rule: 3.4 — Quy tắc booking window
+    validations:
+      required: true
+
   - type: input
     id: feature_name
     attributes:
       label: "1. Tên chức năng"
-      description: "Ghi tên chức năng cần thêm hoặc cải thiện."
-      placeholder: "Ví dụ: Đăng nhập bằng Google, Xuất báo cáo Excel..."
+      description: "Ghi tên chức năng cần thêm hoặc cải thiện. Title của issue nên viết tiếng Anh chuyên nghiệp, còn mô tả có thể viết tiếng Việt."
+      placeholder: "Ví dụ: Implement Booking Creation With Window Validation"
     validations:
       required: true
+
   - type: textarea
     id: description
     attributes:
       label: "2. Mô tả chức năng"
-      description: "Mô tả chức năng này dùng để làm gì. (Feature là tính năng. Functional Requirement (FR) là yêu cầu chức năng mà hệ thống cần thực hiện)."
+      description: "Mô tả chức năng này dùng để làm gì. Feature là tính năng. Functional Requirement (FR) là yêu cầu chức năng mà hệ thống cần thực hiện."
       placeholder: "Mô tả chi tiết chức năng..."
     validations:
       required: true
+
   - type: checkboxes
     id: roles
     attributes:
@@ -31,6 +46,7 @@ body:
         - label: "Staff (Nhân viên)"
         - label: "Manager (Quản lý)"
         - label: "Khác"
+
   - type: textarea
     id: rationale
     attributes:
@@ -39,49 +55,126 @@ body:
       placeholder: "Lý do..."
     validations:
       required: true
+
   - type: textarea
     id: workflow
     attributes:
       label: "5. Luồng hoạt động mong muốn"
       description: "Mô tả các bước hoạt động chính của chức năng."
       placeholder: |
-        1. Người dùng click vào...
-        2. Hệ thống xử lý...
-        3. Kết quả trả về...
+        1. Người dùng chọn...
+        2. Hệ thống kiểm tra...
+        3. Hệ thống xử lý...
+        4. Hệ thống hiển thị/lưu kết quả...
     validations:
       required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: "6. Phạm vi"
+      description: "Liệt kê những việc nằm trong phạm vi issue này."
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: "7. Không nằm trong phạm vi"
+      description: "Ghi rõ những việc không làm trong issue này để tránh mở rộng scope. Non-goals là các mục tiêu không thực hiện."
+      placeholder: |
+        - Không triển khai ...
+        - Không sửa ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: business_rules
+    attributes:
+      label: "8. Quy tắc nghiệp vụ liên quan"
+      description: "Ghi các quy tắc nghiệp vụ phải tuân thủ, ưu tiên lấy trực tiếp từ SRS/PRD."
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: false
+
   - type: textarea
     id: expected_result
     attributes:
-      label: "6. Kết quả mong muốn"
+      label: "9. Kết quả mong muốn"
       description: "Mô tả kết quả sau khi chức năng được hoàn thành."
-      placeholder: "Ví dụ: Người dùng đăng nhập thành công và được chuyển hướng về trang chủ."
+      placeholder: "Ví dụ: Booking được tạo thành công khi thỏa điều kiện booking window và sức chứa."
     validations:
       required: true
+
   - type: textarea
-    id: definition_of_done
+    id: acceptance_criteria
     attributes:
-      label: "7. Tiêu chí hoàn thành"
-      description: "Ghi các điều kiện để biết chức năng này đã hoàn thành."
+      label: "10. Acceptance Criteria / Tiêu chí chấp nhận"
+      description: "Ghi các điều kiện pass/fail để biết chức năng này đã hoàn thành đúng. Acceptance Criteria là tiêu chí chấp nhận."
       placeholder: |
-        - [ ] Tích hợp thành công nút đăng nhập.
-        - [ ] Kiểm thử luồng chạy không bị lỗi.
-        - [ ] Ghi log chi tiết khi đăng nhập.
+        - [ ] ...
+        - [ ] ...
+        - [ ] ...
     validations:
       required: true
+
+  - type: textarea
+    id: project_metadata
+    attributes:
+      label: "11. Project Metadata"
+      description: "Thông tin dùng để cập nhật GitHub Project fields. Size là kích thước phạm vi việc; Story Points là điểm ước lượng nỗ lực; Priority Reason là lý do chọn độ ưu tiên."
+      value: |
+        - Type: 🚀 Feature
+        - Size:
+        - Story Points:
+        - Priority:
+        - Priority Reason:
+        - Start Date: TBD
+        - Target Date: TBD
+    validations:
+      required: true
+
+  - type: textarea
+    id: relationships
+    attributes:
+      label: "12. Relationships"
+      description: "Quan hệ với issue khác trong GitHub Project nếu có."
+      value: |
+        - Parent:
+        - Blocked by:
+        - Blocking:
+        - Security alert: None
+    validations:
+      required: false
+
+  - type: input
+    id: suggested_branch
+    attributes:
+      label: "13. Suggested Branch"
+      description: "Tên nhánh gợi ý theo format type/kebab-case-title. Kebab-case là viết thường và nối từ bằng dấu gạch ngang."
+      placeholder: "feature/booking-window-validation"
+    validations:
+      required: false
+
   - type: textarea
     id: references
     attributes:
-      label: "8. Tài liệu hoặc thiết kế liên quan"
+      label: "14. Tài liệu hoặc thiết kế liên quan"
       description: "Thêm link tài liệu, hình ảnh, wireframe (bản phác thảo giao diện), ERD (sơ đồ quan hệ thực thể), use case hoặc ghi 'Không có'."
       placeholder: "Link Figma, thiết kế database, tài liệu đặc tả..."
     validations:
       required: false
+
   - type: dropdown
     id: priority
     attributes:
-      label: "9. Mức độ ưu tiên"
-      description: "Chọn mức độ ưu tiên cho yêu cầu chức năng này."
+      label: "15. Mức độ ưu tiên"
+      description: "Chọn mức độ ưu tiên cho yêu cầu chức năng này. Nếu chọn priority, hãy giải thích lý do trong Project Metadata."
       options:
         - "Thấp (Low)"
         - "Trung bình (Medium)"
@@ -89,10 +182,11 @@ body:
         - "Bắt buộc (Critical)"
     validations:
       required: true
+
   - type: textarea
     id: notes
     attributes:
-      label: "10. Ghi chú thêm"
+      label: "16. Ghi chú thêm"
       description: "Ghi thêm thông tin khác nếu cần."
       placeholder: "Nhập ghi chú thêm..."
     validations:

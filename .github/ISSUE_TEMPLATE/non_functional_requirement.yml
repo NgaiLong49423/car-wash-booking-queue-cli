@@ -3,14 +3,26 @@ description: Ghi nhận yêu cầu phi chức năng của hệ thống (NFR - No
 title: "nfr: "
 labels: ["📐 NFR"]
 body:
+  - type: textarea
+    id: source_trace
+    attributes:
+      label: "0. Source Trace"
+      description: "Ghi nguồn yêu cầu từ tài liệu. Ví dụ: SRS Section 6.x, NFR-xx, PRD Non-Functional Requirements. Nếu không có, ghi 'Không có'."
+      placeholder: |
+        - PRD: Non-Functional Requirements — ...
+        - SRS: Section ... — ...
+    validations:
+      required: true
+
   - type: input
     id: nfr_name
     attributes:
       label: "1. Tên yêu cầu phi chức năng"
-      description: "Ghi tên yêu cầu phi chức năng cần thực hiện. (NFR là yêu cầu về chất lượng hệ thống như hiệu năng, bảo mật, khả năng mở rộng, độ ổn định)."
-      placeholder: "Ví dụ: Mã hóa mật khẩu người dùng, Tối ưu thời gian load trang..."
+      description: "Ghi tên yêu cầu phi chức năng cần thực hiện. NFR là yêu cầu về chất lượng hệ thống như hiệu năng, bảo mật, khả năng mở rộng, độ ổn định."
+      placeholder: "Ví dụ: Đảm bảo lưu dữ liệu sau thao tác quan trọng"
     validations:
       required: true
+
   - type: checkboxes
     id: nfr_type
     attributes:
@@ -26,6 +38,7 @@ body:
         - label: "Compatibility (Khả năng tương thích)"
         - label: "Accessibility (Khả năng tiếp cận)"
         - label: "Khác"
+
   - type: textarea
     id: description
     attributes:
@@ -34,6 +47,7 @@ body:
       placeholder: "Mô tả chi tiết yêu cầu..."
     validations:
       required: true
+
   - type: textarea
     id: rationale
     attributes:
@@ -42,31 +56,93 @@ body:
       placeholder: "Lý do..."
     validations:
       required: true
+
   - type: textarea
     id: metrics
     attributes:
       label: "5. Tiêu chí đo lường"
-      description: "Ghi tiêu chí cụ thể để kiểm tra yêu cầu này."
+      description: "Ghi tiêu chí cụ thể để kiểm tra yêu cầu này. Metrics là chỉ số đo lường để biết yêu cầu có đạt hay không."
       placeholder: |
         Ví dụ:
-        - Trang đăng nhập phản hồi dưới 2 giây.
-        - Mật khẩu phải được mã hóa BCrypt trước khi lưu vào database.
-        - Giao diện hiển thị tốt trên màn hình mobile.
+        - Thao tác lưu dữ liệu phải hoàn tất sau mỗi thay đổi quan trọng.
+        - File dữ liệu phải được đọc lại đúng sau khi khởi động ứng dụng.
     validations:
       required: true
+
   - type: textarea
     id: scope
     attributes:
       label: "6. Phạm vi ảnh hưởng"
       description: "Ghi chức năng, module (phần chức năng hoặc khu vực code) hoặc tài liệu bị ảnh hưởng."
-      placeholder: "Ví dụ: Module Authenticate, toàn bộ database..."
+      placeholder: "Ví dụ: Module booking, lưu trữ file, toàn bộ ứng dụng CLI..."
     validations:
       required: false
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: "7. Không nằm trong phạm vi"
+      description: "Ghi rõ những việc không làm trong issue này để tránh mở rộng scope. Non-goals là các mục tiêu không thực hiện."
+      placeholder: |
+        - Không triển khai ...
+        - Không sửa ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: "8. Acceptance Criteria / Tiêu chí chấp nhận"
+      description: "Ghi các điều kiện pass/fail để biết NFR này đã đạt. Acceptance Criteria là tiêu chí chấp nhận."
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: project_metadata
+    attributes:
+      label: "9. Project Metadata"
+      description: "Thông tin dùng để cập nhật GitHub Project fields. Size là kích thước phạm vi việc; Story Points là điểm ước lượng nỗ lực; Priority Reason là lý do chọn độ ưu tiên."
+      value: |
+        - Type: 📐 NFR
+        - Size:
+        - Story Points:
+        - Priority:
+        - Priority Reason:
+        - Start Date: TBD
+        - Target Date: TBD
+    validations:
+      required: true
+
+  - type: textarea
+    id: relationships
+    attributes:
+      label: "10. Relationships"
+      description: "Quan hệ với issue khác trong GitHub Project nếu có."
+      value: |
+        - Parent:
+        - Blocked by:
+        - Blocking:
+        - Security alert: None
+    validations:
+      required: false
+
+  - type: input
+    id: suggested_branch
+    attributes:
+      label: "11. Suggested Branch"
+      description: "Tên nhánh gợi ý theo format type/kebab-case-title. Kebab-case là viết thường và nối từ bằng dấu gạch ngang."
+      placeholder: "feature/data-persistence-reliability"
+    validations:
+      required: false
+
   - type: dropdown
     id: priority
     attributes:
-      label: "7. Mức độ ưu tiên"
-      description: "Chọn mức độ ưu tiên của yêu cầu này."
+      label: "12. Mức độ ưu tiên"
+      description: "Chọn mức độ ưu tiên của yêu cầu này. Nếu chọn priority, hãy giải thích lý do trong Project Metadata."
       options:
         - "Thấp (Low)"
         - "Trung bình (Medium)"
@@ -74,20 +150,11 @@ body:
         - "Bắt buộc (Critical)"
     validations:
       required: true
-  - type: textarea
-    id: definition_of_done
-    attributes:
-      label: "8. Tiêu chí hoàn thành"
-      description: "Ghi các điều kiện để biết yêu cầu này đã hoàn thành."
-      placeholder: |
-        - [ ] 
-        - [ ] 
-    validations:
-      required: true
+
   - type: textarea
     id: notes
     attributes:
-      label: "9. Ghi chú thêm"
+      label: "13. Ghi chú thêm"
       description: "Ghi thêm thông tin khác nếu cần."
       placeholder: "Nhập ghi chú thêm..."
     validations:
