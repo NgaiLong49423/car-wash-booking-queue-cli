@@ -154,7 +154,7 @@ Admin Menu
 4. Thiết lập ngày/buổi hiện tại
 5. Tạo booking cho khách
 6. Kích hoạt buổi rửa xe
-7. Xem hàng chờ
+7. Xem hàng chờ / booking theo buổi
 8. Xử lý booking tiếp theo
 9. Xác nhận thanh toán
 10. Hoàn tất booking
@@ -222,7 +222,7 @@ Các thao tác này nên nằm trong luồng xử lý của Use Case, không nê
 | UC-09 | Quản lý dịch vụ | Admin/Nhân viên |
 | UC-10 | Thiết lập ngày và buổi hiện tại | Admin/Nhân viên |
 | UC-11 | Kích hoạt buổi rửa xe | Admin/Nhân viên |
-| UC-12 | Xem hàng chờ | Admin/Nhân viên |
+| UC-12 | Xem hàng chờ và booking theo buổi | Admin/Nhân viên |
 | UC-13 | Xử lý booking tiếp theo | Admin/Nhân viên |
 | UC-14 | Xác nhận thanh toán | Admin/Nhân viên |
 | UC-15 | Hoàn tất booking | Admin/Nhân viên |
@@ -524,7 +524,7 @@ Admin Menu
 4. Thiết lập ngày/buổi hiện tại
 5. Tạo booking cho khách
 6. Kích hoạt buổi rửa xe
-7. Xem hàng chờ
+7. Xem hàng chờ / booking theo buổi
 8. Xử lý booking tiếp theo
 9. Xác nhận thanh toán
 10. Hoàn tất booking
@@ -1290,7 +1290,793 @@ Sau các quyết định mới, luồng Customer tạo booking đầy đủ hơn
 
 ---
 
-## 30. Kết luận
+## 30. Chi tiết các Use Case đã phân rã
+
+## UC-01 — Xem danh sách dịch vụ
+
+### 1. Actor chính
+
+* Customer
+
+### 2. Mục tiêu
+
+Cho phép Customer xem danh sách các dịch vụ rửa xe hiện có trong hệ thống để biết tên dịch vụ, giá tiền và thời gian thực hiện trước khi tạo booking.
+
+### 3. Tiền điều kiện
+
+* Hệ thống đã được khởi động.
+* Danh sách dịch vụ đã được nạp từ file dữ liệu.
+* Customer đang ở trong Customer Menu.
+
+### 4. Hậu điều kiện
+
+* Danh sách dịch vụ được hiển thị cho Customer.
+* Dữ liệu dịch vụ không bị thay đổi.
+* Customer có thể quay lại Customer Menu hoặc tiếp tục chọn chức năng khác.
+
+### 5. Luồng chính
+
+1. Customer chọn chức năng **Xem danh sách dịch vụ** trong Customer Menu.
+2. Hệ thống lấy danh sách dịch vụ hiện có.
+3. Hệ thống kiểm tra danh sách dịch vụ có dữ liệu hay không.
+4. Nếu có dữ liệu, hệ thống hiển thị danh sách dịch vụ cho Customer.
+5. Mỗi dịch vụ được hiển thị tối thiểu gồm:
+
+   * Mã dịch vụ.
+   * Tên dịch vụ.
+   * Giá tiền.
+   * Thời gian thực hiện.
+6. Customer xem thông tin dịch vụ.
+7. Hệ thống quay lại Customer Menu sau khi Customer hoàn tất xem danh sách.
+
+### 6. Luồng thay thế / ngoại lệ
+
+#### 6.1 Danh sách dịch vụ rỗng
+
+1. Customer chọn chức năng **Xem danh sách dịch vụ**.
+2. Hệ thống kiểm tra và phát hiện chưa có dịch vụ nào trong hệ thống.
+3. Hệ thống hiển thị thông báo:
+
+```text
+Hiện chưa có dịch vụ rửa xe nào trong hệ thống.
+Vui lòng liên hệ Admin/Nhân viên để được hỗ trợ.
+```
+
+4. Hệ thống quay lại Customer Menu.
+
+#### 6.2 File dữ liệu dịch vụ không đọc được
+
+1. Customer chọn chức năng **Xem danh sách dịch vụ**.
+2. Hệ thống không thể đọc dữ liệu dịch vụ từ file.
+3. Hệ thống hiển thị thông báo lỗi phù hợp.
+4. Hệ thống không cho Customer tạo hoặc sửa dịch vụ.
+5. Hệ thống quay lại Customer Menu.
+
+### 7. Quy tắc nghiệp vụ liên quan
+
+* Customer chỉ có quyền xem danh sách dịch vụ.
+* Customer không được thêm, sửa hoặc xóa dịch vụ.
+* Việc quản lý dịch vụ thuộc quyền Admin/Nhân viên.
+* Dịch vụ là dữ liệu nền của hệ thống, dùng cho quá trình tạo booking.
+* Dịch vụ hợp lệ cần có tối thiểu mã dịch vụ, tên dịch vụ, giá tiền và thời gian thực hiện.
+
+### 8. Cấu trúc dữ liệu liên quan
+
+* **List/ArrayList** dùng để lưu danh sách dịch vụ.
+* Hệ thống duyệt danh sách dịch vụ để hiển thị từng dịch vụ cho Customer.
+* Không cần Queue, Priority Queue hoặc Stack cho UC này.
+
+### 9. Ví dụ hiển thị CLI
+
+```text
+Danh sách dịch vụ:
+
+1. S001 - Rửa xe cơ bản - 100,000 VND - 30 phút
+2. S002 - Rửa xe cao cấp - 200,000 VND - 45 phút
+3. S003 - Rửa xe + phủ bóng - 350,000 VND - 60 phút
+
+Nhấn Enter để quay lại Customer Menu.
+```
+
+### 10. Ghi chú thiết kế
+
+UC này chỉ có mục đích xem dữ liệu, không làm thay đổi trạng thái hệ thống. Vì vậy, đây là Use Case đơn giản và không cần phân rã thêm thành các Use Case nhỏ hơn.
+
+## UC-02 — Xem thông tin cá nhân
+
+### 1. Actor chính
+
+* Customer
+
+### 2. Mục tiêu
+
+Cho phép Customer xem thông tin cá nhân của chính mình trong hệ thống, bao gồm các thông tin định danh và thông tin thành viên liên quan đến quyền lợi đặt lịch.
+
+### 3. Tiền điều kiện
+
+* Hệ thống đã được khởi động.
+* Customer đã vào Customer Menu bằng mã khách hàng hợp lệ.
+* Hệ thống đã xác định được `currentCustomer`.
+* Dữ liệu khách hàng đã được nạp từ file dữ liệu.
+
+### 4. Hậu điều kiện
+
+* Thông tin cá nhân của Customer được hiển thị.
+* Dữ liệu khách hàng không bị thay đổi.
+* Customer có thể quay lại Customer Menu hoặc tiếp tục chọn chức năng khác.
+
+### 5. Luồng chính
+
+1. Customer chọn chức năng **Xem thông tin cá nhân** trong Customer Menu.
+2. Hệ thống lấy thông tin của `currentCustomer`.
+3. Hệ thống kiểm tra `currentCustomer` có tồn tại trong danh sách khách hàng hay không.
+4. Nếu hợp lệ, hệ thống hiển thị thông tin cá nhân của Customer.
+5. Thông tin hiển thị tối thiểu gồm:
+
+   * Mã khách hàng.
+   * Họ tên.
+   * Số điện thoại.
+   * Hạng thành viên.
+   * Booking window tương ứng với hạng thành viên.
+6. Customer xem thông tin.
+7. Hệ thống quay lại Customer Menu sau khi Customer hoàn tất xem thông tin.
+
+### 6. Luồng thay thế / ngoại lệ
+
+#### 6.1 Không tìm thấy currentCustomer
+
+1. Customer chọn chức năng **Xem thông tin cá nhân**.
+2. Hệ thống không tìm thấy `currentCustomer` trong danh sách khách hàng.
+3. Hệ thống hiển thị thông báo:
+
+```text
+Không tìm thấy thông tin khách hàng hiện tại.
+Vui lòng quay lại Main Menu và nhập lại mã khách hàng.
+```
+
+4. Hệ thống quay lại Main Menu hoặc Customer Menu tùy theo thiết kế xử lý lỗi.
+
+#### 6.2 File dữ liệu khách hàng không đọc được
+
+1. Customer chọn chức năng **Xem thông tin cá nhân**.
+2. Hệ thống không thể đọc dữ liệu khách hàng từ file.
+3. Hệ thống hiển thị thông báo lỗi phù hợp.
+4. Hệ thống không cho Customer sửa thông tin trực tiếp.
+5. Hệ thống quay lại Customer Menu.
+
+### 7. Quy tắc nghiệp vụ liên quan
+
+* Customer chỉ được xem thông tin của chính mình.
+* Customer không được xem thông tin của khách hàng khác.
+* Customer không được tự sửa thông tin cá nhân trong UC này.
+* Việc thêm, sửa hoặc xóa thông tin khách hàng thuộc quyền Admin/Nhân viên trong UC-07.
+* Booking window được xác định theo hạng thành viên của Customer.
+
+### 8. Booking window theo hạng thành viên
+
+| Hạng thành viên | Số ngày đặt trước tối đa |
+| --------------- | -----------------------: |
+| Member          |                   7 ngày |
+| Silver          |                  10 ngày |
+| Gold            |                  12 ngày |
+| Platinum        |                  14 ngày |
+
+### 9. Cấu trúc dữ liệu liên quan
+
+* **List/ArrayList** dùng để lưu danh sách khách hàng.
+* Có thể dùng **Map** nếu hệ thống muốn tra cứu khách hàng nhanh theo mã khách hàng.
+* Không cần Queue, Priority Queue hoặc Stack cho UC này.
+
+### 10. Ví dụ hiển thị CLI
+
+```text
+Thông tin cá nhân:
+
+Mã khách hàng: C001
+Họ tên: Ngô Gia Long
+Số điện thoại: 0909123456
+Hạng thành viên: Gold
+Booking window: 12 ngày
+
+Nhấn Enter để quay lại Customer Menu.
+```
+
+### 11. Ghi chú thiết kế
+
+UC này chỉ có mục đích xem thông tin, không làm thay đổi dữ liệu hệ thống. Vì Customer Menu đã xác định `currentCustomer` từ trước, Customer không cần nhập lại mã khách hàng khi xem thông tin cá nhân.
+
+## UC-04 — Xem booking cá nhân
+
+### 1. Actor chính
+
+* Customer
+
+### 2. Mục tiêu
+
+Cho phép Customer xem các booking hiện tại hoặc booking tương lai của chính mình, từ đó biết lịch rửa xe nào đang chờ xử lý hoặc đang được phục vụ.
+
+### 3. Tiền điều kiện
+
+* Hệ thống đã được khởi động.
+* Customer đã vào Customer Menu bằng mã khách hàng hợp lệ.
+* Hệ thống đã xác định được `currentCustomer`.
+* Dữ liệu booking đã được nạp từ file dữ liệu.
+
+### 4. Hậu điều kiện
+
+* Danh sách booking chưa kết thúc của Customer được hiển thị.
+* Dữ liệu booking không bị thay đổi.
+* Customer có thể quay lại Customer Menu hoặc tiếp tục chọn chức năng khác.
+
+### 5. Luồng chính
+
+1. Customer chọn chức năng **Xem booking của tôi** trong Customer Menu.
+2. Hệ thống lấy mã khách hàng của `currentCustomer`.
+3. Hệ thống lọc danh sách booking theo mã khách hàng hiện tại.
+4. Hệ thống chỉ lấy các booking chưa kết thúc, gồm:
+   * `WAITING`
+   * `SERVING`
+5. Hệ thống kiểm tra Customer có booking chưa kết thúc nào hay không.
+6. Nếu có, hệ thống hiển thị danh sách booking của Customer.
+7. Mỗi booking nên hiển thị tối thiểu:
+   * Mã booking.
+   * Biển số xe.
+   * Tên dịch vụ.
+   * Ngày rửa xe.
+   * Buổi rửa xe.
+   * Trạng thái booking.
+   * Vị trí xử lý hiện tại nếu có.
+8. Customer xem danh sách booking.
+9. Hệ thống quay lại Customer Menu sau khi Customer hoàn tất xem danh sách.
+
+### 6. Luồng thay thế / ngoại lệ
+
+#### 6.1 Customer không có booking đang chờ hoặc đang phục vụ
+
+1. Customer chọn chức năng **Xem booking của tôi**.
+2. Hệ thống lọc danh sách booking theo `currentCustomer`.
+3. Hệ thống không tìm thấy booking nào thuộc trạng thái `WAITING` hoặc `SERVING`.
+4. Hệ thống hiển thị thông báo:
+
+```text
+Bạn không có booking nào đang chờ hoặc đang được phục vụ.
+```
+
+5. Hệ thống quay lại Customer Menu.
+
+#### 6.2 File dữ liệu booking không đọc được
+
+1. Customer chọn chức năng **Xem booking của tôi**.
+2. Hệ thống không thể đọc dữ liệu booking từ file.
+3. Hệ thống hiển thị thông báo lỗi phù hợp.
+4. Hệ thống không hiển thị dữ liệu booking không chắc chắn.
+5. Hệ thống quay lại Customer Menu.
+
+### 7. Quy tắc nghiệp vụ liên quan
+
+* Customer chỉ được xem booking của chính mình.
+* Customer không được xem booking của khách hàng khác.
+* UC này chỉ xem dữ liệu, không thay đổi trạng thái booking.
+* UC này chỉ hiển thị booking chưa kết thúc gồm `WAITING` và `SERVING`.
+* Booking `COMPLETED` được xem trong UC-06 — Xem lịch sử rửa xe cá nhân.
+* Booking `CANCELLED` không hiển thị trong UC này để giữ danh sách booking cá nhân gọn.
+* Booking ở trạng thái `WAITING` có thể được Customer hủy thông qua UC-05 nếu booking đó thuộc về chính Customer.
+* Booking ở trạng thái `SERVING` không được Customer hủy.
+
+### 8. Cấu trúc dữ liệu liên quan
+
+* **List/ArrayList** dùng để lưu danh sách booking.
+* Hệ thống duyệt danh sách booking và lọc theo:
+  * Mã khách hàng của `currentCustomer`.
+  * Trạng thái `WAITING` hoặc `SERVING`.
+* Có thể dùng **Map** nếu hệ thống muốn tra cứu booking nhanh theo mã khách hàng.
+* Không cần Queue, Priority Queue hoặc Stack trực tiếp trong UC này, vì UC này chỉ xem danh sách booking cá nhân.
+
+### 9. Ví dụ hiển thị CLI
+
+```text
+Booking của tôi:
+
+1. B001
+   Xe: 51A-12345
+   Dịch vụ: Rửa xe cao cấp
+   Ngày/Buổi: 2026-06-26 - Sáng
+   Trạng thái: WAITING
+   Vị trí: Booking tương lai, chờ kích hoạt buổi
+
+2. B005
+   Xe: 59B-99999
+   Dịch vụ: Rửa xe cơ bản
+   Ngày/Buổi: 2026-06-25 - Chiều
+   Trạng thái: SERVING
+   Vị trí: Đang được phục vụ
+
+Nhấn Enter để quay lại Customer Menu.
+```
+
+### 10. Ghi chú thiết kế
+
+UC này tập trung vào câu hỏi: **booking hiện tại hoặc booking sắp tới của Customer đang như thế nào?**
+
+Vì vậy, UC này không hiển thị booking `COMPLETED`. Các booking đã hoàn tất được đưa sang UC-06 — Xem lịch sử rửa xe cá nhân để tránh trùng trách nhiệm giữa hai Use Case.
+
+## UC-06 — Xem lịch sử rửa xe cá nhân
+
+### 1. Actor chính
+
+* Customer
+
+### 2. Mục tiêu
+
+Cho phép Customer xem lịch sử các booking đã hoàn tất của chính mình, từ đó biết những lần đã sử dụng dịch vụ rửa xe trong hệ thống.
+
+### 3. Tiền điều kiện
+
+* Hệ thống đã được khởi động.
+* Customer đã vào Customer Menu bằng mã khách hàng hợp lệ.
+* Hệ thống đã xác định được `currentCustomer`.
+* Dữ liệu booking/lịch sử rửa xe đã được nạp từ file dữ liệu.
+
+### 4. Hậu điều kiện
+
+* Lịch sử rửa xe của Customer được hiển thị.
+* Dữ liệu lịch sử không bị thay đổi.
+* Customer có thể quay lại Customer Menu hoặc tiếp tục chọn chức năng khác.
+
+### 5. Luồng chính
+
+1. Customer chọn chức năng **Xem lịch sử rửa xe của tôi** trong Customer Menu.
+2. Hệ thống lấy mã khách hàng của `currentCustomer`.
+3. Hệ thống lọc danh sách booking hoặc lịch sử theo mã khách hàng hiện tại.
+4. Hệ thống chỉ lấy các booking đã hoàn tất với trạng thái `COMPLETED`.
+5. Nếu có lịch sử, hệ thống hiển thị danh sách các lần rửa xe đã hoàn tất.
+6. Mỗi bản ghi lịch sử nên hiển thị tối thiểu:
+
+   * Mã booking.
+   * Biển số xe.
+   * Tên dịch vụ.
+   * Ngày rửa xe.
+   * Buổi rửa xe.
+   * Giá dịch vụ.
+   * Trạng thái `COMPLETED`.
+7. Customer xem lịch sử.
+8. Hệ thống quay lại Customer Menu sau khi Customer hoàn tất xem lịch sử.
+
+### 6. Luồng thay thế / ngoại lệ
+
+#### 6.1 Customer chưa có lịch sử rửa xe
+
+1. Customer chọn chức năng **Xem lịch sử rửa xe của tôi**.
+2. Hệ thống lọc dữ liệu theo `currentCustomer`.
+3. Hệ thống không tìm thấy booking nào ở trạng thái `COMPLETED`.
+4. Hệ thống hiển thị thông báo:
+
+```text
+Bạn chưa có lịch sử rửa xe nào.
+```
+
+5. Hệ thống quay lại Customer Menu.
+
+#### 6.2 File dữ liệu lịch sử không đọc được
+
+1. Customer chọn chức năng **Xem lịch sử rửa xe của tôi**.
+2. Hệ thống không thể đọc dữ liệu booking hoặc lịch sử từ file.
+3. Hệ thống hiển thị thông báo lỗi phù hợp.
+4. Hệ thống không hiển thị dữ liệu không chắc chắn.
+5. Hệ thống quay lại Customer Menu.
+
+### 7. Quy tắc nghiệp vụ liên quan
+
+* Customer chỉ được xem lịch sử rửa xe của chính mình.
+* Customer không được xem lịch sử của khách hàng khác.
+* Chỉ booking có trạng thái `COMPLETED` mới được xem là lịch sử rửa xe hợp lệ.
+* Booking `WAITING` và `SERVING` thuộc UC-04 — Xem booking cá nhân.
+* Booking `CANCELLED` không được tính là lịch sử rửa xe hoàn tất.
+* UC này chỉ xem dữ liệu, không thay đổi trạng thái booking.
+
+### 8. Cấu trúc dữ liệu liên quan
+
+* **List/ArrayList** dùng để lưu danh sách booking hoặc danh sách lịch sử rửa xe.
+* Hệ thống duyệt danh sách và lọc theo:
+
+  * Mã khách hàng của `currentCustomer`.
+  * Trạng thái `COMPLETED`.
+* Không cần Queue, Priority Queue hoặc Stack trực tiếp trong UC này.
+
+### 9. Ví dụ hiển thị CLI
+
+```text
+Lịch sử rửa xe của tôi:
+
+1. B002
+   Xe: 59B-99999
+   Dịch vụ: Rửa xe cơ bản
+   Ngày/Buổi: 2026-06-25 - Chiều
+   Giá: 100,000 VND
+   Trạng thái: COMPLETED
+
+2. B007
+   Xe: 51A-12345
+   Dịch vụ: Rửa xe cao cấp
+   Ngày/Buổi: 2026-06-20 - Sáng
+   Giá: 200,000 VND
+   Trạng thái: COMPLETED
+
+Nhấn Enter để quay lại Customer Menu.
+```
+
+### 10. Ghi chú thiết kế
+
+UC này nên tách khỏi UC-04 để phân biệt rõ:
+
+* **UC-04 — Xem booking cá nhân**: xem các booking đang chờ hoặc đang được phục vụ.
+* **UC-06 — Xem lịch sử rửa xe cá nhân**: xem các booking đã hoàn tất.
+
+Cách tách này giúp Customer Menu rõ nghĩa hơn và tránh danh sách booking cá nhân bị quá dài.
+
+## UC-12 — Xem hàng chờ và booking theo buổi
+
+### 1. Actor chính
+
+* Admin/Nhân viên
+
+### 2. Mục tiêu
+
+Cho phép Admin/Nhân viên xem danh sách booking đang chờ xử lý trong một ngày/buổi cụ thể, bao gồm slot chính và hàng chờ phụ nếu buổi đó đã được kích hoạt.
+
+### 3. Tiền điều kiện
+
+* Hệ thống đã được khởi động.
+* Admin/Nhân viên đang ở trong Admin Menu.
+* Dữ liệu booking đã được nạp từ file dữ liệu.
+* Ngày/buổi cần xem tồn tại trong hệ thống.
+
+### 4. Hậu điều kiện
+
+* Danh sách hàng chờ được hiển thị cho Admin/Nhân viên.
+* Dữ liệu booking không bị thay đổi.
+* Admin/Nhân viên có thể quay lại Admin Menu hoặc tiếp tục chọn chức năng khác.
+
+### 5. Luồng chính
+
+1. Admin/Nhân viên chọn chức năng **Xem hàng chờ / booking theo buổi** trong Admin Menu.
+2. Hệ thống yêu cầu Admin/Nhân viên chọn ngày cần xem.
+3. Hệ thống yêu cầu Admin/Nhân viên chọn buổi cần xem: Sáng, Chiều hoặc Tối.
+4. Hệ thống kiểm tra ngày/buổi đó đã được kích hoạt hay chưa.
+5. Nếu buổi đã được kích hoạt, hệ thống hiển thị:
+
+   * Slot chính.
+   * Hàng chờ phụ.
+6. Với mỗi booking trong slot chính hoặc hàng chờ phụ, hệ thống hiển thị tối thiểu:
+
+   * Mã booking.
+   * Khách hàng.
+   * Biển số xe.
+   * Dịch vụ.
+   * Hạng thành viên.
+   * Trạng thái booking.
+7. Hệ thống quay lại Admin Menu sau khi Admin/Nhân viên hoàn tất xem hàng chờ.
+
+### 6. Luồng thay thế / ngoại lệ
+
+#### 6.1 Buổi chưa được kích hoạt
+
+1. Admin/Nhân viên chọn ngày/buổi cần xem.
+2. Hệ thống phát hiện buổi đó chưa được kích hoạt.
+3. Hệ thống hiển thị danh sách booking tương lai của ngày/buổi đó nếu có.
+4. Hệ thống thông báo:
+
+```text
+Buổi này chưa được kích hoạt.
+Các booking dưới đây là booking tương lai, chưa được phân vào slot chính hoặc hàng chờ phụ.
+```
+
+5. Hệ thống quay lại Admin Menu sau khi Admin/Nhân viên xem xong.
+
+#### 6.2 Không có booking nào trong ngày/buổi được chọn
+
+1. Admin/Nhân viên chọn ngày/buổi cần xem.
+2. Hệ thống không tìm thấy booking nào thuộc ngày/buổi đó.
+3. Hệ thống hiển thị thông báo:
+
+```text
+Không có booking nào trong ngày/buổi được chọn.
+```
+
+4. Hệ thống quay lại Admin Menu.
+
+#### 6.3 File dữ liệu booking không đọc được
+
+1. Admin/Nhân viên chọn chức năng **Xem hàng chờ**.
+2. Hệ thống không thể đọc dữ liệu booking từ file.
+3. Hệ thống hiển thị thông báo lỗi phù hợp.
+4. Hệ thống không hiển thị dữ liệu không chắc chắn.
+5. Hệ thống quay lại Admin Menu.
+
+### 7. Quy tắc nghiệp vụ liên quan
+
+* Chỉ Admin/Nhân viên được xem hàng chờ hệ thống.
+* Customer không được xem hàng chờ tổng của tiệm.
+* Nếu buổi đã activate, hệ thống hiển thị slot chính và waitlist.
+* Nếu buổi chưa activate, hệ thống chỉ hiển thị booking tương lai, không gọi đó là slot chính hoặc waitlist.
+* UC này chỉ xem dữ liệu, không thay đổi trạng thái booking.
+* Slot chính chỉ chứa booking đang chờ phục vụ trong buổi đã kích hoạt.
+* Waitlist chứa các booking chờ phụ, được ưu tiên theo hạng thành viên và thời gian tạo booking.
+
+### 8. Cấu trúc dữ liệu liên quan
+
+* **Queue** dùng cho slot chính.
+* **Priority Queue** dùng cho waitlist.
+* **List/ArrayList** dùng để lưu danh sách booking tổng hoặc booking tương lai.
+* UC này chỉ đọc dữ liệu từ các cấu trúc trên, không thêm, xóa hoặc thay đổi thứ tự booking.
+
+### 9. Ví dụ hiển thị CLI
+
+#### 9.1 Buổi đã kích hoạt
+
+```text
+Hàng chờ ngày 2026-06-26 - Buổi sáng
+
+Slot chính:
+1. B001 - C001 Ngô Gia Long - 51A-12345 - Rửa xe cao cấp - Gold - WAITING
+2. B002 - C003 Nguyễn Văn A - 59B-99999 - Rửa xe cơ bản - Member - WAITING
+
+Hàng chờ phụ:
+1. B011 - C005 Trần Văn B - 60C-88888 - Rửa xe cao cấp - Platinum - WAITING
+2. B012 - C006 Lê Văn C - 61D-77777 - Rửa xe cơ bản - Gold - WAITING
+
+Nhấn Enter để quay lại Admin Menu.
+```
+
+#### 9.2 Buổi chưa kích hoạt
+
+```text
+Booking tương lai ngày 2026-06-27 - Buổi chiều
+
+Buổi này chưa được kích hoạt.
+Các booking dưới đây chưa được phân vào slot chính hoặc hàng chờ phụ.
+
+1. B020 - C001 Ngô Gia Long - 51A-12345 - Rửa xe cao cấp - Gold - WAITING
+2. B021 - C004 Phạm Văn D - 62E-55555 - Rửa xe cơ bản - Silver - WAITING
+
+Nhấn Enter để quay lại Admin Menu.
+```
+
+### 10. Ghi chú thiết kế
+
+UC này giúp Admin/Nhân viên quan sát trạng thái vận hành của từng ngày/buổi. Tuy nhiên, UC này không xử lý booking tiếp theo, không kích hoạt buổi và không thay đổi trạng thái booking. Các thao tác đó thuộc UC-11, UC-13, UC-14 và UC-15.
+
+## UC-07 — Quản lý khách hàng
+
+### 1. Actor chính
+
+* Admin/Nhân viên
+
+### 2. Mục tiêu
+
+Cho phép Admin/Nhân viên quản lý dữ liệu khách hàng trong hệ thống, bao gồm xem danh sách khách hàng, tìm kiếm khách hàng, thêm khách hàng mới, cập nhật thông tin khách hàng và xóa khách hàng khi khách hàng chưa có dữ liệu liên kết.
+
+### 3. Tiền điều kiện
+
+* Hệ thống đã được khởi động.
+* Admin/Nhân viên đang ở trong Admin Menu.
+* Dữ liệu khách hàng đã được nạp từ file dữ liệu.
+
+### 4. Hậu điều kiện
+
+* Nếu Admin/Nhân viên chỉ xem hoặc tìm kiếm khách hàng, dữ liệu không thay đổi.
+* Nếu Admin/Nhân viên thêm, cập nhật hoặc xóa khách hàng hợp lệ, dữ liệu khách hàng được thay đổi và lưu lại vào file.
+* Hệ thống quay lại menu quản lý khách hàng hoặc Admin Menu sau khi thao tác hoàn tất.
+
+### 5. Luồng chính
+
+1. Admin/Nhân viên chọn chức năng **Quản lý khách hàng** trong Admin Menu.
+2. Hệ thống hiển thị menu quản lý khách hàng.
+3. Admin/Nhân viên chọn một thao tác:
+   * Xem danh sách khách hàng.
+   * Tìm kiếm khách hàng.
+   * Thêm khách hàng mới.
+   * Cập nhật thông tin khách hàng.
+   * Xóa khách hàng.
+   * Quay lại Admin Menu.
+4. Hệ thống thực hiện thao tác tương ứng.
+5. Nếu thao tác làm thay đổi dữ liệu, hệ thống kiểm tra dữ liệu hợp lệ.
+6. Nếu dữ liệu hợp lệ, hệ thống lưu thay đổi xuống file.
+7. Hệ thống thông báo kết quả thao tác.
+8. Hệ thống quay lại menu quản lý khách hàng.
+
+### 6. Luồng con
+
+#### 6.1 Xem danh sách khách hàng
+
+1. Admin/Nhân viên chọn **Xem danh sách khách hàng**.
+2. Hệ thống lấy danh sách khách hàng hiện có.
+3. Nếu danh sách không rỗng, hệ thống hiển thị danh sách khách hàng.
+4. Mỗi khách hàng nên hiển thị tối thiểu:
+   * Mã khách hàng.
+   * Họ tên.
+   * Số điện thoại.
+   * Hạng thành viên.
+5. Hệ thống quay lại menu quản lý khách hàng.
+
+#### 6.2 Tìm kiếm khách hàng
+
+1. Admin/Nhân viên chọn **Tìm kiếm khách hàng**.
+2. Hệ thống yêu cầu nhập từ khóa tìm kiếm.
+3. Admin/Nhân viên nhập mã khách hàng, tên hoặc số điện thoại.
+4. Hệ thống tìm khách hàng phù hợp.
+5. Nếu có kết quả, hệ thống hiển thị danh sách khách hàng phù hợp.
+6. Nếu không có kết quả, hệ thống thông báo không tìm thấy khách hàng.
+7. Hệ thống quay lại menu quản lý khách hàng.
+
+#### 6.3 Thêm khách hàng mới
+
+1. Admin/Nhân viên chọn **Thêm khách hàng mới**.
+2. Hệ thống yêu cầu nhập thông tin khách hàng.
+3. Admin/Nhân viên nhập:
+   * Họ tên.
+   * Số điện thoại.
+4. Hệ thống kiểm tra dữ liệu hợp lệ.
+5. Nếu hợp lệ, hệ thống tạo mã khách hàng mới.
+6. Hệ thống gán hạng thành viên mặc định là `Member`.
+7. Hệ thống thêm khách hàng mới vào danh sách khách hàng.
+8. Hệ thống lưu dữ liệu xuống file.
+9. Hệ thống thông báo thêm khách hàng thành công.
+
+#### 6.4 Cập nhật thông tin khách hàng
+
+1. Admin/Nhân viên chọn **Cập nhật thông tin khách hàng**.
+2. Hệ thống yêu cầu tìm hoặc nhập mã khách hàng cần cập nhật.
+3. Hệ thống kiểm tra khách hàng có tồn tại không.
+4. Nếu tồn tại, hệ thống hiển thị thông tin hiện tại.
+5. Admin/Nhân viên nhập thông tin mới cần cập nhật.
+6. Hệ thống kiểm tra dữ liệu hợp lệ.
+7. Nếu hợp lệ, hệ thống cập nhật thông tin khách hàng.
+8. Hệ thống lưu dữ liệu xuống file.
+9. Hệ thống thông báo cập nhật thành công.
+
+#### 6.5 Xóa khách hàng
+
+1. Admin/Nhân viên chọn **Xóa khách hàng**.
+2. Hệ thống yêu cầu nhập mã khách hàng cần xóa.
+3. Hệ thống kiểm tra khách hàng có tồn tại không.
+4. Nếu khách hàng tồn tại, hệ thống kiểm tra khách hàng có dữ liệu liên kết hay không:
+   * Có xe trong hệ thống không.
+   * Có booking trong hệ thống không.
+   * Có lịch sử rửa xe không.
+5. Nếu khách hàng không có dữ liệu liên kết, hệ thống yêu cầu Admin/Nhân viên xác nhận xóa.
+6. Nếu Admin/Nhân viên xác nhận, hệ thống xóa khách hàng khỏi danh sách khách hàng.
+7. Hệ thống lưu thay đổi xuống file.
+8. Hệ thống thông báo xóa khách hàng thành công.
+
+### 7. Luồng thay thế / ngoại lệ
+
+#### 7.1 Danh sách khách hàng rỗng
+
+1. Admin/Nhân viên chọn **Xem danh sách khách hàng**.
+2. Hệ thống phát hiện chưa có khách hàng nào.
+3. Hệ thống hiển thị thông báo:
+
+```text
+Hiện chưa có khách hàng nào trong hệ thống.
+```
+
+4. Hệ thống quay lại menu quản lý khách hàng.
+
+#### 7.2 Không tìm thấy khách hàng
+
+1. Admin/Nhân viên tìm kiếm hoặc nhập mã khách hàng.
+2. Hệ thống không tìm thấy khách hàng phù hợp.
+3. Hệ thống hiển thị thông báo:
+
+```text
+Không tìm thấy khách hàng phù hợp.
+```
+
+4. Hệ thống quay lại menu quản lý khách hàng.
+
+#### 7.3 Số điện thoại bị trùng
+
+1. Admin/Nhân viên thêm hoặc cập nhật khách hàng.
+2. Hệ thống phát hiện số điện thoại đã tồn tại trong hệ thống.
+3. Hệ thống từ chối thao tác.
+4. Hệ thống hiển thị thông báo:
+
+```text
+Số điện thoại đã tồn tại trong hệ thống.
+Vui lòng kiểm tra lại thông tin khách hàng.
+```
+
+5. Hệ thống yêu cầu nhập lại hoặc quay lại menu quản lý khách hàng.
+
+#### 7.4 Dữ liệu nhập không hợp lệ
+
+1. Admin/Nhân viên nhập thiếu tên, thiếu số điện thoại hoặc nhập sai định dạng.
+2. Hệ thống từ chối thao tác.
+3. Hệ thống hiển thị thông báo lỗi phù hợp.
+4. Hệ thống yêu cầu nhập lại.
+
+#### 7.5 Không thể xóa khách hàng vì có dữ liệu liên kết
+
+1. Admin/Nhân viên chọn **Xóa khách hàng**.
+2. Hệ thống tìm thấy khách hàng cần xóa.
+3. Hệ thống phát hiện khách hàng đã có xe, booking hoặc lịch sử rửa xe.
+4. Hệ thống từ chối xóa khách hàng.
+5. Hệ thống hiển thị thông báo:
+
+```text
+Không thể xóa khách hàng này vì khách hàng đã có dữ liệu liên kết.
+Vui lòng giữ hồ sơ khách hàng để đảm bảo dữ liệu booking và lịch sử không bị sai lệch.
+```
+
+6. Hệ thống quay lại menu quản lý khách hàng.
+
+#### 7.6 Admin/Nhân viên hủy xác nhận xóa
+
+1. Hệ thống yêu cầu xác nhận xóa khách hàng.
+2. Admin/Nhân viên chọn không xác nhận.
+3. Hệ thống không xóa khách hàng.
+4. Hệ thống quay lại menu quản lý khách hàng.
+
+#### 7.7 File dữ liệu khách hàng không đọc hoặc không ghi được
+
+1. Admin/Nhân viên thực hiện thao tác quản lý khách hàng.
+2. Hệ thống không thể đọc hoặc ghi file dữ liệu khách hàng.
+3. Hệ thống hiển thị thông báo lỗi phù hợp.
+4. Nếu chưa ghi thành công, hệ thống không xác nhận thao tác thành công.
+
+### 8. Quy tắc nghiệp vụ liên quan
+
+* Chỉ Admin/Nhân viên được quản lý khách hàng.
+* Customer không được tự thêm, sửa hoặc xóa thông tin khách hàng.
+* Mỗi khách hàng có một mã khách hàng duy nhất.
+* Số điện thoại khách hàng không nên bị trùng để tránh tạo nhiều hồ sơ cho cùng một người.
+* Khách hàng mới mặc định có hạng thành viên `Member`.
+* Hạng thành viên không nên sửa thủ công trong UC này nếu hệ thống có cơ chế xét hạng tự động.
+* Thông tin khách hàng được dùng cho tạo booking, xem lịch sử và tính booking window.
+* Admin/Nhân viên chỉ được xóa khách hàng nếu khách hàng chưa có xe, chưa có booking và chưa có lịch sử rửa xe.
+* Nếu khách hàng đã có dữ liệu liên kết, hệ thống phải từ chối xóa để tránh làm sai lệch dữ liệu.
+
+### 9. Cấu trúc dữ liệu liên quan
+
+* **List/ArrayList** dùng để lưu danh sách khách hàng.
+* Có thể dùng **Map** để tra cứu nhanh khách hàng theo mã khách hàng hoặc số điện thoại.
+* Khi xóa khách hàng, hệ thống cần kiểm tra dữ liệu liên kết trong:
+  * Danh sách xe.
+  * Danh sách booking.
+  * Danh sách lịch sử rửa xe nếu tách riêng.
+* Không cần Queue, Priority Queue hoặc Stack cho UC này.
+
+### 10. Ví dụ menu CLI
+
+```text
+Quản lý khách hàng
+
+1. Xem danh sách khách hàng
+2. Tìm kiếm khách hàng
+3. Thêm khách hàng mới
+4. Cập nhật thông tin khách hàng
+5. Xóa khách hàng
+0. Quay lại Admin Menu
+```
+
+### 11. Ví dụ hiển thị khách hàng
+
+```text
+Danh sách khách hàng:
+
+1. C001 - Ngô Gia Long - 0909123456 - Gold
+2. C002 - Nguyễn Văn A - 0988888888 - Member
+3. C003 - Trần Văn B - 0911222333 - Silver
+```
+
+### 12. Ghi chú thiết kế
+
+UC này tập trung vào quản lý hồ sơ khách hàng cơ bản. Không nên cho Admin/Nhân viên sửa trực tiếp điểm tích lũy hoặc hạng thành viên trong UC này nếu hệ thống có cơ chế loyalty riêng.
+
+Việc xóa khách hàng chỉ áp dụng cho trường hợp nhập nhầm hoặc tạo nhầm hồ sơ khách hàng chưa phát sinh dữ liệu liên kết. Nếu khách hàng đã có xe, booking hoặc lịch sử, hệ thống phải giữ hồ sơ để đảm bảo dữ liệu không bị đứt liên kết.
+
+## Kết luận / trạng thái hiện tại
 
 Các quyết định đã chốt:
 
@@ -1316,5 +2102,19 @@ Các quyết định đã chốt:
 20. Khi hiển thị sức chứa, hệ thống dùng dạng **số chỗ đã dùng / tổng sức chứa**.
 21. Nếu Customer chọn nhầm buổi đã đầy, hệ thống báo lỗi và quay lại bước chọn ngày/buổi, giữ nguyên xe và dịch vụ đã chọn.
 22. Nếu tất cả ngày/buổi trong booking window đều đầy, hệ thống vẫn hiển thị toàn bộ nhưng không cho tạo booking.
+23. UC-04 **Xem booking cá nhân** chỉ hiển thị booking chưa kết thúc gồm `WAITING` và `SERVING`.
+24. UC-06 **Xem lịch sử rửa xe cá nhân** chỉ hiển thị booking `COMPLETED`.
+25. UC-12 được đổi thành **Xem hàng chờ và booking theo buổi** để bao quát cả buổi đã activate và buổi chưa activate.
+26. UC-07 **Quản lý khách hàng** cho phép xóa khách hàng chỉ khi khách chưa có xe, booking hoặc lịch sử rửa xe.
 
-Đây là nền phù hợp để tiếp tục viết Use Case chi tiết, đặc biệt là UC-03 **Tạo booking**, rồi bổ sung vào SRSV2.md.
+Các Use Case đã phân rã chi tiết trong file hiện tại:
+
+- UC-01 — Xem danh sách dịch vụ.
+- UC-02 — Xem thông tin cá nhân.
+- UC-04 — Xem booking cá nhân.
+- UC-06 — Xem lịch sử rửa xe cá nhân.
+- UC-12 — Xem hàng chờ và booking theo buổi.
+- UC-07 — Quản lý khách hàng.
+
+Bước tiếp theo nên tiếp tục phân rã **UC-08 — Quản lý xe**.
+
