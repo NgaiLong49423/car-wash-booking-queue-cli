@@ -7,10 +7,9 @@
 |---|---|
 | Tên tài liệu | Software Requirements Specification (SRS) |
 | Tên hệ thống | Car Wash Booking Queue CLI |
-| Phiên bản | v3.0.1 |
+| Phiên bản | v3.0.2 |
 | Ngày tạo | 2026-06-26 |
 | Sửa đổi gần nhất | 2026-06-26 |
-| Nguồn xây dựng | SRSV2.md; actor_usecase_summary_car_wash_cli.md |
 | Ngôn ngữ | Tiếng Việt |
 | Trạng thái | Hoàn thiện |
 
@@ -19,6 +18,8 @@
 | Phiên bản | Ngày | Người/nguồn cập nhật | Mô tả thay đổi |
 |---|---|---|---|
 | v3.0 | 2026-06-26 | SRSV2.md; actor_usecase_summary_car_wash_cli.md | Chuẩn hóa tài liệu theo cấu trúc IEEE 830 và tích hợp phân tích Actor/Use Case |
+| v3.0.1 | 2026-06-26 | Review nghiệp vụ | Làm rõ quy tắc booking dư khi kích hoạt, tính lại loyalty, kiểm tra thời gian còn lại, Undo và Cancel SERVING |
+| v3.0.2 | 2026-06-26 | Rà soát và đồng bộ SRS | Đồng bộ các quy tắc nghiệp vụ, FR và UC; sửa mâu thuẫn về loyalty, Undo, Activate, Waitlist và khôi phục hàng chờ |
 
 ## 1. Giới thiệu
 
@@ -147,7 +148,7 @@ Bảng tổng hợp quyền theo vai trò (Actor Matrix):
 - Quản lý slot chính (Queue) và hàng chờ phụ (Priority Queue) theo buổi.
 - Xử lý xe tiếp theo, xác nhận thanh toán mô phỏng và hoàn tất dịch vụ.
 - Hủy booking và tự động điều phối hàng chờ phụ lên slot chính.
-- Cập nhật điểm tích lũy và xét hạng thành viên sau khi hoàn tất dịch vụ.
+- Tính toán lại điểm tích lũy và xét hạng thành viên sau khi hoàn tất dịch vụ hoặc sau thao tác nghiệp vụ ảnh hưởng đến booking `COMPLETED`.
 - Lưu lịch sử rửa xe và hoàn tác (Undo) booking hoàn tất gần nhất bằng Stack.
 - Tải/Lưu dữ liệu qua file text phẳng sử dụng dấu phân tách `|`.
 - Tự động sinh ID tăng dần và khởi tạo dữ liệu mẫu (seed data) khi file rỗng.
@@ -188,7 +189,7 @@ Hệ thống quản lý 4 hạng thành viên của khách hàng với điều k
 - **Gold**: Đạt tối thiểu **15 lần rửa** HOẶC tổng chi tiêu từ **6,000,000 VND**.
 - **Platinum**: Đạt tối thiểu **30 lần rửa** HOẶC tổng chi tiêu từ **15,000,000 VND**.
 
-*Quy tắc xét hạng*: Khi booking hoàn tất, hệ thống tính toán các chỉ số và nâng thẳng lên hạng cao nhất mà khách hàng đạt điều kiện (không nâng từng bậc, không tự động hạ hạng).
+*Quy tắc xét hạng*: Khi booking hoàn tất, hệ thống tính toán lại các chỉ số và xác định hạng cao nhất mà khách hàng đạt điều kiện (không nâng từng bậc). Hệ thống không tự động hạ hạng theo chu kỳ thời gian; mọi thay đổi hạng chỉ xảy ra khi hệ thống tính toán lại loyalty sau một thao tác nghiệp vụ hợp lệ.
 
 ### 3.4 Quy tắc booking window
 Giới hạn khoảng cách ngày đặt trước tối đa tính từ ngày hiện tại mô phỏng (`currentDate`) dựa trên hạng thành viên của khách hàng:
@@ -222,7 +223,7 @@ Booking tương lai là booking được đặt cho một ngày sau ngày hiện
 - Khi kích hoạt, hệ thống lấy toàn bộ booking tương lai đã đặt trước của buổi đó, sắp xếp theo thứ tự ưu tiên:
   1. Hạng thành viên cao hơn được ưu tiên trước (Platinum > Gold > Silver > Member).
   2. Nếu cùng hạng thành viên, booking nào được tạo trước (thời gian đặt sớm hơn) được ưu tiên trước.
-- Sắp xếp xong, hệ thống đổ lần lượt các booking ưu tiên cao vào slot chính (tối đa bằng giới hạn slot chính của buổi). Số còn lại (nếu có) được đổ vào hàng chờ phụ (tối đa bằng giới hạn slot chờ phụ). Trong điều kiện dữ liệu hợp lệ, hệ thống không phát sinh booking dư thừa vì tổng sức chứa đã được kiểm tra khi tạo booking. Trường hợp phát hiện dữ liệu vượt sức chứa do lỗi file hoặc dữ liệu thủ công, hệ thống sẽ từ chối phân bổ phần dư và báo lỗi dữ liệu. (do vượt quá sức chứa khi sắp xếp).
+- Sắp xếp xong, hệ thống đổ lần lượt các booking ưu tiên cao vào slot chính (tối đa bằng giới hạn slot chính của buổi). Số còn lại (nếu có) được đổ vào hàng chờ phụ (tối đa bằng giới hạn slot chờ phụ). Trong điều kiện dữ liệu hợp lệ, hệ thống không phát sinh booking dư thừa vì tổng sức chứa đã được kiểm tra khi tạo booking. Trường hợp phát hiện dữ liệu vượt sức chứa do lỗi file hoặc dữ liệu thủ công, hệ thống không phân bổ phần dư và hiển thị lỗi dữ liệu.
 
 ### 3.8 Quy tắc xử lý hàng chờ phụ
 Khi slot chính của buổi hiện tại xuất hiện chỗ trống (do hủy booking hoặc do hệ thống thực hiện nghiệp vụ kéo thêm xe):
@@ -236,10 +237,10 @@ Khi slot chính của buổi hiện tại xuất hiện chỗ trống (do hủy 
 - Khi bấm hoàn tất:
   1. Trạng thái booking chuyển sang `COMPLETED`.
   2. Ghi nhận thông tin vào lịch sử rửa xe (`history.txt`).
-  3. Cập nhật các chỉ số tích lũy của khách hàng: tăng số lần rửa xe, cộng tổng tiền chi tiêu, cộng điểm loyalty theo tỷ lệ.
-  4. Xét lại hạng thành viên của khách hàng.
-  5. Đẩy thông tin booking này vào Stack hoàn tác để hỗ trợ sửa lỗi.
-  6. **Kiểm tra và bổ sung từ hàng chờ phụ**: Hệ thống kiểm tra thời gian còn lại của buổi hiện tại. Nếu còn đủ thời gian phục vụ thêm 1 xe (dựa vào thời gian thực hiện của dịch vụ của xe tiếp theo trong waitlist), hệ thống sẽ kéo booking ưu tiên cao nhất từ waitlist lên cuối hàng chờ chính. Nếu không đủ thời gian hoặc waitlist trống, hệ thống không kéo thêm.
+  3. Gọi chức năng tính toán lại loyalty cho khách hàng liên quan dựa trên các booking còn ở trạng thái `COMPLETED`.
+  4. Xét lại hạng thành viên của khách hàng theo kết quả tính toán lại loyalty.
+  5. Đẩy bản ghi hoàn tác vào Stack. Bản ghi này phải lưu booking vừa hoàn tất và booking được kéo từ Waitlist lên Main Queue nếu có.
+  6. **Kiểm tra và bổ sung từ hàng chờ phụ**: Hệ thống tính thời gian còn lại của buổi hiện tại. Nếu còn đủ thời gian phục vụ booking có độ ưu tiên cao nhất trong Waitlist, hệ thống kéo booking đó lên cuối hàng chờ chính. Nếu không đủ thời gian hoặc Waitlist trống, hệ thống không kéo thêm.
   7. Lưu toàn bộ thay đổi xuống các file lưu trữ tương ứng.
 
 ### 3.9.2 Quy tắc kiểm tra thời gian còn lại của buổi
@@ -265,6 +266,8 @@ usedMinutes = tổng serviceDuration của các booking thỏa mãn:
 remainingMinutes = periodTotalMinutes - usedMinutes
 ```
 
+Khi kiểm tra Waitlist, hệ thống chỉ xét booking có độ ưu tiên cao nhất trong Waitlist. Nếu `remainingMinutes >= serviceDuration` của booking đó, hệ thống kéo booking từ Waitlist lên cuối Main Queue. Nếu không đủ thời gian, hệ thống không kéo thêm booking nào và không bỏ qua booking ưu tiên cao nhất để xét các booking phía sau.
+
 ### 3.10 Quy tắc hủy booking (Cancel booking)
 - Booking ở trạng thái chờ (`WAITING`) hoặc đang phục vụ (`SERVING`) có thể được hủy bởi Admin hoặc chính khách hàng (chỉ WAITING). Booking đã hoàn tất (`COMPLETED`) không được hủy.
 - Khi hủy booking:
@@ -285,7 +288,7 @@ remainingMinutes = periodTotalMinutes - usedMinutes
   - Silver: Ưu tiên mức 2.
   - Gold: Ưu tiên mức 3.
   - Platinum: Ưu tiên mức 4.
-- Điểm loyalty và hạng thành viên được cập nhật ngay lập tức sau khi booking được chuyển sang trạng thái `COMPLETED` thành công.
+- Sau khi booking được chuyển sang trạng thái `COMPLETED` thành công, hệ thống tính toán lại loyalty cho khách hàng liên quan để cập nhật điểm, tổng chi tiêu, số lần rửa xe và hạng thành viên.
 
 Hệ thống không xem điểm loyalty, số lần rửa xe, tổng chi tiêu và hạng thành viên là dữ liệu được chỉnh sửa thủ công độc lập. Các giá trị này phải được tính toán dựa trên dữ liệu booking đã hoàn tất (`COMPLETED`).
 
@@ -311,7 +314,6 @@ Việc tính toán lại loyalty nhằm đảm bảo dữ liệu khách hàng lu
 ### 3.13 Quy tắc hoàn tác booking hoàn tất gần nhất (Undo)
 - Hệ thống chỉ cho phép hoàn tác thao tác hoàn tất của **booking vừa được complete gần nhất** (sử dụng cấu trúc Stack). Không cho phép hoàn tác tùy ý các booking cũ hơn trong lịch sử.
 - Khi thực hiện hoàn tác:
-Khi thực hiện hoàn tác:
   1. Lấy bản ghi hoàn tác gần nhất ra khỏi Stack.
   2. Chuyển booking đã hoàn tất trong bản ghi đó từ `COMPLETED` về trạng thái trước đó, mặc định là `SERVING`, giữ nguyên trạng thái thanh toán `PAID`.
   3. Xóa hoặc vô hiệu hóa bản ghi lịch sử tương ứng của booking vừa được hoàn tác.
@@ -362,9 +364,9 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
 - **FR-14 — Xem booking của khách hàng**: Cho phép khách hàng tra cứu toàn bộ danh sách booking của cá nhân họ cùng trạng thái tương ứng.
 - **FR-15 — Xử lý booking tiếp theo**: Lấy booking đứng đầu hàng chờ chính chuyển sang trạng thái đang rửa (`SERVING`).
 - **FR-16 — Xác nhận thanh toán booking**: Cho phép admin xác nhận khách hàng đã thanh toán hóa đơn cho booking đang ở trạng thái `SERVING`.
-- **FR-17 — Hoàn tất booking**: Xác nhận dịch vụ rửa xe đã hoàn tất cho xe đang rửa, thực hiện tích điểm, cập nhật hạng thành viên và lưu lịch sử.
+- **FR-17 — Hoàn tất booking**: Xác nhận dịch vụ rửa xe đã hoàn tất cho xe đang rửa, ghi lịch sử, tính toán lại loyalty và kiểm tra điều phối Waitlist.
 - **FR-18 — Hủy booking**: Cho phép admin hoặc khách hàng hủy một booking chưa thực hiện.
-- **FR-19 — Cập nhật loyalty sau khi hoàn tất booking**: Tự động tính toán cộng điểm, tăng chi tiêu, tăng số lần rửa xe và xét lại hạng thành viên của khách hàng sau khi booking hoàn tất.
+- **FR-19 — Tính toán lại loyalty**: Tính lại số lần rửa xe, tổng chi tiêu, điểm loyalty và hạng thành viên của khách hàng dựa trên toàn bộ booking `COMPLETED` hiện có.
 - **FR-20 — Xem lịch sử rửa xe**: Hiển thị danh sách các booking đã hoàn tất phục vụ của tiệm.
 - **FR-21 — Hoàn tác booking hoàn tất gần nhất**: Đảo ngược toàn bộ tác động của booking vừa hoàn tất gần nhất về trạng thái trước đó.
 - **FR-22 — Tải dữ liệu từ file khi khởi động**: Nạp toàn bộ dữ liệu từ các file text phẳng trong thư mục `data` vào các cấu trúc dữ liệu tương ứng trong RAM khi ứng dụng khởi chạy.
@@ -481,7 +483,7 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
   3. Sắp xếp các booking này theo thứ tự ưu tiên (Hạng thành viên $\rightarrow$ Thời gian đặt).
   4. Đổ các booking có thứ tự ưu tiên cao vào slot chính (MyQueue) cho đến khi đầy slot.
   5. Đổ các booking tiếp theo vào hàng chờ phụ (MyPriorityQueue) cho đến khi đầy hàng chờ phụ.
-  6. Các booking thừa còn lại (nếu vượt quá sức chứa) được chuyển sang trạng thái hủy/từ chối.
+  6. Trong điều kiện dữ liệu hợp lệ, hệ thống không phát sinh booking thừa vì tổng sức chứa đã được kiểm tra khi tạo booking. Nếu phát hiện dữ liệu vượt sức chứa do lỗi file hoặc dữ liệu thủ công, hệ thống không phân bổ phần dư và hiển thị lỗi dữ liệu.
   7. Ghi nhận trạng thái buổi đã kích hoạt vào file `periods.txt`.
 - **Điều kiện/ràng buộc**: Chỉ kích hoạt buổi trùng khớp với ngày và buổi mô phỏng hiện tại. Buổi đó phải chưa từng được kích hoạt trước đây.
 - **Kết quả mong đợi**: Hàng chờ chính và hàng chờ phụ được khởi tạo đầy đủ dữ liệu từ danh sách đặt trước.
@@ -542,13 +544,13 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
 - **Kết quả mong đợi**: Trạng thái thanh toán của booking chuyển thành `PAID`.
 
 #### FR-17 — Hoàn tất booking
-- **Mô tả**: Xác nhận dịch vụ rửa xe đã hoàn tất cho xe đang rửa, thực hiện tích điểm, cập nhật hạng thành viên và lưu lịch sử.
-- **Lý do cần có**: Đóng luồng phục vụ của một booking, kích hoạt tích lũy loyalty cho khách hàng và giải phóng vị trí phục vụ của tiệm.
+- **Mô tả**: Xác nhận dịch vụ rửa xe đã hoàn tất cho xe đang rửa, ghi lịch sử, tính toán lại loyalty và kiểm tra điều phối Waitlist.
+- **Lý do cần có**: Đóng luồng phục vụ của một booking, đồng bộ dữ liệu loyalty cho khách hàng và giải phóng vị trí phục vụ của tiệm.
 - **Luồng xử lý chính**:
   1. Kiểm tra có booking đang ở trạng thái `SERVING` và đã thanh toán (`paymentStatus = PAID`) hay chưa.
   2. Chuyển trạng thái booking sang `COMPLETED`.
-  3. Gọi nghiệp vụ cập nhật loyalty của khách hàng (FR-19).
-  4. Ghi nhận booking vào lịch sử rửa xe (`history.txt`).
+  3. Ghi nhận booking vào lịch sử rửa xe (`history.txt`).
+  4. Gọi chức năng tính toán lại loyalty của khách hàng (FR-19).
   5. Đẩy booking vào Stack hoàn tác.
   6. Tính lại `usedMinutes` của buổi hiện tại bằng tổng thời gian dịch vụ của các booking `COMPLETED` trong cùng ngày và cùng buổi.
   7. Tính `remainingMinutes = periodTotalMinutes - usedMinutes`.
@@ -576,7 +578,7 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
 - **Điều kiện/ràng buộc**: Không cho phép hủy booking đã ở trạng thái `COMPLETED`. Customer chỉ được hủy booking của chính mình khi đang `WAITING`. Admin được hủy bất kỳ booking `WAITING` hoặc `SERVING`.
 - **Kết quả mong đợi**: Booking được hủy, giải phóng chỗ và bổ sung kịp thời khách hàng từ hàng chờ phụ lên slot chính.
 
-#### FR-19 — Cập nhật loyalty sau khi hoàn tất booking
+#### FR-19 — Tính toán lại loyalty
 - **Mô tả**: Hệ thống tính toán lại `visitCount`, `totalSpent`, `loyaltyPoints` và `tier` của khách hàng dựa trên toàn bộ booking `COMPLETED` hiện có.
 - **Lý do cần có**: Đảm bảo ghi nhận đóng góp chi tiêu của khách hàng để áp dụng các đặc quyền ưu tiên trong lần đặt lịch sau.
 - **Luồng xử lý chính**:
@@ -597,19 +599,20 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
 - **Kết quả mong đợi**: Hiển thị đầy đủ thông tin các lượt rửa xe đã hoàn tất.
 
 #### FR-21 — Hoàn tác booking hoàn tất gần nhất
-- **Mô tả**: Đảo ngược toàn bộ tác động của booking vừa hoàn tất gần nhất về trạng thái trước đó.
+- **Mô tả**: Đảo ngược toàn bộ tác động của thao tác hoàn tất booking gần nhất, bao gồm trạng thái booking, lịch sử, loyalty và booking được kéo từ Waitlist nếu có.
 - **Lý do cần có**: Giúp nhân viên sửa sai nhanh chóng nếu lỡ tay bấm nhầm hoàn tất cho một xe chưa xong hoặc nhầm xe.
 - **Luồng xử lý chính**:
-  1. Lấy booking hoàn tất gần nhất ra khỏi Stack hoàn tác.
-  2. Chuyển trạng thái booking đó từ `COMPLETED` về `SERVING` (và giữ trạng thái thanh toán `PAID`).
-  3. Lấy thông tin khách hàng liên quan, thực hiện trừ đi các chỉ số đã cộng (giảm `visitCount` đi 1, trừ `totalSpent` tương ứng giá dịch vụ, trừ điểm loyalty tương ứng).
-  4. Xét lại hạng thành viên của khách hàng dựa trên các chỉ số sau khi giảm (có thể bị hạ hạng về hạng cũ).
-  5. Xóa dòng lịch sử của booking này trong danh sách lịch sử.
-  6. Lưu toàn bộ thay đổi xuống các file lưu trữ.
-  7. Nếu thao tác Complete trước đó đã kéo một booking từ Waitlist lên Main Queue, hệ thống hoàn tác thao tác kéo này bằng cách đưa booking đó trở lại Waitlist.
-  8. Waitlist được sắp xếp lại theo Priority Queue dựa trên hạng thành viên và thời gian tạo booking.
-- **Điều kiện/ràng buộc**: Stack hoàn tác phải không được trống. Chỉ hoàn tác được booking hoàn tất gần nhất.
-- **Kết quả mong đợi**: Hệ thống quay về trạng thái trước khi complete booking đó một cách nhất quán.
+  1. Kiểm tra Stack hoàn tác có dữ liệu hay không.
+  2. Lấy bản ghi hoàn tác gần nhất ra khỏi Stack.
+  3. Chuyển booking đã hoàn tất trong bản ghi đó từ `COMPLETED` về trạng thái trước đó, mặc định là `SERVING`, và giữ nguyên `paymentStatus = PAID`.
+  4. Xóa hoặc vô hiệu hóa dòng lịch sử tương ứng của booking vừa được hoàn tác trong `history.txt`.
+  5. Nếu thao tác Complete trước đó đã kéo một booking từ Waitlist lên Main Queue, hệ thống loại booking đó khỏi Main Queue và đưa trở lại Waitlist.
+  6. Waitlist được sắp xếp lại theo Priority Queue dựa trên hạng thành viên và thời gian tạo booking.
+  7. Gọi chức năng tính toán lại loyalty cho khách hàng liên quan dựa trên các booking còn ở trạng thái `COMPLETED`.
+  8. Lưu toàn bộ thay đổi xuống các file lưu trữ.
+- **Điều kiện/ràng buộc**: Stack hoàn tác phải không được trống. Chỉ hoàn tác được booking hoàn tất gần nhất. Nếu có booking được đưa trở lại Waitlist, hệ thống không cần khôi phục vị trí cũ tuyệt đối mà để Priority Queue tự sắp xếp lại theo quy tắc ưu tiên.
+- **Kết quả mong đợi**: Hệ thống quay về trạng thái nhất quán trước thao tác complete gần nhất, loyalty được đồng bộ lại từ dữ liệu booking `COMPLETED`.
+
 
 #### FR-22 — Tải dữ liệu từ file khi khởi động
 - **Mô tả**: Nạp toàn bộ dữ liệu từ các file text phẳng trong thư mục `data` vào các cấu trúc dữ liệu tương ứng trong RAM khi ứng dụng khởi chạy.
@@ -991,11 +994,36 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 ### 5.9 UC-08 — Quản lý xe
 
 **Actor chính:** Admin/Nhân viên  
-**Mục tiêu:** Quản lý liên kết thông tin xe của khách hàng.  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Dữ liệu xe được thay đổi và cập nhật xuống file `vehicles.txt` (nếu thêm mới).  
+**Mục tiêu:** Quản lý thông tin xe của khách hàng, bao gồm thêm xe mới, xem danh sách xe và tìm kiếm xe theo khách hàng hoặc biển số.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Dữ liệu khách hàng đã được nạp từ file.
+- Dữ liệu xe đã được nạp từ file.  
+**Hậu điều kiện:**  
+- Nếu thêm xe thành công, xe mới được lưu vào bộ nhớ và ghi xuống file `vehicles.txt`.
+- Nếu chỉ xem hoặc tìm kiếm, dữ liệu không thay đổi.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Quản lý xe** trong Admin Menu.
+2. Hệ thống hiển thị các lựa chọn: thêm xe, xem danh sách xe, xem xe theo khách hàng, tìm kiếm xe theo biển số.
+3. Nếu chọn **thêm xe**, Admin/Nhân viên nhập biển số xe và mã khách hàng sở hữu.
+4. Hệ thống kiểm tra mã khách hàng có tồn tại hay không.
+5. Hệ thống kiểm tra biển số xe không được rỗng và không trùng với xe đã có trong hệ thống.
+6. Nếu dữ liệu hợp lệ, hệ thống sinh mã xe mới theo định dạng `V001, V002...`.
+7. Hệ thống lưu xe mới vào danh sách xe trong RAM và ghi xuống file `vehicles.txt`.
+8. Nếu chọn **xem/tìm kiếm**, hệ thống lọc danh sách xe theo điều kiện đã nhập và hiển thị kết quả.
+9. Hệ thống quay lại Admin Menu sau khi thao tác hoàn tất.
+
+**Luồng thay thế / ngoại lệ:**
+- **8.1 Mã khách hàng không tồn tại**:
+  1. Hệ thống báo lỗi khách hàng không tồn tại.
+  2. Hệ thống không tạo xe mới và cho phép nhập lại hoặc hủy thao tác.
+- **8.2 Biển số bị trùng**:
+  1. Hệ thống phát hiện biển số đã tồn tại.
+  2. Hệ thống từ chối thêm xe và hiển thị thông báo lỗi.
+- **8.3 Không tìm thấy xe**:
+  1. Hệ thống không tìm thấy xe theo điều kiện tìm kiếm.
+  2. Hệ thống hiển thị thông báo không có dữ liệu phù hợp.
 
 **Quy tắc nghiệp vụ liên quan:**  
 - Biển số xe không được để trống và không được trùng lặp.
@@ -1003,24 +1031,53 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 
 **Cấu trúc dữ liệu liên quan:**  
 - `MyLinkedList` để lưu trữ danh sách xe.
+- Tìm kiếm tuyến tính (`Linear Search`) để tìm xe theo biển số hoặc mã khách hàng.
 
 ---
 
 ### 5.10 UC-09 — Quản lý dịch vụ
 
 **Actor chính:** Admin/Nhân viên  
-**Mục tiêu:** Quản lý danh sách dịch vụ rửa xe của tiệm (thêm, xem, tìm kiếm và sắp xếp).  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Dữ liệu dịch vụ được cập nhật xuống file `services.txt` (nếu thêm mới).  
+**Mục tiêu:** Quản lý danh sách dịch vụ rửa xe của tiệm, bao gồm thêm dịch vụ, xem danh sách, tìm kiếm và sắp xếp dịch vụ theo giá hoặc thời gian thực hiện.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Dữ liệu dịch vụ đã được nạp từ file.  
+**Hậu điều kiện:**  
+- Nếu thêm dịch vụ thành công, dữ liệu dịch vụ được cập nhật trong RAM và ghi xuống file `services.txt`.
+- Nếu chỉ xem, tìm kiếm hoặc sắp xếp hiển thị, dữ liệu gốc không bị thay đổi ngoài thứ tự hiển thị.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Quản lý dịch vụ**.
+2. Hệ thống hiển thị các lựa chọn: thêm dịch vụ, xem danh sách dịch vụ, tìm kiếm dịch vụ, sắp xếp dịch vụ.
+3. Nếu chọn **thêm dịch vụ**, Admin/Nhân viên nhập tên dịch vụ, giá tiền và thời gian thực hiện.
+4. Hệ thống kiểm tra tên dịch vụ không rỗng, giá tiền lớn hơn 0 và thời gian thực hiện lớn hơn 0.
+5. Nếu dữ liệu hợp lệ, hệ thống sinh mã dịch vụ mới theo định dạng `S001, S002...`.
+6. Hệ thống lưu dịch vụ mới vào danh sách dịch vụ và ghi xuống file `services.txt`.
+7. Nếu chọn **xem/tìm kiếm**, hệ thống hiển thị danh sách dịch vụ hoặc kết quả phù hợp.
+8. Nếu chọn **sắp xếp**, hệ thống cho phép chọn tiêu chí sắp xếp theo giá hoặc thời gian thực hiện, tăng dần hoặc giảm dần.
+9. Hệ thống hiển thị danh sách dịch vụ sau khi sắp xếp.
+10. Hệ thống quay lại Admin Menu sau khi thao tác hoàn tất.
+
+**Luồng thay thế / ngoại lệ:**
+- **9.1 Dữ liệu dịch vụ không hợp lệ**:
+  1. Hệ thống phát hiện tên rỗng, giá không hợp lệ hoặc thời gian không hợp lệ.
+  2. Hệ thống từ chối thêm dịch vụ và yêu cầu nhập lại.
+- **9.2 Không có dịch vụ nào trong hệ thống**:
+  1. Hệ thống hiển thị thông báo danh sách dịch vụ rỗng.
+  2. Hệ thống quay lại menu quản lý dịch vụ.
+- **9.3 Không tìm thấy dịch vụ**:
+  1. Hệ thống không tìm thấy dịch vụ theo từ khóa.
+  2. Hệ thống hiển thị thông báo không có kết quả phù hợp.
 
 **Quy tắc nghiệp vụ liên quan:**  
-- Tên dịch vụ không được rỗng, giá dịch vụ và thời gian rửa phải lớn hơn 0.
+- Tên dịch vụ không được rỗng.
+- Giá dịch vụ và thời gian rửa phải lớn hơn 0.
+- Thời gian dịch vụ được dùng để kiểm tra khả năng kéo booking từ Waitlist lên Main Queue.
 
 **Cấu trúc dữ liệu liên quan:**  
 - `MyLinkedList` để lưu trữ danh sách dịch vụ.
 - Thuật toán sắp xếp chọn (`Selection Sort`) để sắp xếp dịch vụ hiển thị tăng/giảm dần theo giá hoặc thời gian.
+- Tìm kiếm tuyến tính (`Linear Search`) để tìm dịch vụ theo mã hoặc tên.
 
 ---
 
@@ -1028,16 +1085,43 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 
 **Actor chính:** Admin/Nhân viên  
 **Mục tiêu:** Thiết lập ngày (`currentDate`) và buổi (`currentPeriod`) mô phỏng hiện tại cho toàn hệ thống.  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Ngày/buổi mô phỏng được cập nhật trong bộ nhớ và ghi vào `periods.txt`.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Hệ thống đã khởi động và nạp dữ liệu cấu hình hiện tại.  
+**Hậu điều kiện:**  
+- Ngày/buổi mô phỏng được cập nhật trong bộ nhớ.
+- Trạng thái ngày/buổi mô phỏng được ghi nhận để phục vụ các nghiệp vụ đặt lịch, kích hoạt buổi và kiểm tra booking window.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Thiết lập ngày và buổi hiện tại**.
+2. Hệ thống hiển thị ngày và buổi mô phỏng hiện tại.
+3. Admin/Nhân viên nhập ngày mới theo định dạng `YYYY-MM-DD`.
+4. Admin/Nhân viên chọn buổi mới trong danh sách `MORNING`, `AFTERNOON`, `EVENING`.
+5. Hệ thống kiểm tra ngày nhập có đúng định dạng và hợp lệ hay không.
+6. Hệ thống kiểm tra buổi nhập có thuộc danh sách buổi quy định hay không.
+7. Nếu dữ liệu hợp lệ, hệ thống cập nhật `currentDate` và `currentPeriod`.
+8. Hệ thống lưu thay đổi cấu hình thời gian mô phỏng.
+9. Hệ thống quay lại Admin Menu.
+
+**Luồng thay thế / ngoại lệ:**
+- **9.1 Ngày không hợp lệ**:
+  1. Hệ thống phát hiện ngày sai định dạng hoặc không tồn tại.
+  2. Hệ thống báo lỗi và yêu cầu nhập lại.
+- **9.2 Buổi không hợp lệ**:
+  1. Hệ thống phát hiện buổi không thuộc danh sách quy định.
+  2. Hệ thống báo lỗi và yêu cầu chọn lại.
+- **9.3 Lỗi lưu cấu hình**:
+  1. Hệ thống không thể ghi dữ liệu cấu hình thời gian.
+  2. Hệ thống hiển thị thông báo lỗi và không xác nhận thay đổi.
 
 **Quy tắc nghiệp vụ liên quan:**  
-- Ngày nhập phải đúng định dạng ngày tháng hợp lệ. Buổi nhập phải thuộc danh sách buổi quy định (`MORNING`, `AFTERNOON`, `EVENING`).
+- Ngày nhập phải đúng định dạng ngày tháng hợp lệ.
+- Buổi nhập phải thuộc danh sách buổi quy định (`MORNING`, `AFTERNOON`, `EVENING`).
+- Ngày và buổi mô phỏng ảnh hưởng trực tiếp đến booking window, booking hiện tại và thao tác kích hoạt buổi.
 
 **Cấu trúc dữ liệu liên quan:**  
-- Biến toàn cục trong bộ nhớ và ghi file text.
+- Biến cấu hình trong bộ nhớ.
+- File text dùng để lưu trạng thái ngày/buổi mô phỏng.
 
 ---
 
@@ -1045,15 +1129,46 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 
 **Actor chính:** Admin/Nhân viên  
 **Mục tiêu:** Kích hoạt buổi rửa xe hiện tại để hệ thống sắp xếp các booking tương lai của buổi đó vào hàng chờ chính và hàng chờ phụ thực tế.  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Buổi chuyển sang trạng thái kích hoạt, các hàng chờ chính/phụ của buổi được phân bổ đầy đủ, cập nhật trạng thái vào file `periods.txt`.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Ngày và buổi mô phỏng hiện tại đã được thiết lập.
+- Buổi cần kích hoạt chưa từng được kích hoạt trước đó.
+- Dữ liệu booking tương lai của buổi đã được nạp.  
+**Hậu điều kiện:**  
+- Buổi chuyển sang trạng thái `ACTIVATED`.
+- Booking tương lai của buổi được phân bổ vào Main Queue và Waitlist theo quy tắc ưu tiên.
+- Trạng thái kích hoạt được ghi vào file `periods.txt`.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Kích hoạt buổi rửa xe**.
+2. Hệ thống xác định ngày hiện tại (`currentDate`) và buổi hiện tại (`currentPeriod`).
+3. Hệ thống kiểm tra buổi này đã được kích hoạt trước đó hay chưa.
+4. Nếu chưa kích hoạt, hệ thống lấy danh sách booking tương lai thuộc đúng ngày và buổi hiện tại.
+5. Hệ thống sắp xếp booking theo hạng thành viên từ cao xuống thấp: Platinum, Gold, Silver, Member.
+6. Nếu cùng hạng thành viên, booking được tạo sớm hơn được ưu tiên trước.
+7. Hệ thống đưa các booking ưu tiên cao vào Main Queue cho đến khi đạt giới hạn slot chính.
+8. Các booking còn lại được đưa vào Waitlist cho đến khi đạt giới hạn slot chờ phụ.
+9. Trong điều kiện dữ liệu hợp lệ, hệ thống không phát sinh booking dư thừa vì tổng sức chứa đã được kiểm tra khi tạo booking.
+10. Nếu phát hiện dữ liệu vượt sức chứa do lỗi file hoặc dữ liệu thủ công, hệ thống không phân bổ phần dư và hiển thị lỗi dữ liệu.
+11. Hệ thống ghi trạng thái buổi đã kích hoạt vào file `periods.txt`.
+12. Hệ thống hiển thị kết quả phân bổ Main Queue và Waitlist.
+
+**Luồng thay thế / ngoại lệ:**
+- **12.1 Buổi đã được kích hoạt**:
+  1. Hệ thống phát hiện buổi hiện tại đã có trạng thái `ACTIVATED`.
+  2. Hệ thống từ chối kích hoạt lại và hiển thị thông báo lỗi.
+- **12.2 Không có booking tương lai**:
+  1. Hệ thống không tìm thấy booking tương lai nào cho buổi hiện tại.
+  2. Hệ thống vẫn cho phép kích hoạt buổi và tạo hàng chờ rỗng.
+- **12.3 Dữ liệu vượt sức chứa do lỗi file**:
+  1. Hệ thống phát hiện số booking vượt tổng sức chứa của buổi.
+  2. Hệ thống chỉ phân bổ trong giới hạn hợp lệ và báo lỗi dữ liệu cho phần dư không được phân bổ.
 
 **Quy tắc nghiệp vụ liên quan:**  
 - Chỉ kích hoạt buổi trùng khớp với ngày và buổi hiện tại mô phỏng của hệ thống.
-- Mỗi buổi chỉ được kích hoạt duy nhất một lần (ngăn kích hoạt trùng buổi).
-- Sắp xếp booking tương lai theo hạng thành viên (Platinum > Gold > Silver > Member) và thời gian đặt sớm để đổ lần lượt vào slot chính, tiếp đến hàng chờ phụ. Số dư thừa còn lại bị hủy (vượt quá sức chứa).
+- Mỗi buổi chỉ được kích hoạt duy nhất một lần.
+- Booking tương lai được sắp xếp theo hạng thành viên và thời gian tạo.
+- Trong điều kiện dữ liệu hợp lệ, không có booking dư vì sức chứa đã được kiểm tra khi tạo booking.
 
 **Cấu trúc dữ liệu liên quan:**  
 - `MyQueue` (slot chính), `MyPriorityQueue` (hàng chờ phụ / booking tương lai), file `periods.txt`.
@@ -1105,14 +1220,35 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 
 **Actor chính:** Admin/Nhân viên  
 **Mục tiêu:** Lấy booking đứng đầu hàng chờ chính chuyển sang trạng thái đang rửa (`SERVING`).  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Booking đầu queue chuyển sang `SERVING`, cập nhật file `bookings.txt`.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Buổi hiện tại đã được kích hoạt.
+- Hàng chờ chính có ít nhất một booking đang `WAITING`.
+- Không có booking nào khác đang ở trạng thái `SERVING`.  
+**Hậu điều kiện:**  
+- Booking đầu Main Queue chuyển sang `SERVING`.
+- File `bookings.txt` được cập nhật.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Xử lý booking tiếp theo**.
+2. Hệ thống kiểm tra có booking nào đang ở trạng thái `SERVING` hay không.
+3. Nếu không có booking đang `SERVING`, hệ thống kiểm tra Main Queue của buổi hiện tại.
+4. Hệ thống lấy booking đứng đầu Main Queue theo nguyên tắc FIFO.
+5. Hệ thống chuyển trạng thái booking từ `WAITING` sang `SERVING`.
+6. Hệ thống lưu thay đổi xuống file `bookings.txt`.
+7. Hệ thống hiển thị thông tin booking đang được phục vụ.
+
+**Luồng thay thế / ngoại lệ:**
+- **7.1 Đang có booking SERVING**:
+  1. Hệ thống phát hiện đã có booking đang `SERVING`.
+  2. Hệ thống từ chối xử lý xe mới và yêu cầu hoàn tất hoặc hủy booking đang phục vụ trước.
+- **7.2 Main Queue rỗng**:
+  1. Hệ thống phát hiện không có booking nào trong Main Queue.
+  2. Hệ thống hiển thị thông báo không có xe chờ phục vụ.
 
 **Quy tắc nghiệp vụ liên quan:**  
 - Chỉ được phép có tối đa 1 booking ở trạng thái `SERVING` tại một thời điểm.
-- Hàng chờ chính phải không trống.
+- Hàng chờ chính xử lý theo FIFO.
 
 **Cấu trúc dữ liệu liên quan:**  
 - `MyQueue` (lấy ra ở đầu hàng chờ chính bằng thao tác `dequeue`), file `bookings.txt`.
@@ -1123,14 +1259,36 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 
 **Actor chính:** Admin/Nhân viên  
 **Mục tiêu:** Xác nhận thanh toán hóa đơn cho booking đang ở trạng thái `SERVING`.  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Booking `SERVING` cập nhật trạng thái thanh toán `paymentStatus = PAID`, phương thức thanh toán cập nhật, ghi đè file `bookings.txt`.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Có một booking đang ở trạng thái `SERVING`.  
+**Hậu điều kiện:**  
+- Booking `SERVING` cập nhật `paymentStatus = PAID`.
+- Phương thức thanh toán được ghi nhận.
+- File `bookings.txt` được cập nhật.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Xác nhận thanh toán**.
+2. Hệ thống tìm booking đang ở trạng thái `SERVING`.
+3. Hệ thống hiển thị thông tin booking, khách hàng, xe, dịch vụ và số tiền cần thanh toán.
+4. Admin/Nhân viên chọn phương thức thanh toán (`CASH` hoặc `BANKING`).
+5. Hệ thống kiểm tra phương thức thanh toán hợp lệ.
+6. Hệ thống cập nhật `paymentStatus = PAID` và lưu phương thức thanh toán.
+7. Hệ thống ghi thay đổi xuống file `bookings.txt`.
+8. Hệ thống hiển thị thông báo thanh toán thành công.
+
+**Luồng thay thế / ngoại lệ:**
+- **8.1 Không có booking SERVING**:
+  1. Hệ thống không tìm thấy booking đang phục vụ.
+  2. Hệ thống báo lỗi không có booking cần thanh toán.
+- **8.2 Phương thức thanh toán không hợp lệ**:
+  1. Hệ thống phát hiện phương thức không thuộc `CASH` hoặc `BANKING`.
+  2. Hệ thống yêu cầu chọn lại.
 
 **Quy tắc nghiệp vụ liên quan:**  
 - Chỉ thanh toán cho booking đang ở trạng thái `SERVING`.
-- Nhập phương thức thanh toán là `CASH` hoặc `BANKING`.
+- Phương thức thanh toán hợp lệ là `CASH` hoặc `BANKING`.
+- Thanh toán thực tế/hoàn tiền nằm ngoài phạm vi hệ thống CLI.
 
 **Cấu trúc dữ liệu liên quan:**  
 - `MyLinkedList` (duyệt tìm booking đang `SERVING`), file `bookings.txt`.
@@ -1140,56 +1298,141 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 ### 5.16 UC-15 — Hoàn tất booking
 
 **Actor chính:** Admin/Nhân viên  
-**Mục tiêu:** Xác nhận dịch vụ rửa xe hoàn tất cho xe đang rửa, thực hiện tích lũy loyalty và kiểm tra kéo thêm xe từ waitlist lên slot chính.  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Booking chuyển sang `COMPLETED`, ghi lịch sử vào `history.txt`, cập nhật thông tin khách hàng, đẩy booking vào Stack hoàn tác, điều phối xe từ waitlist lên slot chính nếu còn đủ thời gian của buổi.  
+**Mục tiêu:** Xác nhận dịch vụ rửa xe hoàn tất cho xe đang rửa, ghi lịch sử, tính toán lại loyalty và kiểm tra kéo thêm xe từ Waitlist lên Main Queue nếu còn đủ thời gian.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Có booking đang ở trạng thái `SERVING`.
+- Booking đang phục vụ đã có `paymentStatus = PAID`.  
+**Hậu điều kiện:**  
+- Booking chuyển sang `COMPLETED`.
+- Booking được ghi vào `history.txt`.
+- Loyalty của khách hàng được tính toán lại từ các booking `COMPLETED`.
+- Bản ghi hoàn tác được đẩy vào Stack.
+- Nếu đủ điều kiện, một booking từ Waitlist được kéo lên cuối Main Queue.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Hoàn tất booking**.
+2. Hệ thống tìm booking đang ở trạng thái `SERVING`.
+3. Hệ thống kiểm tra booking đã thanh toán hay chưa.
+4. Hệ thống chuyển trạng thái booking sang `COMPLETED`.
+5. Hệ thống ghi bản ghi lịch sử rửa xe vào `history.txt`.
+6. Hệ thống tính toán lại loyalty cho khách hàng liên quan dựa trên các booking `COMPLETED`.
+7. Hệ thống tạo bản ghi hoàn tác và đẩy vào Stack. Nếu có booking được kéo từ Waitlist lên Main Queue, bản ghi hoàn tác phải lưu mã booking đó.
+8. Hệ thống tính lại `usedMinutes` của buổi hiện tại từ các booking `COMPLETED`.
+9. Hệ thống tính `remainingMinutes = periodTotalMinutes - usedMinutes`.
+10. Nếu Waitlist còn booking, hệ thống lấy booking có độ ưu tiên cao nhất để kiểm tra.
+11. Nếu `remainingMinutes >= serviceDuration` của booking đó, hệ thống chuyển booking từ Waitlist lên cuối Main Queue.
+12. Nếu không đủ thời gian, hệ thống giữ nguyên Waitlist và không xét các booking phía sau.
+13. Hệ thống lưu toàn bộ thay đổi xuống các file liên quan.
+
+**Luồng thay thế / ngoại lệ:**
+- **13.1 Không có booking SERVING**:
+  1. Hệ thống không tìm thấy booking đang phục vụ.
+  2. Hệ thống báo lỗi không có booking để hoàn tất.
+- **13.2 Booking chưa thanh toán**:
+  1. Hệ thống phát hiện booking chưa có `paymentStatus = PAID`.
+  2. Hệ thống từ chối hoàn tất và yêu cầu xác nhận thanh toán trước.
+- **13.3 Waitlist rỗng hoặc không đủ thời gian**:
+  1. Hệ thống không kéo thêm booking từ Waitlist.
+  2. Hệ thống chỉ hoàn tất booking hiện tại và lưu dữ liệu.
 
 **Quy tắc nghiệp vụ liên quan:**  
 - Chỉ thực hiện khi booking ở trạng thái `SERVING` và đã thanh toán (`PAID`).
-- Cập nhật loyalty cho khách hàng (Quy tắc 3.11).
-- Kiểm tra thời gian còn lại của buổi hiện tại so với thời gian dịch vụ của xe đầu waitlist để quyết định kéo lên slot chính (Quy tắc 3.9).
+- Loyalty được tính toán lại từ booking `COMPLETED`.
+- Chỉ xét booking có độ ưu tiên cao nhất trong Waitlist khi kiểm tra thời gian còn lại.
 
 **Cấu trúc dữ liệu liên quan:**  
-- `MyQueue` (slot chính), `MyPriorityQueue` (waitlist), `MyStack` (hoàn tác), file `bookings.txt`, `customers.txt`, `history.txt`.
+- `MyQueue` (slot chính), `MyPriorityQueue` (Waitlist), `MyStack` (hoàn tác), file `bookings.txt`, `customers.txt`, `history.txt`.
 
 ---
 
 ### 5.17 UC-16 — Xem lịch sử rửa xe
 
 **Actor chính:** Admin/Nhân viên  
-**Mục tiêu:** Xem toàn bộ danh sách các booking đã hoàn tất phục vụ của tiệm.  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu.  
-**Hậu điều kiện:** Danh sách hiển thị cho Admin. Dữ liệu không thay đổi.  
+**Mục tiêu:** Xem toàn bộ danh sách các booking đã hoàn tất phục vụ của tiệm, có thể lọc theo khách hàng nếu cần.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Dữ liệu lịch sử đã được nạp từ `history.txt`.  
+**Hậu điều kiện:**  
+- Danh sách lịch sử được hiển thị cho Admin/Nhân viên.
+- Dữ liệu không thay đổi.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Xem lịch sử rửa xe**.
+2. Hệ thống hiển thị lựa chọn xem toàn bộ lịch sử hoặc lọc theo mã khách hàng.
+3. Nếu xem toàn bộ, hệ thống hiển thị tất cả bản ghi lịch sử.
+4. Nếu lọc theo khách hàng, Admin/Nhân viên nhập mã khách hàng cần xem.
+5. Hệ thống lọc các bản ghi lịch sử theo mã khách hàng.
+6. Mỗi bản ghi hiển thị gồm mã booking, khách hàng, xe, dịch vụ, thời gian hoàn tất, số tiền thanh toán và điểm loyalty tương ứng.
+7. Hệ thống quay lại Admin Menu sau khi Admin/Nhân viên xem xong.
+
+**Luồng thay thế / ngoại lệ:**
+- **7.1 Lịch sử rỗng**:
+  1. Hệ thống phát hiện chưa có booking nào `COMPLETED`.
+  2. Hệ thống hiển thị thông báo chưa có lịch sử rửa xe.
+- **7.2 Không có lịch sử của khách hàng được chọn**:
+  1. Hệ thống không tìm thấy lịch sử theo mã khách hàng.
+  2. Hệ thống hiển thị thông báo không có dữ liệu phù hợp.
 
 **Quy tắc nghiệp vụ liên quan:**  
 - Chỉ hiển thị các booking đã hoàn tất (`COMPLETED`).
+- Booking bị hủy khi `SERVING` không được ghi vào lịch sử hoàn tất.
 
 **Cấu trúc dữ liệu liên quan:**  
 - `MyLinkedList` lưu danh sách lịch sử, nạp từ `history.txt`.
+- Tìm kiếm/lọc tuyến tính theo mã khách hàng.
 
 ---
 
 ### 5.18 UC-17 — Hoàn tác booking hoàn tất gần nhất
 
 **Actor chính:** Admin/Nhân viên  
-**Mục tiêu:** Đảo ngược thao tác hoàn tất của booking hoàn tất gần nhất, đưa về trạng thái `SERVING` và hoàn trả các chỉ số loyalty của khách hàng.  
-**Tiền điều kiện:** Admin đang ở trong Admin Menu. Stack hoàn tác phải không trống.  
-**Hậu điều kiện:** Booking quay lại `SERVING`, điểm và hạng của khách hàng bị trừ tương ứng, dòng lịch sử bị xóa, cập nhật các file lưu trữ.  
+**Mục tiêu:** Đảo ngược thao tác hoàn tất booking gần nhất, khôi phục trạng thái booking, lịch sử, Waitlist nếu có và tính toán lại loyalty từ dữ liệu `COMPLETED`.  
+**Tiền điều kiện:**  
+- Admin/Nhân viên đang ở trong Admin Menu.
+- Stack hoàn tác không trống.
+- Booking cần hoàn tác là booking hoàn tất gần nhất.  
+**Hậu điều kiện:**  
+- Booking vừa hoàn tác quay lại trạng thái trước đó, mặc định là `SERVING`.
+- Bản ghi lịch sử tương ứng bị xóa hoặc vô hiệu hóa.
+- Nếu Complete trước đó đã kéo booking từ Waitlist lên Main Queue, booking đó được đưa trở lại Waitlist.
+- Loyalty của khách hàng liên quan được tính toán lại từ booking `COMPLETED`.
+- Các file lưu trữ được cập nhật.
 
-*Chưa được phân rã chi tiết trong tài liệu nguồn.*
+**Luồng chính:**
+1. Admin/Nhân viên chọn chức năng **Hoàn tác booking hoàn tất gần nhất**.
+2. Hệ thống kiểm tra Stack hoàn tác có rỗng hay không.
+3. Hệ thống lấy bản ghi hoàn tác gần nhất ra khỏi Stack.
+4. Hệ thống chuyển booking trong bản ghi hoàn tác từ `COMPLETED` về trạng thái trước đó, mặc định là `SERVING`, giữ nguyên `paymentStatus = PAID`.
+5. Hệ thống xóa hoặc vô hiệu hóa dòng lịch sử tương ứng trong `history.txt`.
+6. Nếu bản ghi hoàn tác có lưu booking đã được kéo từ Waitlist lên Main Queue, hệ thống loại booking đó khỏi Main Queue và đưa trở lại Waitlist.
+7. Hệ thống sắp xếp lại Waitlist theo Priority Queue dựa trên hạng thành viên và thời gian tạo booking.
+8. Hệ thống gọi chức năng tính toán lại loyalty cho khách hàng liên quan dựa trên các booking còn ở trạng thái `COMPLETED`.
+9. Hệ thống lưu toàn bộ thay đổi xuống các file liên quan.
+10. Hệ thống hiển thị thông báo hoàn tác thành công.
+
+**Luồng thay thế / ngoại lệ:**
+- **10.1 Stack hoàn tác rỗng**:
+  1. Hệ thống không có bản ghi hoàn tác nào.
+  2. Hệ thống báo lỗi không thể hoàn tác.
+- **10.2 Không tìm thấy booking cần hoàn tác**:
+  1. Hệ thống không tìm thấy booking trong dữ liệu hiện tại.
+  2. Hệ thống báo lỗi dữ liệu không nhất quán và không tiếp tục hoàn tác.
+- **10.3 Không tìm thấy booking đã kéo từ Waitlist**:
+  1. Hệ thống không tìm thấy booking đã được ghi nhận là bị kéo lên Main Queue.
+  2. Hệ thống báo lỗi dữ liệu không nhất quán, vẫn đảm bảo booking hoàn tất được hoàn tác nếu có thể.
 
 **Quy tắc nghiệp vụ liên quan:**  
-- Chỉ cho phép hoàn tác booking hoàn tất gần nhất (sử dụng Stack LIFO).
-- Khấu trừ các chỉ số chi tiêu, điểm loyalty, visit count và xét hạ hạng khách hàng nếu không còn đủ điều kiện hạng mới (Quy tắc 3.13).
+- Chỉ cho phép hoàn tác booking hoàn tất gần nhất.
+- Undo phải hoàn tác cả tác động phụ của Complete nếu Complete đã kéo booking từ Waitlist lên Main Queue.
+- Loyalty không bị trừ thủ công, mà được tính toán lại từ các booking còn ở trạng thái `COMPLETED`.
 
 **Cấu trúc dữ liệu liên quan:**  
-- `MyStack` (lấy phần tử trên cùng bằng thao tác `pop`), file `bookings.txt`, `customers.txt`, `history.txt`.
+- `MyStack` (lấy phần tử trên cùng bằng thao tác `pop`), `MyQueue`, `MyPriorityQueue`, file `bookings.txt`, `customers.txt`, `history.txt`.
 
 ---
+
+
 
 ## 6. Yêu cầu dữ liệu
 
@@ -1257,6 +1500,8 @@ Hệ thống quản lý dữ liệu hoàn toàn trong bộ nhớ RAM khi chạy 
   - Danh sách booking trong slot chính của buổi hiện tại (FIFO Queue).
   - Danh sách booking trong Waitlist của buổi hiện tại (Priority Queue Max Heap).
   - Danh sách booking tương lai chờ kích hoạt.
+- Hệ thống không lưu trực tiếp Queue/Waitlist xuống file như một cấu trúc dữ liệu riêng. Khi khởi động lại, Main Queue và Waitlist được tái tạo từ dữ liệu gốc trong `bookings.txt` và trạng thái buổi trong `periods.txt`.
+- Việc tái tạo hàng chờ dựa trên ngày, buổi, trạng thái booking, trạng thái kích hoạt của buổi và quy tắc ưu tiên hiện hành. Booking thuộc Main Queue được sắp theo FIFO dựa trên thời gian tạo hoặc thứ tự ghi nhận; booking thuộc Waitlist được sắp theo Priority Queue dựa trên hạng thành viên và thời gian tạo booking.
 
 ---
 
