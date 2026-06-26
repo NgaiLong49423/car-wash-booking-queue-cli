@@ -13,8 +13,8 @@ Dưới đây là cấu trúc tổ chức các thư mục tài liệu trong dự
 ```text
 docs/
 ├── requirements/
-│   ├── SRS.md
-│   └── project-requirements.md
+│   ├── PRD.md
+│   └── SRS.md
 │
 ├── diagrams/
 │   ├── Activity/
