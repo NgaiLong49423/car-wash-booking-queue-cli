@@ -55,14 +55,20 @@ Do not use this skill for ordinary code implementation, bug fixing, or pull requ
    - Default mode is draft-only.
    - Real GitHub issue creation requires explicit user approval.
    - GitHub Project sync requires explicit user approval.
+   - For large documents, use a phased workflow instead of doing planning, draft generation, GitHub creation, and Project sync in one pass.
 
-5. Respect the current repository.
+5. Index-driven creation.
+   - `ISSUE_INDEX.md` is the single source of truth for which draft files may become real GitHub Issues.
+   - In GitHub Creation Mode, never create issues by scanning every `.md` file in the draft directory.
+   - Create real GitHub Issues only from draft files explicitly listed in `ISSUE_INDEX.md`.
+
+6. Respect the current repository.
    - Read `.github/ISSUE_TEMPLATE/*.yml` before drafting issues when present.
    - Read `.github/labels.yml` before assigning labels when present.
    - Do not invent labels outside `.github/labels.yml` unless the user explicitly allows it.
    - Use the current repository's conventions for templates, labels, and Project fields.
 
-6. Professional titles, localized bodies.
+7. Professional titles, localized bodies.
    - Issue titles must be professional English.
    - Issue bodies should be Vietnamese by default unless the user requests another language.
    - Suggested branch names must be English kebab-case.
@@ -96,6 +102,14 @@ Draft mode must not:
 - Create branches.
 - Commit changes unless the user explicitly asks.
 
+When regenerating drafts, clean stale drafts first:
+
+- Delete or archive old issue draft files in `.agent/report/github-issue-drafts/`.
+- Regenerate only the final intended draft set.
+- Ensure every draft file listed in `ISSUE_INDEX.md` exists.
+- Ensure every `.md` draft file in the draft directory is referenced by `ISSUE_INDEX.md`.
+- Do not leave stale, duplicate, or unreferenced draft files in the final draft directory.
+
 ### 2. GitHub Creation Mode — Explicit Approval Required
 
 Only enter this mode if the user explicitly says something like:
@@ -111,14 +125,23 @@ Default behavior in this mode:
 - Create only issues with `Status = Approved` in `ISSUE_INDEX.md`.
 - If the user specifies a range or exact IDs, create only those drafts.
 - If the user explicitly says "create all drafts", create all draft issues.
+- Create real GitHub Issues only from draft files explicitly listed in `ISSUE_INDEX.md`.
+- Do not create issues by scanning every `.md` file in the draft directory.
 - After creation, update `ISSUE_INDEX.md` with issue number, issue URL, status `Created`, and created date if available.
 
-Before creating real issues:
+Before creating real issues, run the preflight checks:
 
-- Ensure the issue title and body are derived from the draft.
-- Ensure labels exist on GitHub.
+- `ISSUE_INDEX.md` exists.
+- All selected draft files listed in `ISSUE_INDEX.md` exist.
+- No unreferenced issue draft files remain in the final draft directory.
+- No local `file:///` paths exist in drafts or in `ISSUE_INDEX.md`.
+- The issue title and body are derived from the selected draft.
+- Labels exist on GitHub.
 - If labels are missing but exist in `.github/labels.yml`, create those missing labels from `labels.yml`.
 - Do not create labels that are not listed in `.github/labels.yml` unless the user explicitly approves.
+- Project field names and option IDs have been inspected if Project sync will run in the same request.
+
+If any preflight check fails, stop and report the failure. Do not create partial issues unless the user explicitly approves continuing.
 
 ### 3. GitHub Project Sync Mode — Explicit Approval Required
 
@@ -144,7 +167,7 @@ Before syncing, inspect and verify:
 
 Do not sync if any required field ID, option ID, project number, or issue item ID cannot be determined confidently. Stop and ask the user.
 
-Fields to sync when available:
+Normal fields to sync when available:
 
 - Type
 - Size
@@ -152,9 +175,10 @@ Fields to sync when available:
 - Priority
 - Start date
 - Target date
-- Relationships: parent, blocked by, blocking, security alert when supported by the Project or GitHub UI/API.
 
-After syncing, update `ISSUE_INDEX.md` with status `Synced` and any relevant Project item references if available.
+Relationship sync is optional and best-effort only. Do not treat relationship sync failure as a full workflow failure.
+
+After syncing, update `ISSUE_INDEX.md` with status `Synced` for successfully synced normal Project fields and record any failed fields with reasons.
 
 ## Required Repository Inspection
 
@@ -184,19 +208,55 @@ If the hierarchy is unclear, summarize the available documents and ask the user 
 
 ## Issue Decomposition Strategy
 
-Use a hybrid decomposition strategy:
+Use a hybrid decomposition strategy, but prefer FR-level traceability.
 
-- Group issues by module, domain, feature area, or workflow.
+Default rule:
+
+- Prefer one GitHub Issue per Functional Requirement (FR).
+
+Allowed exceptions:
+
+- Split one FR into multiple implementation issues if it is too large, risky, or unclear.
+- Group multiple FRs only when they are small, strongly coupled, and implemented in the same workflow.
+- Do not group many FRs into one issue only for convenience.
+- Every grouping or splitting decision must be justified in `ISSUE_INDEX.md`.
+
+General rules:
+
+- Group issues by module, domain, feature area, or workflow only when that grouping improves implementation clarity.
 - Preserve traceability to FR, NFR, UC, business rules, or source sections.
 - Split large requirements into implementation-ready issues.
-- Merge very small requirements only when they belong to the same workflow and can be completed together safely.
 - Do not split by code layer alone unless the source document or project workflow requires it.
-
-Prefer vertical slices when possible: each issue should represent a meaningful, testable piece of behavior.
+- Prefer vertical slices when possible: each issue should represent a meaningful, testable piece of behavior.
 
 ## Epic and Relationship Rules
 
 Use parent/epic issues only when useful.
+
+Issue relationships must always be written in the issue body. GitHub Project relationship synchronization is optional and best-effort.
+
+Required relationship fields in every draft issue:
+
+- Parent
+- Blocked by
+- Blocking
+- Security alert
+
+Project relationship fields may be synced only when:
+
+- The GitHub Project explicitly supports the relationship field.
+- The exact target issue number or issue ID can be resolved.
+- The required GitHub CLI or GraphQL operation is known and safe.
+- The operation can be performed without guessing.
+
+If relationship sync fails or is not safely supported:
+
+- Do not fail the whole workflow.
+- Keep the relationship information in the issue body.
+- Report the relationship sync failure in the final report.
+- Continue syncing normal Project fields such as Type, Priority, Story Points, Start date, and Target date.
+
+Never guess relationship field IDs or relationship target IDs.
 
 Create or propose an Epic when:
 
@@ -519,6 +579,89 @@ Synced
 
 Default status is `Draft`.
 
+## Token-Saving Workflow
+
+For large requirement documents or projects with many issues, do not perform the full workflow in one pass unless the user explicitly asks for it.
+
+Prefer this phased workflow:
+
+### Phase 1: Planning
+
+Create only:
+
+- `ISSUE_INDEX.md`.
+- FR Traceability Table.
+- Proposed issue list.
+- Grouping/splitting reasons.
+- Size and Story Points estimates.
+- Dependencies.
+
+Do not generate full issue body files yet.
+
+### Phase 2: Draft Generation
+
+Generate issue draft files only after the issue list is approved.
+
+Rules:
+
+- Only read the source sections needed for each issue.
+- Avoid re-reading the entire SRS/PRD repeatedly.
+- Reuse extracted source trace and decisions from `ISSUE_INDEX.md`.
+- Do not print full draft bodies in chat unless the user explicitly asks.
+
+### Phase 3: GitHub Creation
+
+Create real GitHub Issues only from draft files explicitly listed in `ISSUE_INDEX.md`.
+
+Rules:
+
+- Do not regenerate issue bodies during creation unless required.
+- Do not scan every `.md` file in the draft directory.
+- Run preflight checks before creating issues.
+
+### Phase 4: Project Sync
+
+Sync normal Project fields after issues are created.
+
+Normal Project fields include:
+
+- Type.
+- Priority.
+- Story Points.
+- Start date.
+- Target date.
+- Size, if the Project supports it.
+
+Relationship sync is best-effort only.
+
+### Phase 5: Final Report
+
+Report only concise results:
+
+- Created issue number.
+- Title.
+- URL.
+- Synced fields.
+- Failed fields and reasons.
+- Relationship sync failures, if any.
+
+Avoid printing full issue bodies in the final report.
+
+## Reporting Rules
+
+Do not print full issue bodies in chat unless the user asks.
+
+When reporting planning, draft generation, issue creation, or Project sync results, use compact tables.
+
+Preferred report format:
+
+```md
+| No | Issue | GitHub URL | Type | Priority | Story Points | Sync Status |
+|---|---|---|---|---|---:|---|
+```
+
+Keep the final report concise. Put detailed information in files such as `ISSUE_INDEX.md`, not in chat.
+
 ## GitHub CLI Guidelines
 
 When creating real GitHub Issues, prefer `gh issue create`.
@@ -534,13 +677,17 @@ Never close issues, delete issues, delete labels, delete branches, force-push, o
 Before creating issues:
 
 - [ ] User explicitly requested real issue creation.
-- [ ] Draft files exist.
 - [ ] `ISSUE_INDEX.md` exists.
-- [ ] Selected drafts are Approved, or user explicitly selected Draft/Needs Review items.
+- [ ] Draft files selected for creation are listed in `ISSUE_INDEX.md`.
+- [ ] Every selected draft file exists.
+- [ ] No unreferenced draft files remain in the final draft directory.
+- [ ] No local `file:///` paths exist in drafts or in `ISSUE_INDEX.md`.
+- [ ] Selected drafts are `Approved`, or the user explicitly selected `Draft`/`Needs Review` items.
 - [ ] Labels are valid.
 - [ ] Missing labels are defined in `.github/labels.yml` before creation.
 - [ ] Issue bodies include Source Trace.
 - [ ] Issue titles are in professional English.
+- [ ] Full issue bodies will not be printed in chat unless requested.
 
 Before syncing Project metadata:
 
@@ -550,10 +697,12 @@ Before syncing Project metadata:
 - [ ] Option IDs are known for single-select fields.
 - [ ] Issue item IDs are known.
 - [ ] No field is guessed.
+- [ ] Relationship sync is treated as best-effort, not mandatory.
+- [ ] Relationship target issue IDs can be resolved if relationship sync is attempted.
 
 ## Final Response After Draft Generation
 
-After creating drafts, respond with:
+After creating drafts, respond concisely with:
 
 - Output directory.
 - Number of draft issues.
@@ -562,9 +711,11 @@ After creating drafts, respond with:
 - Link/path to `ISSUE_INDEX.md`.
 - Reminder that no real GitHub Issues were created unless GitHub Creation Mode was explicitly requested.
 
+Do not print full draft issue bodies unless the user explicitly asks.
+
 ## Final Response After Real Issue Creation
 
-After creating real issues, respond with:
+After creating real issues, respond concisely with:
 
 - Number of issues created.
 - Issue numbers and URLs.
@@ -572,13 +723,20 @@ After creating real issues, respond with:
 - Any labels created from `.github/labels.yml`.
 - Whether `ISSUE_INDEX.md` was updated.
 - Whether GitHub Project sync was performed.
+- Any skipped draft and reason.
+
+Do not print full issue bodies unless the user explicitly asks.
 
 ## Final Response After Project Sync
 
-After syncing Project metadata, respond with:
+After syncing Project metadata, respond concisely with:
 
 - Project name/number.
 - Issues synced.
-- Fields updated.
+- Normal fields updated.
+- Relationship sync result, if attempted.
+- Relationship sync failures and reasons.
 - Issues skipped and why.
 - Whether `ISSUE_INDEX.md` was updated to `Synced`.
+
+Do not treat failed relationship sync as a full workflow failure when normal fields were synced successfully.

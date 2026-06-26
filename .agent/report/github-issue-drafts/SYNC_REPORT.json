@@ -1,0 +1,212 @@
+{
+  "001-foundation-custom-data-structures.md": {
+    "num": "1",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/1",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "002-persistence-file-storage.md": {
+    "num": "2",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/2",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "003-entities-customer-management.md": {
+    "num": "3",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/3",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "004-entities-vehicle-management.md": {
+    "num": "4",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/4",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "005-entities-service-management.md": {
+    "num": "5",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/5",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "006-simulation-time-settings.md": {
+    "num": "6",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/6",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "007-booking-creation-validation.md": {
+    "num": "7",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/7",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "008-queue-period-activation.md": {
+    "num": "8",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/8",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "009-queue-view-monitoring.md": {
+    "num": "9",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/9",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "010-process-service-processing.md": {
+    "num": "10",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/10",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "011-completion-booking-completion.md": {
+    "num": "11",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/11",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "012-cancellation-booking-cancellation.md": {
+    "num": "12",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/12",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "013-history-view.md": {
+    "num": "13",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/13",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "014-undo-booking-rollback.md": {
+    "num": "14",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/14",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  },
+  "015-cli-menu-integration.md": {
+    "num": "15",
+    "url": "https://github.com/NgaiLong49423/car-wash-booking-queue-cli/issues/15",
+    "status": "Synced",
+    "synced_fields": [
+      "Story Points",
+      "Type",
+      "Priority"
+    ],
+    "skipped_fields": [
+      "Start date (Skipped: TBD)",
+      "Target date (Skipped: TBD)"
+    ]
+  }
+}
