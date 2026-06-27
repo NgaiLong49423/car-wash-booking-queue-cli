@@ -1,3 +1,32 @@
+## [0.2.1] - 2026-06-27
+
+### Author
+
+* Prepared by Ngô Gia Long (SE190732).
+
+### Project Management
+
+* Finalized the official task assignment plan for the Car Wash Booking Queue CLI project.
+* Balanced the project workload across 4 members using Story Points, dependency risk, module ownership, and previously completed planning work.
+* Grouped the 15 GitHub Issues into 4 milestone-based delivery phases instead of using small per-issue deadlines.
+* Added milestone-based Start Date and Target Date planning for the main GitHub Issues.
+* Defined the following milestone schedule:
+  * Milestone 1: Foundation & Data Ready — 2026-06-27 to 2026-07-01.
+  * Milestone 2: Booking Core Ready — 2026-07-02 to 2026-07-05.
+  * Milestone 3: Operation Flow Ready — 2026-07-06 to 2026-07-08.
+  * Milestone 4: CLI Integration & Final QA — 2026-07-09 to 2026-07-11.
+* Confirmed that GitHub Issues are used for detailed implementation tracking, while deadlines are managed through larger milestones.
+
+### Docs
+
+* Updated the project planning records to align task assignment, milestone deadlines, and GitHub Project tracking.
+* Confirmed the task assignment structure between the work distribution report and the phase/branch/merge workflow.
+
+### Changed
+
+* Changed deadline planning from small isolated issue-level deadlines to larger milestone-based deadlines.
+* Clarified that Issue #15 is treated as the final CLI integration and QA milestone involving all members.
+
 ## [0.2.0] - 2026-06-26
 
 ### Author

@@ -52,8 +52,8 @@ Cung cấp cổng tương tác trực tiếp cho người vận hành và khách
 - Estimation Reason: Cần xây dựng toàn bộ giao diện điều hướng menu phân cấp và xử lý nhập liệu, trôi dòng scanner, bọc các khối try-catch để ngăn crash ứng dụng.
 - Priority: ⬆️ High (ID: 06f6c1b8)
 - Priority Reason: Tích hợp cuối cùng kết nối toàn bộ hệ thống để bàn giao sản phẩm chạy thử.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-07-09
+- Target Date: 2026-07-11
 
 ## Labels
 - 🚀 Feature

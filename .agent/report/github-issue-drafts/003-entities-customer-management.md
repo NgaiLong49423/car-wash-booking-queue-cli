@@ -44,8 +44,8 @@ Cho phép Admin cập nhật hồ sơ khách hàng và phục vụ làm cơ sở
 - Estimation Reason: Cần triển khai các ràng buộc kiểm tra khóa ngoại chéo (ở Vehicles, Bookings và History) trước khi xóa, và kiểm tra tính duy nhất của số điện thoại trên danh sách động.
 - Priority: ➡️ Medium (ID: 17b09fd9)
 - Priority Reason: Cần thiết trước khi làm tính năng quản lý xe và đặt lịch booking.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-06-27
+- Target Date: 2026-07-01
 
 ## Labels
 - 🚀 Feature

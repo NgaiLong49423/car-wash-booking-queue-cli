@@ -43,8 +43,8 @@ Theo SRS Mục 7, các cấu trúc dữ liệu phải tự viết hoàn toàn, s
 - Estimation Reason: Lập trình thủ công 5 lớp cấu trúc dữ liệu chính. Phần phức tạp nhất là logic Heapify Up/Down của Max Heap trong Priority Queue để xử lý độ ưu tiên kép.
 - Priority: ⬆️ High (ID: 06f6c1b8)
 - Priority Reason: Đây là nền tảng cốt lõi, tất cả các chức năng nghiệp vụ và thực thể khác đều phụ thuộc trực tiếp vào các cấu trúc dữ liệu này.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-06-27
+- Target Date: 2026-07-01
 
 ## Labels
 - 🛠️ Backend

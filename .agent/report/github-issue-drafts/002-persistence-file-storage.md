@@ -42,8 +42,8 @@ Triển khai logic lưu trữ dữ liệu bền vững của ứng dụng bằng
 - Estimation Reason: Cần viết parser thủ công cho 6 thực thể khác nhau với các quy tắc đọc/ghi file văn bản và xử lý lỗi vào/ra (IO).
 - Priority: ⬆️ High (ID: 06f6c1b8)
 - Priority Reason: Cần thiết để các issue quản lý thực thể phía sau có thể ghi và kiểm tra dữ liệu thực tế trên ổ đĩa.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-06-27
+- Target Date: 2026-07-01
 
 ## Labels
 - 🚀 Feature

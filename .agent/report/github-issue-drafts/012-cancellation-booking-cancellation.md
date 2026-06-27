@@ -48,8 +48,8 @@ Cho phép khách hàng giải phóng lịch hẹn khi thay đổi kế hoạch v
 - Estimation Reason: Cần xử lý logic loại bỏ phần tử ở giữa hàng chờ chính (MyQueue) và điều phối kéo xe từ Waitlist (Priority Queue Max Heap) vào cuối Queue chính trong các trường hợp hủy khác nhau.
 - Priority: ⬆️ High (ID: 06f6c1b8)
 - Priority Reason: Đảm bảo hàng chờ hoạt động đúng khi có biến động khách hàng hủy lịch hẹn.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-07-06
+- Target Date: 2026-07-08
 
 ## Labels
 - 🚀 Feature

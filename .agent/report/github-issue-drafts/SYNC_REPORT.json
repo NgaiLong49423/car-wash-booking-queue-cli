@@ -6,12 +6,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 1 — Foundation & Data Ready",
+    "start_date": "2026-06-27",
+    "target_date": "2026-07-01",
+    "sync_error": ""
   },
   "002-persistence-file-storage.md": {
     "num": "2",
@@ -20,12 +23,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 1 — Foundation & Data Ready",
+    "start_date": "2026-06-27",
+    "target_date": "2026-07-01",
+    "sync_error": ""
   },
   "003-entities-customer-management.md": {
     "num": "3",
@@ -34,12 +40,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 1 — Foundation & Data Ready",
+    "start_date": "2026-06-27",
+    "target_date": "2026-07-01",
+    "sync_error": ""
   },
   "004-entities-vehicle-management.md": {
     "num": "4",
@@ -48,12 +57,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 1 — Foundation & Data Ready",
+    "start_date": "2026-06-27",
+    "target_date": "2026-07-01",
+    "sync_error": ""
   },
   "005-entities-service-management.md": {
     "num": "5",
@@ -62,12 +74,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 1 — Foundation & Data Ready",
+    "start_date": "2026-06-27",
+    "target_date": "2026-07-01",
+    "sync_error": ""
   },
   "006-simulation-time-settings.md": {
     "num": "6",
@@ -76,12 +91,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 1 — Foundation & Data Ready",
+    "start_date": "2026-06-27",
+    "target_date": "2026-07-01",
+    "sync_error": ""
   },
   "007-booking-creation-validation.md": {
     "num": "7",
@@ -90,12 +108,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 2 — Booking Core Ready",
+    "start_date": "2026-07-02",
+    "target_date": "2026-07-05",
+    "sync_error": ""
   },
   "008-queue-period-activation.md": {
     "num": "8",
@@ -104,12 +125,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 2 — Booking Core Ready",
+    "start_date": "2026-07-02",
+    "target_date": "2026-07-05",
+    "sync_error": ""
   },
   "009-queue-view-monitoring.md": {
     "num": "9",
@@ -118,12 +142,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 2 — Booking Core Ready",
+    "start_date": "2026-07-02",
+    "target_date": "2026-07-05",
+    "sync_error": ""
   },
   "010-process-service-processing.md": {
     "num": "10",
@@ -132,12 +159,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 2 — Booking Core Ready",
+    "start_date": "2026-07-02",
+    "target_date": "2026-07-05",
+    "sync_error": ""
   },
   "011-completion-booking-completion.md": {
     "num": "11",
@@ -146,12 +176,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 3 — Operation Flow Ready",
+    "start_date": "2026-07-06",
+    "target_date": "2026-07-08",
+    "sync_error": ""
   },
   "012-cancellation-booking-cancellation.md": {
     "num": "12",
@@ -160,12 +193,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 3 — Operation Flow Ready",
+    "start_date": "2026-07-06",
+    "target_date": "2026-07-08",
+    "sync_error": ""
   },
   "013-history-view.md": {
     "num": "13",
@@ -174,12 +210,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 3 — Operation Flow Ready",
+    "start_date": "2026-07-06",
+    "target_date": "2026-07-08",
+    "sync_error": ""
   },
   "014-undo-booking-rollback.md": {
     "num": "14",
@@ -188,12 +227,15 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 3 — Operation Flow Ready",
+    "start_date": "2026-07-06",
+    "target_date": "2026-07-08",
+    "sync_error": ""
   },
   "015-cli-menu-integration.md": {
     "num": "15",
@@ -202,11 +244,14 @@
     "synced_fields": [
       "Story Points",
       "Type",
-      "Priority"
+      "Priority",
+      "Start date",
+      "Target date"
     ],
-    "skipped_fields": [
-      "Start date (Skipped: TBD)",
-      "Target date (Skipped: TBD)"
-    ]
+    "skipped_fields": [],
+    "milestone": "Milestone 4 — CLI Integration & Final QA",
+    "start_date": "2026-07-09",
+    "target_date": "2026-07-11",
+    "sync_error": ""
   }
 }

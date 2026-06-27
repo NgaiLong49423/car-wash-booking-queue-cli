@@ -42,8 +42,8 @@ Cung cấp bảng giá dịch vụ và thời gian thi công cho tiệm rửa xe
 - Estimation Reason: CRUD dịch vụ đơn giản kết hợp viết thuật toán sắp xếp cơ bản trên danh sách liên kết đơn tự định nghĩa.
 - Priority: ➡️ Medium (ID: 17b09fd9)
 - Priority Reason: Cần thiết để lựa chọn dịch vụ khi tạo booking.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-06-27
+- Target Date: 2026-07-01
 
 ## Labels
 - 🚀 Feature

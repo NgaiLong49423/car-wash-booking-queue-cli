@@ -51,8 +51,8 @@ Thiết lập hàng chờ phục vụ thực tế cho buổi hiện tại, phân
 - Estimation Reason: Chứa thuật toán sắp xếp theo độ ưu tiên kép phức tạp và logic phân phối tài nguyên vào 2 cấu trúc dữ liệu khác nhau (FIFO Queue và Max Heap Priority Queue), kèm theo ghi nhận trạng thái vào file `periods.txt`.
 - Priority: ⬆️ High (ID: 06f6c1b8)
 - Priority Reason: Quyết định thứ tự phục vụ và trạng thái vận hành của tiệm, là tiền đề để nhân viên bắt đầu xử lý xe.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-07-02
+- Target Date: 2026-07-05
 
 ## Labels
 - 🚀 Feature

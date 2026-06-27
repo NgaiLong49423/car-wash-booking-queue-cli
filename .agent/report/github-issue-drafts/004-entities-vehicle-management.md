@@ -44,8 +44,8 @@ Thiết lập phương tiện cho khách hàng phục vụ kiểm tra sở hữu
 - Estimation Reason: Logic CRUD cơ bản cho một thực thể phụ có khóa ngoại liên kết tới Customer, độ phức tạp lập trình thấp.
 - Priority: ➡️ Medium (ID: 17b09fd9)
 - Priority Reason: Phương tiện là thành phần bắt buộc phải chọn khi đặt lịch booking.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-06-27
+- Target Date: 2026-07-01
 
 ## Labels
 - 🚀 Feature

@@ -39,8 +39,8 @@ Cung cấp báo cáo đối soát và kiểm tra lịch sử phục vụ của t
 - Estimation Reason: Logic đọc dữ liệu từ file `history.txt` và hiển thị/lọc cơ bản trên giao diện CLI, độ phức tạp thấp.
 - Priority: ➡️ Medium (ID: 17b09fd9)
 - Priority Reason: Tính năng báo cáo thống kê phục vụ kiểm tra, có thể hoàn thành sau các luồng nghiệp vụ chính.
-- Start Date: TBD
-- Target Date: TBD
+- Start Date: 2026-07-06
+- Target Date: 2026-07-08
 
 ## Labels
 - 🚀 Feature
