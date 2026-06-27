@@ -12,28 +12,9 @@ package datastructure;
  */
 public class MyLinkedList<T> {
 
-    /**
-     * Node là một mắt xích trong danh sách liên kết.
-     * Mỗi node lưu data và con trỏ next trỏ tới node tiếp theo.
-     *
-     * Để Node là private class vì Node chỉ phục vụ nội bộ MyLinkedList.
-     */
-    private class Node {
-        T data;
-        Node next;
-
-        /**
-         * Tạo node mới chứa dữ liệu truyền vào.
-         */
-        Node(T data) {
-            this.data = data;
-            this.next = null;
-        }
-    }
-
-    private Node head; // Node đầu tiên của danh sách
-    private Node tail; // Node cuối cùng của danh sách
-    private int size; // Số lượng phần tử hiện có trong danh sách
+    private Node<T> head; // Node đầu tiên của danh sách
+    private Node<T> tail; // Node cuối cùng của danh sách
+    private int size;     // Số lượng phần tử hiện có trong danh sách
 
     /**
      * Constructor khởi tạo danh sách rỗng.
@@ -53,7 +34,7 @@ public class MyLinkedList<T> {
      * Kết quả: A -> B -> C
      */
     public void addLast(T data) {
-        Node newNode = new Node(data);
+        Node<T> newNode = new Node<>(data);
 
         if (isEmpty()) {
             head = newNode;
@@ -75,7 +56,7 @@ public class MyLinkedList<T> {
      * Kết quả: X -> A -> B
      */
     public void addFirst(T data) {
-        Node newNode = new Node(data);
+        Node<T> newNode = new Node<>(data);
 
         if (isEmpty()) {
             head = newNode;
@@ -101,7 +82,7 @@ public class MyLinkedList<T> {
     public T get(int index) {
         checkIndex(index);
 
-        Node current = head;
+        Node<T> current = head;
 
         for (int i = 0; i < index; i++) {
             current = current.next;
@@ -121,7 +102,7 @@ public class MyLinkedList<T> {
     public void set(int index, T data) {
         checkIndex(index);
 
-        Node current = head;
+        Node<T> current = head;
 
         for (int i = 0; i < index; i++) {
             current = current.next;
@@ -150,13 +131,13 @@ public class MyLinkedList<T> {
             return removeLast();
         }
 
-        Node previous = head;
+        Node<T> previous = head;
 
         for (int i = 0; i < index - 1; i++) {
             previous = previous.next;
         }
 
-        Node removedNode = previous.next;
+        Node<T> removedNode = previous.next;
         previous.next = removedNode.next;
         size--;
 
@@ -171,6 +152,8 @@ public class MyLinkedList<T> {
      * removeFirst()
      * Trả về A
      * Danh sách còn: B -> C
+     *
+     * Nếu danh sách rỗng thì trả về null.
      */
     public T removeFirst() {
         if (isEmpty()) {
@@ -196,6 +179,8 @@ public class MyLinkedList<T> {
      * removeLast()
      * Trả về C
      * Danh sách còn: A -> B
+     *
+     * Nếu danh sách rỗng thì trả về null.
      */
     public T removeLast() {
         if (isEmpty()) {
@@ -210,7 +195,7 @@ public class MyLinkedList<T> {
             return removedData;
         }
 
-        Node current = head;
+        Node<T> current = head;
 
         while (current.next != tail) {
             current = current.next;
@@ -232,6 +217,8 @@ public class MyLinkedList<T> {
      * getFirst()
      * Trả về A
      * Danh sách vẫn là: A -> B -> C
+     *
+     * Nếu danh sách rỗng thì trả về null.
      */
     public T getFirst() {
         if (isEmpty()) {
@@ -249,6 +236,8 @@ public class MyLinkedList<T> {
      * getLast()
      * Trả về C
      * Danh sách vẫn là: A -> B -> C
+     *
+     * Nếu danh sách rỗng thì trả về null.
      */
     public T getLast() {
         if (isEmpty()) {
@@ -300,7 +289,7 @@ public class MyLinkedList<T> {
             return;
         }
 
-        Node current = head;
+        Node<T> current = head;
 
         while (current != null) {
             System.out.println(current.data);
@@ -319,7 +308,8 @@ public class MyLinkedList<T> {
     private void checkIndex(int index) {
         if (index < 0 || index >= size) {
             throw new IndexOutOfBoundsException(
-                    "Invalid index: " + index + ". Valid index range is 0 to " + (size - 1));
+                    "Invalid index: " + index + ". Valid index range is 0 to " + (size - 1)
+            );
         }
     }
 }
