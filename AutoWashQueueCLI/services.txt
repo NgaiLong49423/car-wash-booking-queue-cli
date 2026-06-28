@@ -1,0 +1,3 @@
+SRV01,Rua xe tieu chuan,50000
+SRV02,Rua xe VIP,100000
+SRV03,Ve sinh noi that,150000

@@ -1,14 +1,16 @@
 package autowash.cli;
 
+import autowash.storage.DataSeeder;
 import autowash.storage.FileManager;
 
 public class Main {
     public static void main(String[] args) {
-        String dataFile = "data_khach_hang.txt";
+        // 1. Chạy nạp dữ liệu mẫu
+        DataSeeder.initializeData();
         
-        FileManager.writeToFile(dataFile, "CUS01, Nguyen Anh Kiet, VIP", false);
-        FileManager.writeToFile(dataFile, "CUS02, Ngo Gia Long, Thuong", true);
-        
-        FileManager.readFromFile(dataFile);
+        // 2. In thử ra xem file đã có dữ liệu chưa
+        FileManager.readFromFile("services.txt");
+        System.out.println();
+        FileManager.readFromFile("customers.txt");
     }
 }

@@ -1,0 +1,2 @@
+59-A1 12345,CUS01,Honda Civic
+69-B2 67890,CUS02,Toyota Vios

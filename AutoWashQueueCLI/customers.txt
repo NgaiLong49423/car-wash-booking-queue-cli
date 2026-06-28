@@ -1,0 +1,2 @@
+CUS01,Nguyen Anh Kiet,VIP,150
+CUS02,Ngo Gia Long,Standard,0
