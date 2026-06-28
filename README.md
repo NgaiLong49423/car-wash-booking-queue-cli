@@ -191,9 +191,12 @@ Dự án này được phân phối dưới giấy phép mã nguồn mở MIT. X
 
 ## 14. Thành Viên / Tác Giả
 
-| Họ tên | Vai trò | GitHub |
-|---|---|---|
-| Đang cập nhật | Đang cập nhật | [TODO] |
+| Họ tên | GitHub |
+|---|---|
+| Ngô Gia Long | [NgaiLong49423](https://github.com/NgaiLong49423) |
+| Ngô Hoàng Thái Dương | [NgoHoangThaiDuong](https://github.com/NgoHoangThaiDuong) |
+| Nguyễn Anh Kiệt | [anhkiet150905-stack](https://github.com/anhkiet150905-stack) |
+| Nguyễn Tuấn Minh  | [theredcrescedo-eng](https://github.com/theredcrescedo-eng) |
 
 ## 15. Ghi Chú
 
