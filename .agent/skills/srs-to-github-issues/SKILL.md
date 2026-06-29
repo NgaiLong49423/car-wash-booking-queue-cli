@@ -1,9 +1,9 @@
 ---
 name: srs-to-github-issues
 description: Convert PRD, SRS, product specs, requirement documents, or planning documents into professional GitHub Issue drafts, optionally create real GitHub Issues, and optionally sync GitHub Project metadata. Use this when the user asks to break down requirements into issues, create GitHub issue drafts, estimate issue size/story points, assign labels, or prepare project-ready work items.
-risk: critical
-source: self
-source_type: custom
+version: v1.0.3
+created_date: 2026-06-27
+last_updated_date: 2026-06-29
 ---
 
 # SRS to GitHub Issues
