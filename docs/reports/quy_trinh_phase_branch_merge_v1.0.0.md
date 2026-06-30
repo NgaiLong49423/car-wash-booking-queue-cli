@@ -274,7 +274,7 @@ Gợi ý nội dung:
 ### Phase 2 - File Storage + Seed Data
 
 **Issue:** #2 File Storage + Seed Data  
-**Người chính:** Người 2  
+**Người chính:** Nguyễn Anh Kiệt  
 **Branch:** `feature/002-file-storage-seed-data`
 
 Mục tiêu:
@@ -299,7 +299,7 @@ Mục tiêu:
 ### Phase 3 - Entity Management
 
 **Issue:** #3, #4, #5  
-**Người chính:** Người 2  
+**Người chính:** Nguyễn Anh Kiệt 
 
 Branch:
 
@@ -363,7 +363,7 @@ Mục tiêu:
 ### Phase 5 - Booking Creation and Validation
 
 **Issue:** #7 Booking Creation and Validation  
-**Người chính:** Người 3  
+**Người chính:** Ngô Hoàng Thái Dương  
 **Branch:** `feature/007-booking-creation-validation`
 
 Mục tiêu:
@@ -393,7 +393,7 @@ Mục tiêu:
 #### Phase 6.1 - Service Period Activation
 
 **Issue:** #8 Service Period Activation  
-**Người chính:** Người 3  
+**Người chính:** Ngô Hoàng Thái Dương  
 **Branch:** `feature/008-service-period-activation`
 
 Điều kiện merge:
@@ -426,7 +426,7 @@ Mục tiêu:
 ### Phase 7 - Service Processing and Payment
 
 **Issue:** #10 Service Processing and Payment  
-**Người chính:** Người 3  
+**Người chính:** Ngô Hoàng Thái Dương  
 **Branch:** `feature/010-service-processing-payment`
 
 Mục tiêu:
@@ -452,7 +452,7 @@ Mục tiêu:
 ### Phase 8 - Booking Cancellation + Queue Promotion
 
 **Issue:** #12 Booking Cancellation + Queue Promotion  
-**Người chính:** Người 4  
+**Người chính:** Nguyễn Tuấn Minh  
 **Branch:** `feature/012-booking-cancellation-promotion`
 
 Mục tiêu:
@@ -477,7 +477,7 @@ Mục tiêu:
 ### Phase 9 - Booking Completion + Loyalty Recalculation
 
 **Issue:** #11 Booking Completion + Loyalty Recalculation  
-**Người chính:** Người 4  
+**Người chính:** Nguyễn Tuấn Minh  
 **Branch:** `feature/011-booking-completion-loyalty`
 
 Mục tiêu:
@@ -505,7 +505,7 @@ Mục tiêu:
 ### Phase 10 - Undo Last Completed Booking
 
 **Issue:** #14 Undo Last Completed Booking  
-**Người chính:** Người 4  
+**Người chính:** Nguyễn Tuấn Minh  
 **Branch:** `feature/014-undo-last-completed-booking`
 
 Mục tiêu:
@@ -531,7 +531,7 @@ Mục tiêu:
 ### Phase 11 - History Reports
 
 **Issue:** #13 History Reports  
-**Người chính:** Người 2  
+**Người chính:** Nguyễn Anh Kiệt  
 **Branch:** `feature/013-history-reports`
 
 Mục tiêu:
