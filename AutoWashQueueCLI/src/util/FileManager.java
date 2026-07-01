@@ -1,4 +1,4 @@
-package data;
+package util;
 
 import datastructure.MyLinkedList;
 import model.Customer;

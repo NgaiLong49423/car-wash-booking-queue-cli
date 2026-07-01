@@ -4,7 +4,6 @@ import datastructure.MyLinkedList;
 import model.Customer;
 
 public class CustomerService {
-    // Khai báo danh sách liên kết đơn tự cài đặt theo đúng yêu cầu 
     private MyLinkedList<Customer> customerList;
 
     public CustomerService() {
@@ -17,21 +16,42 @@ public class CustomerService {
             System.out.println("Chua co khach hang nao trong he thong!");
             return;
         }
-        // Gọi hàm display() trong MyLinkedList
         customerList.display();
         System.out.println("----------------------------");
     }
 
-    public void addCustomer(String id, String name, String phone, String level, int points) {
-        // Kiểm tra trùng lặp mã khách hàng
-        if (findCustomerById(id) != null) {
-            System.out.println("=> Loi: Ma khach hang " + id + " da ton tai!");
-            return;
+    // Đã bỏ tham số 'id', tự động sinh ID bên trong hàm và kiểm tra số điện thoại
+    public void addCustomer(String name, String phone, String level, int points) {
+        // 1. Kiểm tra trùng lặp số điện thoại
+        int size = customerList.size();
+        for (int i = 0; i < size; i++) {
+            if (customerList.get(i).getPhone().equals(phone)) {
+                System.out.println("=> Loi: So dien thoai " + phone + " da ton tai trong he thong!");
+                return;
+            }
         }
-        Customer newCustomer = new Customer(id, name, phone, level, points);
-        // Dùng hàm addLast để thêm vào cuối danh sách liên kết
+
+        // 2. Logic tự động sinh ID (C001, C002...)
+        int maxIdNum = 0;
+        for (int i = 0; i < size; i++) {
+            String currentId = customerList.get(i).getId();
+            if (currentId.startsWith("C")) {
+                try {
+                    int num = Integer.parseInt(currentId.substring(1));
+                    if (num > maxIdNum) {
+                        maxIdNum = num;
+                    }
+                } catch (Exception e) {
+                    // Bỏ qua nếu mã không đúng định dạng
+                }
+            }
+        }
+        String newId = String.format("C%03d", maxIdNum + 1);
+
+        // 3. Tạo và lưu khách hàng
+        Customer newCustomer = new Customer(newId, name, phone, level, points);
         customerList.addLast(newCustomer);
-        System.out.println("=> Da them khach hang thanh cong: " + name);
+        System.out.println("=> Da them khach hang thanh cong: " + name + " (Ma KH: " + newId + ")");
     }
 
     public Customer findCustomerById(String id) {
@@ -48,6 +68,16 @@ public class CustomerService {
     public void updateCustomer(String id, String newName, String newPhone, String newLevel, int newPoints) {
         Customer c = findCustomerById(id);
         if (c != null) {
+            // Kiểm tra trùng số điện thoại nếu khách hàng đổi sang số mới
+            if (!c.getPhone().equals(newPhone)) {
+                int size = customerList.size();
+                for (int i = 0; i < size; i++) {
+                    if (customerList.get(i).getPhone().equals(newPhone)) {
+                        System.out.println("=> Loi: So dien thoai moi da bi trung voi khach hang khac!");
+                        return;
+                    }
+                }
+            }
             c.setName(newName);
             c.setPhone(newPhone);
             c.setMembershipLevel(newLevel);
@@ -71,7 +101,6 @@ public class CustomerService {
         System.out.println("=> Loi: Khong tim thay khach hang co ma " + id);
     }
 
-    // --- HÀM MỚI THÊM ĐỂ FILE MANAGER LẤY DỮ LIỆU ---
     public MyLinkedList<Customer> getCustomerList() {
         return customerList;
     }

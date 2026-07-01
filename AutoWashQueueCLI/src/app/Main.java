@@ -1,7 +1,7 @@
 package app;
 
-import data.DataSeeder;
-import data.FileManager;
+import util.DataSeeder;
+import util.FileManager;
 import service.BookingService;
 import service.CustomerService;
 import service.VehicleService;
