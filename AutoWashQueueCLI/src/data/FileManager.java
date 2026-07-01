@@ -17,13 +17,13 @@ public class FileManager {
         boolean hasData = false;
 
         // 1. Đọc Khách hàng
-        File fCust = new File("customers.txt");
+        File fCust = new File("data/customers.txt");
         if (fCust.exists()) {
             try (BufferedReader br = FileUtil.openReaderWithBom(fCust)) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     if (line.trim().isEmpty()) continue;
-                    String[] p = line.split(",");
+                    String[] p = line.split("\\|");
                     if (p.length == 5) customers.addLast(new Customer(p[0].trim(), p[1].trim(), p[2].trim(), p[3].trim(), Integer.parseInt(p[4].trim())));
                 }
                 hasData = true;
@@ -64,7 +64,7 @@ public class FileManager {
     // --- HÀM GHI DỮ LIỆU XUỐNG FILE ---
     public static void saveData(MyLinkedList<Customer> customers, MyLinkedList<WashService> services, MyLinkedList<Vehicle> vehicles) {
         // 1. Ghi Khách hàng
-        try (BufferedWriter bw = FileUtil.openUtf8Writer("customers.txt")) {
+        try (BufferedWriter bw = FileUtil.openUtf8Writer("data/customers.txt")) {
             for (int i = 0; i < customers.size(); i++) {
                 Customer c = customers.get(i);
                 bw.write(c.getId() + "," + c.getName() + "," + c.getPhone() + "," + c.getMembershipLevel() + "," + c.getPoints());
