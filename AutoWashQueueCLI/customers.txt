@@ -1,3 +1,0 @@
-KH01,Nguyen Van A,0901234567,Gold,100
-KH02,Tran Thi B,0912345678,Silver,50
-KH03,Le Van C,0988777666,Thong thuong,0

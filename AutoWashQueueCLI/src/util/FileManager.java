@@ -9,6 +9,9 @@ import util.FileUtil;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import model.Booking;
+import model.Period;
+import model.History;
 
 public class FileManager {
 
@@ -91,5 +94,70 @@ public class FileManager {
         } catch (Exception e) { System.out.println("=> Loi ghi vehicles.txt"); }
 
         System.out.println("=> Da luu toan bo du lieu xuong file (.txt) an toan!");
+    }
+    // === CÁC HÀM ĐỌC GHI DỮ LIỆU BỔ SUNG ===
+
+    public static void loadExtraData(MyLinkedList<Booking> bookings, MyLinkedList<Period> periods, MyLinkedList<History> histories) {
+        // 1. Đọc Bookings
+        File fB = new File("data/bookings.txt");
+        if (fB.exists()) {
+            try (BufferedReader br = FileUtil.openReaderWithBom(fB)) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+                    String[] p = line.split("\\|");
+                    if (p.length >= 4) bookings.addLast(new Booking(p[0].trim(), p[1].trim(), p[2].trim(), p[3].trim()));
+                }
+            } catch (Exception e) { System.out.println("=> Loi doc bookings.txt"); }
+        }
+
+        // 2. Đọc Periods
+        File fP = new File("data/periods.txt");
+        if (fP.exists()) {
+            try (BufferedReader br = FileUtil.openReaderWithBom(fP)) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+                    String[] p = line.split("\\|");
+                    if (p.length >= 3) periods.addLast(new Period(p[0].trim(), p[1].trim(), Boolean.parseBoolean(p[2].trim())));
+                }
+            } catch (Exception e) { System.out.println("=> Loi doc periods.txt"); }
+        }
+
+        // 3. Đọc History
+        File fH = new File("data/history.txt");
+        if (fH.exists()) {
+            try (BufferedReader br = FileUtil.openReaderWithBom(fH)) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+                    String[] p = line.split("\\|");
+                    if (p.length >= 5) histories.addLast(new History(p[0].trim(), p[1].trim(), p[2].trim(), p[3].trim(), p[4].trim()));
+                }
+            } catch (Exception e) { System.out.println("=> Loi doc history.txt"); }
+        }
+    }
+
+    public static void saveExtraData(MyLinkedList<Booking> bookings, MyLinkedList<Period> periods, MyLinkedList<History> histories) {
+        try (BufferedWriter bw = FileUtil.openUtf8Writer("data/bookings.txt")) {
+            for (int i = 0; i < bookings.size(); i++) {
+                bw.write(bookings.get(i).toString());
+                bw.newLine();
+            }
+        } catch (Exception e) { }
+
+        try (BufferedWriter bw = FileUtil.openUtf8Writer("data/periods.txt")) {
+            for (int i = 0; i < periods.size(); i++) {
+                bw.write(periods.get(i).toString());
+                bw.newLine();
+            }
+        } catch (Exception e) { }
+
+        try (BufferedWriter bw = FileUtil.openUtf8Writer("data/history.txt")) {
+            for (int i = 0; i < histories.size(); i++) {
+                bw.write(histories.get(i).toString());
+                bw.newLine();
+            }
+        } catch (Exception e) { }
     }
 }

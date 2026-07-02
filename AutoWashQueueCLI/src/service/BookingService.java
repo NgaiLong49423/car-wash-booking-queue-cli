@@ -18,15 +18,15 @@ public class BookingService {
             System.out.println("Hien tai khong co xe nao dang cho.");
             return;
         }
-        // Gọi hàm display() trong MyQueue
         bookingQueue.display();
         System.out.println("-----------------------");
     }
 
     // TÍNH NĂNG 2: Xếp xe vào hàng đợi (Thêm vào cuối - enqueue)
     public void addBooking(String bookingId, String licensePlate, String serviceId) {
-        Booking newBooking = new Booking(bookingId, licensePlate, serviceId);
-        bookingQueue.enqueue(newBooking); // Dùng enqueue thay vì offer như hôm qua
+        // CẬP NHẬT: Đã truyền thêm trạng thái "Dang cho" vào tham số thứ 4
+        Booking newBooking = new Booking(bookingId, licensePlate, serviceId, "Dang cho");
+        bookingQueue.enqueue(newBooking);
         System.out.println("=> Da dat lich! Xe " + licensePlate + " da vao hang doi.");
     }
 
@@ -36,8 +36,7 @@ public class BookingService {
             System.out.println("=> Khong co xe nao dang cho de xu ly.");
             return;
         }
-        // Dùng dequeue để lấy và xóa phần tử đứng đầu
-        Booking nextToWash = bookingQueue.dequeue(); 
+        Booking nextToWash = bookingQueue.dequeue();
         nextToWash.setStatus("Dang rua");
         System.out.println("=> DANG XU LY: " + nextToWash.toString());
     }

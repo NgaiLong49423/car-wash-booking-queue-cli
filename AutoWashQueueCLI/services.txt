@@ -1,3 +1,0 @@
-DV01,Rua xe tieu chuan,50000.0
-DV02,Rua xe cao cap + Hut bui,100000.0
-DV03,Rua xe + Danh bong,250000.0

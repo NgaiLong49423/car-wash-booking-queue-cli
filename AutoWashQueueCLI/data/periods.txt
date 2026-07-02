@@ -1,0 +1,3 @@
+P1|Sang|true
+P2|Chieu|false
+P3|Toi|false

@@ -1,3 +1,0 @@
-59A-123.45,KH01,Sedan 4 cho
-60B-678.90,KH02,SUV 7 cho
-51C-999.99,KH03,Ban tai

@@ -6,11 +6,11 @@ public class Booking {
     private String serviceId;
     private String status;
 
-    public Booking(String bookingId, String licensePlate, String serviceId) {
+    public Booking(String bookingId, String licensePlate, String serviceId, String status) {
         this.bookingId = bookingId;
         this.licensePlate = licensePlate;
         this.serviceId = serviceId;
-        this.status = "Dang cho"; // Trạng thái mặc định khi vừa xếp hàng
+        this.status = status;
     }
 
     public String getBookingId() { return bookingId; }
@@ -27,6 +27,6 @@ public class Booking {
 
     @Override
     public String toString() {
-        return "Dat Lich [" + bookingId + " | Xe: " + licensePlate + " | Dich vu: " + serviceId + " | Trang thai: " + status + "]";
+        return bookingId + "|" + licensePlate + "|" + serviceId + "|" + status;
     }
 }
