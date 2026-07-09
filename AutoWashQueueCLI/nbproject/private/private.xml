@@ -5,15 +5,12 @@
         <group>
             <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyPriorityQueue.java</file>
             <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyLinkedList.java</file>
-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/util/DataSeeder.java</file>
-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/History.java</file>
-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyMap.java</file>
+            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/WashPackage.java</file>
+            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/Vehicle.java</file>
             <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/service/BookingService.java</file>
             <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/Booking.java</file>
-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/util/FileManager.java</file>
-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/Node.java</file>
-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/app/Main.java</file>
-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyStack.java</file>
+            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/service/WashServiceManager.java</file>
+            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyQueue.java</file>
         </group>
     </open-files>
 </project-private>
