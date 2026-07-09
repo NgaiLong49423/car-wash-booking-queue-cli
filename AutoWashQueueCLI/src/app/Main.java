@@ -11,6 +11,7 @@ import datastructure.MyLinkedList;
 import model.Period;
 import model.History;
 import model.Booking;
+import model.Customer;
 
 public class Main {
     public static void main(String[] args) {
@@ -60,7 +61,49 @@ public class Main {
 
             switch (choice) {
                 case 1:
-                    customerService.displayAllCustomers();
+                    // Customer Management Submenu
+                    boolean backToMain = false;
+                    while (!backToMain) {
+                        int subChoice = ConsoleInputter.intMenu("CUSTOMER MANAGEMENT",
+                                "Display all customers",
+                                "Add new customer",
+                                "Search customer",
+                                "Update customer information",
+                                "Delete customer",
+                                "Back to main menu");
+                        switch (subChoice) {
+                            case 1:
+                                customerService.displayAllCustomers();
+                                break;
+                            case 2:
+                                String name = ConsoleInputter.getStr("Enter customer name");
+                                String phone = ConsoleInputter.getStr("Enter phone number");
+                                customerService.addCustomer(name, phone, "MEMBER", 0);
+                                break;
+                            case 3:
+                                String query = ConsoleInputter.getStr("Enter search query (ID, Name, or Phone)");
+                                customerService.searchCustomers(query);
+                                break;
+                            case 4:
+                                String updateId = ConsoleInputter.getStr("Enter customer ID to update");
+                                Customer c = customerService.findCustomerById(updateId);
+                                if (c != null) {
+                                    String newName = ConsoleInputter.updateStr("Enter new name", c.getName());
+                                    String newPhone = ConsoleInputter.updateStr("Enter new phone", c.getPhone());
+                                    customerService.updateCustomer(updateId, newName, newPhone, c.getMembershipLevel(), c.getPoints());
+                                } else {
+                                    System.out.println("=> Error: Customer not found with ID: " + updateId);
+                                }
+                                break;
+                            case 5:
+                                String deleteId = ConsoleInputter.getStr("Enter customer ID to delete");
+                                customerService.deleteCustomer(deleteId, vehicleService, bookingService, historyList);
+                                break;
+                            case 6:
+                                backToMain = true;
+                                break;
+                        }
+                    }
                     break;
                 case 2:
                     washService.displayAllServices();
