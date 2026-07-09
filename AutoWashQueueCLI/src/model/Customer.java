@@ -32,6 +32,6 @@ public class Customer {
 
     @Override
     public String toString() {
-        return "Khach Hang [" + id + " | " + name + " | SĐT: " + phone + " | Hang: " + membershipLevel + " | Diem: " + points + "]";
+        return id + "|" + name + "|" + phone + "|" + membershipLevel + "|" + points;
     }
 }

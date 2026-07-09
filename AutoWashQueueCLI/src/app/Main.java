@@ -7,16 +7,23 @@ import service.CustomerService;
 import service.VehicleService;
 import service.WashServiceManager;
 import util.ConsoleInputter;
+import datastructure.MyLinkedList;
+import model.Period;
+import model.History;
 
 public class Main {
     public static void main(String[] args) {
-        // 1. Khởi tạo toàn bộ hệ thống xử lý
+        // 1. System initialization
         CustomerService customerService = new CustomerService();
         WashServiceManager washService = new WashServiceManager();
         VehicleService vehicleService = new VehicleService();
         BookingService bookingService = new BookingService();
 
-        // 2. Cố gắng Load dữ liệu từ file. Nếu chưa có file (lần chạy đầu tiên), dùng DataSeeder
+        // Temporary lists for Period and History
+        MyLinkedList<Period> periodsList = new MyLinkedList<>();
+        MyLinkedList<History> historyList = new MyLinkedList<>();
+
+        // 2. Load data from files
         boolean hasSavedData = FileManager.loadData(
                 customerService.getCustomerList(), 
                 washService.getServiceList(), 
@@ -26,17 +33,20 @@ public class Main {
         if (!hasSavedData) {
             DataSeeder.seed(customerService, washService, vehicleService);
         } else {
-            System.out.println("\n[He thong] -> Da tai du lieu tu file .txt thanh cong!");
+            System.out.println("\n[System] -> Data loaded from .txt files successfully!");
         }
 
-        // 3. Vòng lặp Menu chính
+        // Load extra data (Bookings, Periods, History)
+        FileManager.loadExtraData(bookingService.getBookingQueue(), periodsList, historyList);
+
+        // 3. Main Menu Loop
         while (true) {
-            int choice = ConsoleInputter.intMenu("HE THONG QUAN LY RUA XE",
-                    "Quan ly Khach hang",
-                    "Quan ly Dich vu",
-                    "Quan ly Xe co",
-                    "Quan ly Hang doi (Dat lich)",
-                    "Thoat & Luu du lieu");
+            int choice = ConsoleInputter.intMenu("CAR WASH MANAGEMENT SYSTEM",
+                    "Customer Management",
+                    "Service Management",
+                    "Vehicle Management",
+                    "Queue Management (Booking)",
+                    "Exit & Save Data");
 
             switch (choice) {
                 case 1:
@@ -52,17 +62,18 @@ public class Main {
                     bookingService.displayQueue();
                     break;
                 case 5:
-                    // Tự động sao lưu dữ liệu trước khi thoát
+                    // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 
                             washService.getServiceList(), 
                             vehicleService.getVehicleList()
                     );
-                    System.out.println("=> He thong dong. Tam biet!");
+                    FileManager.saveExtraData(bookingService.getBookingQueue(), periodsList, historyList);
+                    System.out.println("=> System closed. Goodbye!");
                     System.exit(0);
                     break;
                 default:
-                    System.out.println("Vui long chon chuc nang hop le!");
+                    System.out.println("Please select a valid option!");
             }
         }
     }

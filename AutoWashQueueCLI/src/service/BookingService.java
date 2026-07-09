@@ -40,4 +40,8 @@ public class BookingService {
         nextToWash.setStatus("Dang rua");
         System.out.println("=> DANG XU LY: " + nextToWash.toString());
     }
+    
+    public datastructure.MyQueue<model.Booking> getBookingQueue() {
+    return bookingQueue;
+}
 }

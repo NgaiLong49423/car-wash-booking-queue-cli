@@ -22,6 +22,6 @@ public class Vehicle {
 
     @Override
     public String toString() {
-        return "Xe [" + licensePlate + " | Chu xe (Ma KH): " + customerId + " | Loai: " + vehicleType + "]";
+        return licensePlate + "|" + customerId + "|" + vehicleType;
     }
 }

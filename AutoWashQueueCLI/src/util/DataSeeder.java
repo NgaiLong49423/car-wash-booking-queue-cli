@@ -7,49 +7,53 @@ import model.Booking;
 import model.Period;
 import model.History;
 import datastructure.MyLinkedList;
+import datastructure.MyQueue; // Đã thêm thư viện MyQueue
 
 public class DataSeeder {
     
     public static void seed(CustomerService customerService, WashServiceManager washService, VehicleService vehicleService) {
         
-        // 1. Thêm Khách hàng mẫu
-        customerService.addCustomer("Nguyen Van A", "0901234567", "GOLD", 100);
-        customerService.addCustomer("Tran Thi B", "0912345678", "SILVER", 50);
-        customerService.addCustomer("Le Van C", "0988777666", "MEMBER", 0);
+        // 1. Mock Customers (4 tiers as requested: PLATINUM, GOLD, SILVER, MEMBER)
+        customerService.addCustomer("Nguyen Van A", "0901234567", "PLATINUM", 100);
+        customerService.addCustomer("Tran Thi B", "0912345678", "GOLD", 50);
+        customerService.addCustomer("Le Van C", "0988777666", "SILVER", 20);
+        customerService.addCustomer("Pham Van D", "0999888777", "MEMBER", 0);
 
-        // 2. Thêm Dịch vụ mẫu
-        washService.addService("DV01", "Rua xe tieu chuan", 50000);
-        washService.addService("DV02", "Rua xe cao cap + Hut bui", 100000);
-        washService.addService("DV03", "Rua xe + Danh bong", 250000);
+        // 2. Mock Services (Translated to English)
+        washService.addService("S001", "Standard Wash", 50000);
+        washService.addService("S002", "Premium Wash + Vacuum", 100000);
+        washService.addService("S003", "Wash + Polish", 250000);
 
-        // 3. Thêm Xe cộ mẫu
-        vehicleService.addVehicle("59A-123.45", "C001", "Sedan 4 cho");
-        vehicleService.addVehicle("60B-678.90", "C002", "SUV 7 cho");
-        vehicleService.addVehicle("51C-999.99", "C003", "Ban tai");
+        // 3. Mock Vehicles (Translated to English)
+        vehicleService.addVehicle("59A-123.45", "C001", "Sedan 4-seater");
+        vehicleService.addVehicle("60B-678.90", "C002", "SUV 7-seater");
+        vehicleService.addVehicle("51C-999.99", "C003", "Pickup Truck");
+        vehicleService.addVehicle("51D-111.11", "C004", "Minivan");
         
-        // 4. Tự động sinh 3 file dữ liệu mẫu còn thiếu (bookings, periods, history)
+        // 4. Generate extra mock data files
         seedMissingFiles();
 
-        System.out.println("\n[He thong] -> Da nap du lieu mau (Seed Data) thanh cong!");
+        System.out.println("\n[System] -> Data loaded from .txt files successfully!");
     }
 
     private static void seedMissingFiles() {
-        // Dữ liệu mẫu Booking
-        MyLinkedList<Booking> mockBookings = new MyLinkedList<>();
-        mockBookings.addLast(new Booking("B001", "59A-123.45", "DV01", "Dang cho"));
-        mockBookings.addLast(new Booking("B002", "60B-678.90", "DV02", "Dang cho"));
+        // Mock Bookings (Waiting status translated)
+        // Đã đổi sang MyQueue để đồng bộ với FileManager
+        MyQueue<Booking> mockBookings = new MyQueue<>();
+        mockBookings.enqueue(new Booking("B001", "59A-123.45", "S001", "Waiting"));
+        mockBookings.enqueue(new Booking("B002", "60B-678.90", "S002", "Waiting"));
 
-        // Dữ liệu mẫu Periods (Các buổi phục vụ)
+        // Mock Periods (Morning, Afternoon, Evening translated)
         MyLinkedList<Period> mockPeriods = new MyLinkedList<>();
-        mockPeriods.addLast(new Period("P1", "Sang", true));
-        mockPeriods.addLast(new Period("P2", "Chieu", false));
-        mockPeriods.addLast(new Period("P3", "Toi", false));
+        mockPeriods.addLast(new Period("P1", "Morning", true));
+        mockPeriods.addLast(new Period("P2", "Afternoon", false));
+        mockPeriods.addLast(new Period("P3", "Evening", false));
 
-        // Dữ liệu mẫu History
+        // Mock History
         MyLinkedList<History> mockHistory = new MyLinkedList<>();
-        mockHistory.addLast(new History("H001", "B000", "51C-999.99", "DV03", "2026-07-01 10:00"));
+        mockHistory.addLast(new History("H001", "B000", "51C-999.99", "S003", "2026-07-09 10:00"));
 
-        // Ghi xuống file
+        // Save to files
         FileManager.saveExtraData(mockBookings, mockPeriods, mockHistory);
     }
 }

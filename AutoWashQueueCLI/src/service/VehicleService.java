@@ -11,23 +11,23 @@ public class VehicleService {
     }
 
     public void displayAllVehicles() {
-        System.out.println("\n--- DANH SACH XE CO ---");
+        System.out.println("\n--- VEHICLE LIST ---");
         if (vehicleList.isEmpty()) {
-            System.out.println("Chua co xe nao trong he thong!");
+            System.out.println("No vehicles found in the system!");
             return;
         }
         vehicleList.display();
-        System.out.println("-----------------------");
+        System.out.println("--------------------");
     }
 
     public void addVehicle(String licensePlate, String customerId, String type) {
         if (findVehicleByLicense(licensePlate) != null) {
-            System.out.println("=> Loi: Bien so xe " + licensePlate + " da ton tai!");
+            System.out.println("=> Error: License plate " + licensePlate + " already exists!");
             return;
         }
         Vehicle newVehicle = new Vehicle(licensePlate, customerId, type);
         vehicleList.addLast(newVehicle);
-        System.out.println("=> Da them xe thanh cong: " + licensePlate);
+        System.out.println("=> Added vehicle successfully: " + licensePlate);
     }
 
     public Vehicle findVehicleByLicense(String licensePlate) {
@@ -46,9 +46,9 @@ public class VehicleService {
         if (v != null) {
             v.setCustomerId(newCustomerId);
             v.setVehicleType(newType);
-            System.out.println("=> Da cap nhat thong tin xe: " + licensePlate);
+            System.out.println("=> Updated vehicle successfully: " + licensePlate);
         } else {
-            System.out.println("=> Loi: Khong tim thay xe bien so " + licensePlate);
+            System.out.println("=> Error: Vehicle not found with license plate: " + licensePlate);
         }
     }
 
@@ -58,14 +58,13 @@ public class VehicleService {
             Vehicle v = vehicleList.get(i);
             if (v.getLicensePlate().equalsIgnoreCase(licensePlate)) {
                 vehicleList.remove(i);
-                System.out.println("=> Da xoa xe: " + licensePlate);
+                System.out.println("=> Deleted vehicle successfully: " + licensePlate);
                 return;
             }
         }
-        System.out.println("=> Loi: Khong tim thay xe bien so " + licensePlate);
+        System.out.println("=> Error: Vehicle not found with license plate: " + licensePlate);
     }
 
-    // --- HÀM MỚI THÊM ĐỂ FILE MANAGER LẤY DỮ LIỆU ---
     public MyLinkedList<Vehicle> getVehicleList() {
         return vehicleList;
     }
