@@ -10,6 +10,7 @@ import util.ConsoleInputter;
 import datastructure.MyLinkedList;
 import model.Period;
 import model.History;
+import model.Booking;
 
 public class Main {
     public static void main(String[] args) {
@@ -37,7 +38,16 @@ public class Main {
         }
 
         // Load extra data (Bookings, Periods, History)
-        FileManager.loadExtraData(bookingService.getBookingQueue(), periodsList, historyList);
+        FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
+
+        // Populate active bookingQueue from loaded bookingList for compatibility
+        MyLinkedList<Booking> list = bookingService.getBookingList();
+        for (int i = 0; i < list.size(); i++) {
+            Booking b = list.get(i);
+            if ("WAITING".equalsIgnoreCase(b.getBookingStatus()) || "Dang cho".equalsIgnoreCase(b.getBookingStatus()) || "SERVING".equalsIgnoreCase(b.getBookingStatus()) || "Dang rua".equalsIgnoreCase(b.getBookingStatus())) {
+                bookingService.getBookingQueue().enqueue(b);
+            }
+        }
 
         // 3. Main Menu Loop
         while (true) {
@@ -68,7 +78,7 @@ public class Main {
                             washService.getServiceList(), 
                             vehicleService.getVehicleList()
                     );
-                    FileManager.saveExtraData(bookingService.getBookingQueue(), periodsList, historyList);
+                    FileManager.saveExtraData(bookingService.getBookingList(), periodsList, historyList);
                     System.out.println("=> System closed. Goodbye!");
                     System.exit(0);
                     break;

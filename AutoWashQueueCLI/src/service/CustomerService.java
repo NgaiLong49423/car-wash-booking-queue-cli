@@ -2,6 +2,7 @@ package service;
 
 import datastructure.MyLinkedList;
 import model.Customer;
+import util.FileManager;
 
 public class CustomerService {
     private MyLinkedList<Customer> customerList;
@@ -43,9 +44,12 @@ public class CustomerService {
         }
         String newId = String.format("C%03d", maxIdNum + 1);
 
-        Customer newCustomer = new Customer(newId, name, phone, level, points);
+        Customer newCustomer = new Customer(newId, name, phone, level, points, 0.0, 0);
         customerList.addLast(newCustomer);
         System.out.println("=> Added customer successfully: " + name + " (Customer ID: " + newId + ")");
+        
+        // Auto-save on change (FR-23)
+        FileManager.saveCustomers(customerList);
     }
 
     public Customer findCustomerById(String id) {
@@ -76,6 +80,9 @@ public class CustomerService {
             c.setMembershipLevel(newLevel);
             c.setPoints(newPoints);
             System.out.println("=> Updated customer successfully: " + id);
+            
+            // Auto-save on change (FR-23)
+            FileManager.saveCustomers(customerList);
         } else {
             System.out.println("=> Error: Customer not found with ID: " + id);
         }
@@ -88,6 +95,9 @@ public class CustomerService {
             if (c.getId().equalsIgnoreCase(id)) {
                 customerList.remove(i);
                 System.out.println("=> Deleted customer successfully: " + id);
+                
+                // Auto-save on change (FR-23)
+                FileManager.saveCustomers(customerList);
                 return;
             }
         }

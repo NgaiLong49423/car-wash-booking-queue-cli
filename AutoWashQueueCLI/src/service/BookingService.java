@@ -1,14 +1,17 @@
 package service;
 
+import datastructure.MyLinkedList;
 import datastructure.MyQueue;
 import model.Booking;
+import util.FileManager;
 
 public class BookingService {
-    // Khai báo Hàng đợi (Queue) tự cài đặt của Leader
     private MyQueue<Booking> bookingQueue;
+    private MyLinkedList<Booking> bookingList;
 
     public BookingService() {
         this.bookingQueue = new MyQueue<>();
+        this.bookingList = new MyLinkedList<>();
     }
 
     // TÍNH NĂNG 1: Xem các xe đang xếp hàng
@@ -24,10 +27,24 @@ public class BookingService {
 
     // TÍNH NĂNG 2: Xếp xe vào hàng đợi (Thêm vào cuối - enqueue)
     public void addBooking(String bookingId, String licensePlate, String serviceId) {
-        // CẬP NHẬT: Đã truyền thêm trạng thái "Dang cho" vào tham số thứ 4
-        Booking newBooking = new Booking(bookingId, licensePlate, serviceId, "Dang cho");
+        Booking newBooking = new Booking(
+                bookingId, 
+                "C000", // Default Customer ID for now (Issue 3 / 7 responsibility)
+                licensePlate, // Vehicle identifier (Mã xe / Biển số)
+                serviceId, 
+                "2026-07-10", // Default Date (Issue 6 responsibility)
+                "MORNING", // Default Period (Issue 6 responsibility)
+                "WAITING", 
+                "UNPAID", 
+                "NONE", 
+                System.currentTimeMillis()
+        );
         bookingQueue.enqueue(newBooking);
+        bookingList.addLast(newBooking);
         System.out.println("=> Da dat lich! Xe " + licensePlate + " da vao hang doi.");
+        
+        // Auto-save bookings on change (FR-23)
+        FileManager.saveBookings(bookingList);
     }
 
     // TÍNH NĂNG 3: Đưa xe vào rửa (Lấy ra khỏi đầu hàng - dequeue)
@@ -37,11 +54,29 @@ public class BookingService {
             return;
         }
         Booking nextToWash = bookingQueue.dequeue();
-        nextToWash.setStatus("Dang rua");
+        nextToWash.setStatus("SERVING");
+
+        // Update status in the main bookingList
+        int size = bookingList.size();
+        for (int i = 0; i < size; i++) {
+            Booking b = bookingList.get(i);
+            if (b.getBookingId().equalsIgnoreCase(nextToWash.getBookingId())) {
+                b.setBookingStatus("SERVING");
+                break;
+            }
+        }
+        
         System.out.println("=> DANG XU LY: " + nextToWash.toString());
+        
+        // Auto-save bookings on change (FR-23)
+        FileManager.saveBookings(bookingList);
     }
     
-    public datastructure.MyQueue<model.Booking> getBookingQueue() {
-    return bookingQueue;
-}
+    public MyQueue<Booking> getBookingQueue() {
+        return bookingQueue;
+    }
+
+    public MyLinkedList<Booking> getBookingList() {
+        return bookingList;
+    }
 }

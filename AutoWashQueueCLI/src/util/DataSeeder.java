@@ -3,57 +3,67 @@ package util;
 import service.CustomerService;
 import service.VehicleService;
 import service.WashServiceManager;
+import model.Customer;
+import model.Vehicle;
+import model.WashPackage;
 import model.Booking;
 import model.Period;
 import model.History;
 import datastructure.MyLinkedList;
-import datastructure.MyQueue; // Đã thêm thư viện MyQueue
+import java.io.File;
 
 public class DataSeeder {
     
     public static void seed(CustomerService customerService, WashServiceManager washService, VehicleService vehicleService) {
+        // Clear lists
+        customerService.getCustomerList().clear();
+        washService.getServiceList().clear();
+        vehicleService.getVehicleList().clear();
+
+        // 1. Mock Customers (7 fields: id|name|phone|membershipLevel|points|totalSpent|visitCount)
+        customerService.getCustomerList().addLast(new Customer("C001", "Nguyen Van A", "0901234567", "PLATINUM", 100, 1500000.0, 5));
+        customerService.getCustomerList().addLast(new Customer("C002", "Tran Thi B", "0912345678", "GOLD", 50, 800000.0, 3));
+        customerService.getCustomerList().addLast(new Customer("C003", "Le Van C", "0988777666", "SILVER", 20, 300000.0, 1));
+        customerService.getCustomerList().addLast(new Customer("C004", "Pham Van D", "0999999999", "MEMBER", 0, 0.0, 0));
+
+        // 2. Mock Services (5 fields: id|name|price|duration|status)
+        washService.getServiceList().addLast(new WashPackage("S001", "Standard Wash", 50000.0, 30, "ACTIVE"));
+        washService.getServiceList().addLast(new WashPackage("S002", "Premium Wash + Vacuum", 100000.0, 45, "ACTIVE"));
+        washService.getServiceList().addLast(new WashPackage("S003", "Wash + Polish", 250000.0, 60, "ACTIVE"));
+
+        // 3. Mock Vehicles (3 fields: id|licensePlate|customerId)
+        vehicleService.getVehicleList().addLast(new Vehicle("V001", "59A-123.45", "C001"));
+        vehicleService.getVehicleList().addLast(new Vehicle("V002", "60B-678.90", "C002"));
+        vehicleService.getVehicleList().addLast(new Vehicle("V003", "51C-999.99", "C003"));
+        vehicleService.getVehicleList().addLast(new Vehicle("V004", "51D-111.11", "C004"));
+
+        // Ensure data directory exists
+        File dir = new File("data");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         
-        // 1. Mock Customers (4 tiers as requested: PLATINUM, GOLD, SILVER, MEMBER)
-        customerService.addCustomer("Nguyen Van A", "0901234567", "PLATINUM", 100);
-        customerService.addCustomer("Tran Thi B", "0912345678", "GOLD", 50);
-        customerService.addCustomer("Le Van C", "0988777666", "SILVER", 20);
-        customerService.addCustomer("Pham Van D", "0999888777", "MEMBER", 0);
+        // Save core files
+        FileManager.saveData(customerService.getCustomerList(), washService.getServiceList(), vehicleService.getVehicleList());
 
-        // 2. Mock Services (Translated to English)
-        washService.addService("S001", "Standard Wash", 50000);
-        washService.addService("S002", "Premium Wash + Vacuum", 100000);
-        washService.addService("S003", "Wash + Polish", 250000);
+        // 4. Mock extra files (Bookings, Periods, Histories)
+        MyLinkedList<Booking> mockBookings = new MyLinkedList<>();
+        mockBookings.addLast(new Booking("B001", "C001", "V001", "S001", "2026-07-10", "MORNING", "WAITING", "UNPAID", "NONE", System.currentTimeMillis()));
+        mockBookings.addLast(new Booking("B002", "C002", "V002", "S002", "2026-07-10", "MORNING", "WAITING", "UNPAID", "NONE", System.currentTimeMillis() + 1000));
 
-        // 3. Mock Vehicles (Translated to English)
-        vehicleService.addVehicle("59A-123.45", "C001", "Sedan 4-seater");
-        vehicleService.addVehicle("60B-678.90", "C002", "SUV 7-seater");
-        vehicleService.addVehicle("51C-999.99", "C003", "Pickup Truck");
-        vehicleService.addVehicle("51D-111.11", "C004", "Minivan");
-        
-        // 4. Generate extra mock data files
-        seedMissingFiles();
-
-        System.out.println("\n[System] -> Data loaded from .txt files successfully!");
-    }
-
-    private static void seedMissingFiles() {
-        // Mock Bookings (Waiting status translated)
-        // Đã đổi sang MyQueue để đồng bộ với FileManager
-        MyQueue<Booking> mockBookings = new MyQueue<>();
-        mockBookings.enqueue(new Booking("B001", "59A-123.45", "S001", "Waiting"));
-        mockBookings.enqueue(new Booking("B002", "60B-678.90", "S002", "Waiting"));
-
-        // Mock Periods (Morning, Afternoon, Evening translated)
+        // Mock Periods (date|periodName|status)
         MyLinkedList<Period> mockPeriods = new MyLinkedList<>();
-        mockPeriods.addLast(new Period("P1", "Morning", true));
-        mockPeriods.addLast(new Period("P2", "Afternoon", false));
-        mockPeriods.addLast(new Period("P3", "Evening", false));
+        mockPeriods.addLast(new Period("2026-07-10", "MORNING", "ACTIVATED"));
+        mockPeriods.addLast(new Period("2026-07-10", "AFTERNOON", "NOT_ACTIVATED"));
+        mockPeriods.addLast(new Period("2026-07-10", "EVENING", "NOT_ACTIVATED"));
 
-        // Mock History
+        // Mock History (8 fields: bookingId|customerId|customerName|plateNumber|serviceName|completedTime|amountPaid|loyaltyPointsEarned)
         MyLinkedList<History> mockHistory = new MyLinkedList<>();
-        mockHistory.addLast(new History("H001", "B000", "51C-999.99", "S003", "2026-07-09 10:00"));
+        mockHistory.addLast(new History("B003", "C003", "Le Van C", "51C-999.99", "Wash + Polish", "2026-07-09 10:00", 250000.0, 20));
 
-        // Save to files
+        // Save extra files
         FileManager.saveExtraData(mockBookings, mockPeriods, mockHistory);
+
+        System.out.println("\n[System] -> Seed data generated and saved successfully!");
     }
 }

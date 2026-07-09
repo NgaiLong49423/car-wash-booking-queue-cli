@@ -1,15 +1,18 @@
 package model;
 
 public class Vehicle {
+    private String id;
     private String licensePlate;
     private String customerId;
-    private String vehicleType;
 
-    public Vehicle(String licensePlate, String customerId, String vehicleType) {
+    public Vehicle(String id, String licensePlate, String customerId) {
+        this.id = id;
         this.licensePlate = licensePlate;
         this.customerId = customerId;
-        this.vehicleType = vehicleType;
     }
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getLicensePlate() { return licensePlate; }
     public void setLicensePlate(String licensePlate) { this.licensePlate = licensePlate; }
@@ -17,11 +20,8 @@ public class Vehicle {
     public String getCustomerId() { return customerId; }
     public void setCustomerId(String customerId) { this.customerId = customerId; }
 
-    public String getVehicleType() { return vehicleType; }
-    public void setVehicleType(String vehicleType) { this.vehicleType = vehicleType; }
-
     @Override
     public String toString() {
-        return licensePlate + "|" + customerId + "|" + vehicleType;
+        return id + "|" + licensePlate + "|" + customerId;
     }
 }

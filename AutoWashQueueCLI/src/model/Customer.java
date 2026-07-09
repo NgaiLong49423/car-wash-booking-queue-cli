@@ -6,13 +6,17 @@ public class Customer {
     private String phone;
     private String membershipLevel;
     private int points;
+    private double totalSpent;
+    private int visitCount;
 
-    public Customer(String id, String name, String phone, String membershipLevel, int points) {
+    public Customer(String id, String name, String phone, String membershipLevel, int points, double totalSpent, int visitCount) {
         this.id = id;
         this.name = name;
         this.phone = phone;
         this.membershipLevel = membershipLevel;
         this.points = points;
+        this.totalSpent = totalSpent;
+        this.visitCount = visitCount;
     }
 
     public String getId() { return id; }
@@ -30,8 +34,14 @@ public class Customer {
     public int getPoints() { return points; }
     public void setPoints(int points) { this.points = points; }
 
+    public double getTotalSpent() { return totalSpent; }
+    public void setTotalSpent(double totalSpent) { this.totalSpent = totalSpent; }
+
+    public int getVisitCount() { return visitCount; }
+    public void setVisitCount(int visitCount) { this.visitCount = visitCount; }
+
     @Override
     public String toString() {
-        return id + "|" + name + "|" + phone + "|" + membershipLevel + "|" + points;
+        return id + "|" + name + "|" + phone + "|" + membershipLevel + "|" + points + "|" + totalSpent + "|" + visitCount;
     }
 }

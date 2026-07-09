@@ -2,6 +2,7 @@ package service;
 
 import datastructure.MyLinkedList;
 import model.Vehicle;
+import util.FileManager;
 
 public class VehicleService {
     private MyLinkedList<Vehicle> vehicleList;
@@ -25,9 +26,29 @@ public class VehicleService {
             System.out.println("=> Error: License plate " + licensePlate + " already exists!");
             return;
         }
-        Vehicle newVehicle = new Vehicle(licensePlate, customerId, type);
+
+        // Generate unique Vehicle ID
+        int size = vehicleList.size();
+        int maxIdNum = 0;
+        for (int i = 0; i < size; i++) {
+            String currentId = vehicleList.get(i).getId();
+            if (currentId != null && currentId.startsWith("V")) {
+                try {
+                    int num = Integer.parseInt(currentId.substring(1));
+                    if (num > maxIdNum) {
+                        maxIdNum = num;
+                    }
+                } catch (Exception e) {}
+            }
+        }
+        String newId = String.format("V%03d", maxIdNum + 1);
+
+        Vehicle newVehicle = new Vehicle(newId, licensePlate, customerId);
         vehicleList.addLast(newVehicle);
-        System.out.println("=> Added vehicle successfully: " + licensePlate);
+        System.out.println("=> Added vehicle successfully: " + licensePlate + " (Vehicle ID: " + newId + ")");
+        
+        // Auto-save on change (FR-23)
+        FileManager.saveVehicles(vehicleList);
     }
 
     public Vehicle findVehicleByLicense(String licensePlate) {
@@ -45,8 +66,11 @@ public class VehicleService {
         Vehicle v = findVehicleByLicense(licensePlate);
         if (v != null) {
             v.setCustomerId(newCustomerId);
-            v.setVehicleType(newType);
+            // newType is ignored/retained in memory or not stored as per updated Vehicle model without vehicleType
             System.out.println("=> Updated vehicle successfully: " + licensePlate);
+            
+            // Auto-save on change (FR-23)
+            FileManager.saveVehicles(vehicleList);
         } else {
             System.out.println("=> Error: Vehicle not found with license plate: " + licensePlate);
         }
@@ -59,6 +83,9 @@ public class VehicleService {
             if (v.getLicensePlate().equalsIgnoreCase(licensePlate)) {
                 vehicleList.remove(i);
                 System.out.println("=> Deleted vehicle successfully: " + licensePlate);
+                
+                // Auto-save on change (FR-23)
+                FileManager.saveVehicles(vehicleList);
                 return;
             }
         }

@@ -1,28 +1,37 @@
 package model;
 
 public class Period {
-    private String periodId;
-    private String periodName; // Ví dụ: Sáng, Chiều, Tối
-    private boolean isActive;  // Trạng thái kích hoạt của buổi đó
+    private String date;
+    private String periodName;
+    private String status;
 
-    public Period(String periodId, String periodName, boolean isActive) {
-        this.periodId = periodId;
+    public Period(String date, String periodName, String status) {
+        this.date = date;
         this.periodName = periodName;
-        this.isActive = isActive;
+        this.status = status;
     }
 
-    public String getPeriodId() { return periodId; }
-    public void setPeriodId(String periodId) { this.periodId = periodId; }
+    // Legacy constructor for compatibility
+    public Period(String periodId, String periodName, boolean isActive) {
+        this("2026-07-10", periodName, isActive ? "ACTIVATED" : "NOT_ACTIVATED");
+    }
+
+    public String getDate() { return date; }
+    public void setDate(String date) { this.date = date; }
 
     public String getPeriodName() { return periodName; }
     public void setPeriodName(String periodName) { this.periodName = periodName; }
 
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    // Legacy getters for compatibility
+    public String getPeriodId() { return periodName; }
+    public boolean isActive() { return "ACTIVATED".equalsIgnoreCase(status); }
+    public void setActive(boolean active) { this.status = active ? "ACTIVATED" : "NOT_ACTIVATED"; }
 
     @Override
     public String toString() {
-        // Sử dụng dấu | để chuẩn hóa việc ghi file theo yêu cầu của Leader
-        return periodId + "|" + periodName + "|" + isActive;
+        return date + "|" + periodName + "|" + status;
     }
 }
