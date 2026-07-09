@@ -1,8 +1,18 @@
 ## [0.3.0] - 2026-06-29
 
-### Changed
+### Author
 
-* Cài ??t c?u trúc d? li?u custom.
+* Prepared by NgÃ´ Gia Long (SE190732).
+
+### Added
+
+* Implemented and integrated custom data structures to serve as the application's foundational data layer, avoiding Java's built-in collections:
+  * `MyLinkedList`: A custom singly linked list implementation for generic data storage.
+  * `MyQueue`: A custom FIFO (First-In-First-Out) queue implementation.
+  * `MyStack`: A custom LIFO (Last-In-First-Out) stack implementation.
+  * `MyPriorityQueue`: A custom Max-Heap based priority queue implementation to manage prioritized bookings.
+  * `MyMap`: A custom key-value association structure.
+  * `Node`: A generic node class supporting the custom linked-list, queue, and stack implementations.
 
 ## [0.2.1] - 2026-06-27
 
