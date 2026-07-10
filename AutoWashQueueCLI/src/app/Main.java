@@ -140,9 +140,25 @@ public class Main {
                                 if (ws != null) {
                                     String newName = ConsoleInputter.updateStr("Enter new name", ws.getName());
                                     
-                                    System.out.printf("Enter new price (Old: %.1f, Enter to skip): ", ws.getPrice());
-                                    String prStr = ConsoleInputter.scanner.nextLine().trim();
-                                    double newPriceVal = prStr.isEmpty() ? ws.getPrice() : Double.parseDouble(prStr);
+                                    double newPriceVal = ws.getPrice();
+                                    while (true) {
+                                        System.out.printf("Enter new price (Old: %.1f, Enter to skip): ", ws.getPrice());
+                                        String prStr = ConsoleInputter.scanner.nextLine().trim();
+                                        if (prStr.isEmpty()) {
+                                            break;
+                                        }
+                                        try {
+                                            double tempPrice = Double.parseDouble(prStr);
+                                            if (tempPrice > 0) {
+                                                newPriceVal = tempPrice;
+                                                break;
+                                            } else {
+                                                System.out.println("=> Error: Service price must be greater than 0!");
+                                            }
+                                        } catch (NumberFormatException e) {
+                                            System.out.println("=> Error: Please enter a valid number!");
+                                        }
+                                    }
                                     
                                     int newDuration = ConsoleInputter.updateInt("Enter new duration", ws.getDuration());
                                     String newStatus = ConsoleInputter.updateStr("Enter new status (ACTIVE/INACTIVE)", ws.getStatus());

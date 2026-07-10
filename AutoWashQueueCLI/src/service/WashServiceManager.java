@@ -154,7 +154,8 @@ public class WashServiceManager {
         // 1. Kiểm tra ràng buộc liên kết Booking
         MyLinkedList<Booking> bookings = bookingService.getBookingList();
         for (int i = 0; i < bookings.size(); i++) {
-            if (bookings.get(i).getServiceId().equalsIgnoreCase(id)) {
+            String bServiceId = bookings.get(i).getServiceId();
+            if (bServiceId != null && bServiceId.equalsIgnoreCase(id)) {
                 System.out.println("=> Error: Cannot delete service " + id + " because it is linked to booking(s)!");
                 return;
             }
@@ -162,8 +163,10 @@ public class WashServiceManager {
 
         // 2. Kiểm tra ràng buộc liên kết Lịch sử rửa xe (History)
         for (int i = 0; i < historyList.size(); i++) {
-            if (historyList.get(i).getServiceName().equalsIgnoreCase(ws.getName()) || 
-                historyList.get(i).getHistoryId().equalsIgnoreCase(id)) { // Fallback check
+            String hServiceName = historyList.get(i).getServiceName();
+            String hHistoryId = historyList.get(i).getHistoryId();
+            if ((hServiceName != null && ws.getName() != null && hServiceName.equalsIgnoreCase(ws.getName())) || 
+                (hHistoryId != null && hHistoryId.equalsIgnoreCase(id))) {
                 System.out.println("=> Error: Cannot delete service " + id + " because it has associated history records!");
                 return;
             }
