@@ -7,8 +7,9 @@
 |---|---|
 | Tên tài liệu | Product Requirements Document (PRD) |
 | Tên sản phẩm | Car Wash Booking Queue CLI |
-| Nguồn chuyển đổi | SRS.md v3.0.2 |
+| Nguồn chuyển đổi | SRS.md v3.0.3 |
 | Ngày tạo | 2026-06-26 |
+| Sửa đổi gần nhất | 2026-07-02 |
 | Ngôn ngữ | Tiếng Việt |
 | Nguyên tắc chuyển đổi | Chỉ rút gọn và tái cấu trúc nội dung đã có trong SRS; không thêm chức năng mới, không thêm giả định ngoài SRS |
 
@@ -16,7 +17,7 @@
 
 ## 1. Product Overview
 
-**Car Wash Booking Queue CLI** là ứng dụng giao diện dòng lệnh (**CLI - Command Line Interface**, nghĩa là giao diện chạy bằng terminal) mô phỏng hoạt động đặt lịch và điều phối xếp hàng rửa xe trong một tiệm rửa xe.
+**Car Wash Booking Queue CLI** là ứng dụng giao diện dòng lệnh (**CLI - Command Line Interface**, nghĩa là giao diện chạy bằng terminal) mô phỏng hoạt động đặt lịch và điều phối xếp hàng rửa xe trong một tiệm rửa xe. **Lưu ý: Toàn bộ giao diện hiển thị, thông báo và nhập liệu của ứng dụng được yêu cầu viết 100% bằng Tiếng Anh.**
 
 Hệ thống tập trung vào việc quản lý khách hàng, xe, dịch vụ, lịch đặt rửa xe, hàng chờ theo từng buổi phục vụ, lịch sử rửa xe và cập nhật loyalty (**điểm, tổng chi tiêu, số lần rửa, hạng thành viên**) sau khi khách hoàn tất dịch vụ.
 

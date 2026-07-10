@@ -7,9 +7,9 @@
 |---|---|
 | Tên tài liệu | Software Requirements Specification (SRS) |
 | Tên hệ thống | Car Wash Booking Queue CLI |
-| Phiên bản | v3.0.2 |
+| Phiên bản | v3.0.3 |
 | Ngày tạo | 2026-06-26 |
-| Sửa đổi gần nhất | 2026-06-26 |
+| Sửa đổi gần nhất | 2026-07-02 |
 | Ngôn ngữ | Tiếng Việt |
 | Trạng thái | Hoàn thiện |
 
@@ -20,6 +20,7 @@
 | v3.0 | 2026-06-26 | SRSV2.md; actor_usecase_summary_car_wash_cli.md | Chuẩn hóa tài liệu theo cấu trúc IEEE 830 và tích hợp phân tích Actor/Use Case |
 | v3.0.1 | 2026-06-26 | Review nghiệp vụ | Làm rõ quy tắc booking dư khi kích hoạt, tính lại loyalty, kiểm tra thời gian còn lại, Undo và Cancel SERVING |
 | v3.0.2 | 2026-06-26 | Rà soát và đồng bộ SRS | Đồng bộ các quy tắc nghiệp vụ, FR và UC; sửa mâu thuẫn về loyalty, Undo, Activate, Waitlist và khôi phục hàng chờ |
+| v3.0.3 | 2026-07-02 | Yêu cầu người dùng | Cập nhật yêu cầu ngôn ngữ ứng dụng hiển thị 100% tiếng Anh |
 
 ## 1. Giới thiệu
 
@@ -1570,7 +1571,7 @@ Hệ thống khống chế độ phức tạp vừa phải, không tích hợp c
 
 ## 9. Giao diện hệ thống
 
-Hệ thống được thiết kế dưới dạng cây menu CLI phân cấp trực quan.
+Hệ thống được thiết kế dưới dạng cây menu CLI phân cấp trực quan. **Tất cả các thành phần hiển thị, thông báo và dữ liệu nhập/xuất của ứng dụng được yêu cầu viết 100% bằng Tiếng Anh.**
 
 ### 9.1 Main Menu
 Khi ứng dụng khởi chạy, Main Menu hiển thị các nhánh chính để phân chia vai trò thao tác:
