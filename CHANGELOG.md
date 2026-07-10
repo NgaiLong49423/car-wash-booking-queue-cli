@@ -1,3 +1,18 @@
+## [0.4.0] - 2026-07-11
+
+### Author
+
+* Prepared by Ngô Gia Long (SE190732) and Agent.
+
+### Added
+
+* Implemented persistent file storage (`util.FileManager`) with `|` separated `.txt` files, including automatic data directory initialization and auto-save capability (Issue #2).
+* Implemented Customer Management (Issue #3) providing CRUD operations with auto-generated IDs, phone number validation, and strict foreign-key dependency checks before deletion.
+* Implemented Vehicle Management (Issue #4) with auto-generated IDs, license plate validation (space and case insensitive), and strict customer ownership linkage.
+* Implemented Service Management (Issue #5) providing CRUD for wash packages, price/duration validations, and defensive programming for user data entry.
+* Added a custom Selection Sort algorithm to sort wash services by price or duration (Issue #5).
+* Created a reusable `pull-request-reviewer` agent skill to automate and standardize Pull Request quality checks against SRS and Project rules.
+
 ## [0.3.0] - 2026-06-29
 
 ### Author
