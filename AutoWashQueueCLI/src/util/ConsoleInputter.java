@@ -248,7 +248,7 @@ public class ConsoleInputter {
         // 4. Vẽ Footer
         printLine('=', totalWidth);
 
-        return getInt("Lựa chọn của bạn", 1, options.length);
+        return getInt("Your choice", 1, options.length);
     }
 
     // Thêm <?> để nói với Java: "Tôi chấp nhận danh sách của bất cứ kiểu dữ liệu

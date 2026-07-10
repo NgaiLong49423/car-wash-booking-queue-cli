@@ -26,3 +26,4 @@ application-local.properties
 # Maven wrapper generated files
 .mvn/wrapper/maven-wrapper.jar
 
+/AutoWashQueueCLI/dist/
