@@ -13,7 +13,6 @@ import model.History;
 import model.Booking;
 import model.Customer;
 import model.Vehicle;
-import service.SimulationService;
 
 public class Main {
     public static void main(String[] args) {
@@ -26,8 +25,6 @@ public class Main {
         // Temporary lists for Period and History
         MyLinkedList<Period> periodsList = new MyLinkedList<>();
         MyLinkedList<History> historyList = new MyLinkedList<>();
-        
-        SimulationService simulationService = new SimulationService(periodsList);
 
         // 2. Load data from files
         boolean hasSavedData = FileManager.loadData(
@@ -61,7 +58,6 @@ public class Main {
                     "Service Management",
                     "Vehicle Management",
                     "Queue Management (Booking)",
-                    "Simulation Time Settings",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -249,36 +245,6 @@ public class Main {
                     bookingService.displayQueue();
                     break;
                 case 5:
-                    // Simulation Time Settings Submenu
-                    boolean backToMainSim = false;
-                    while (!backToMainSim) {
-                        int subChoice = ConsoleInputter.intMenu("SIMULATION TIME SETTINGS",
-                                "View current simulation time",
-                                "Set current date",
-                                "Set current period",
-                                "Back to main menu");
-                        switch (subChoice) {
-                            case 1:
-                                simulationService.displayCurrentTime();
-                                break;
-                            case 2:
-                                String newDate = ConsoleInputter.getStr("Enter new date (YYYY-MM-DD)");
-                                simulationService.setCurrentDate(newDate);
-                                break;
-                            case 3:
-                                int periodChoice = ConsoleInputter.intMenu("SELECT PERIOD",
-                                        "MORNING",
-                                        "AFTERNOON",
-                                        "EVENING");
-                                simulationService.setCurrentPeriod(periodChoice);
-                                break;
-                            case 4:
-                                backToMainSim = true;
-                                break;
-                        }
-                    }
-                    break;
-                case 6:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 
