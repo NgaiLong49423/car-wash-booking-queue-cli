@@ -12,6 +12,7 @@ import model.Period;
 import model.History;
 import model.Booking;
 import model.Customer;
+import model.Vehicle;
 
 public class Main {
     public static void main(String[] args) {
@@ -109,7 +110,58 @@ public class Main {
                     washService.displayAllServices();
                     break;
                 case 3:
-                    vehicleService.displayAllVehicles();
+                    // Vehicle Management Submenu
+                    boolean backToMainVeh = false;
+                    while (!backToMainVeh) {
+                        int subChoice = ConsoleInputter.intMenu("VEHICLE MANAGEMENT",
+                                "Display all vehicles",
+                                "Display vehicles of a customer",
+                                "Add new vehicle",
+                                "Search vehicle",
+                                "Update vehicle owner",
+                                "Delete vehicle",
+                                "Back to main menu");
+                        switch (subChoice) {
+                            case 1:
+                                vehicleService.displayAllVehicles(customerService);
+                                break;
+                            case 2:
+                                String custId = ConsoleInputter.getStr("Enter Customer ID to filter");
+                                vehicleService.displayVehiclesByCustomer(custId, customerService);
+                                break;
+                            case 3:
+                                String plate = ConsoleInputter.getStr("Enter license plate");
+                                String ownerId = ConsoleInputter.getStr("Enter owner Customer ID");
+                                vehicleService.addVehicle(plate, ownerId, customerService);
+                                break;
+                            case 4:
+                                String searchPlate = ConsoleInputter.getStr("Enter license plate to search");
+                                Vehicle v = vehicleService.findVehicleByLicense(searchPlate);
+                                if (v != null) {
+                                    System.out.println("\nFound vehicle: " + v.toString());
+                                } else {
+                                    System.out.println("=> Vehicle not found with license plate: " + searchPlate);
+                                }
+                                break;
+                            case 5:
+                                String updatePlate = ConsoleInputter.getStr("Enter license plate to update");
+                                Vehicle veh = vehicleService.findVehicleByLicense(updatePlate);
+                                if (veh != null) {
+                                    String newOwnerId = ConsoleInputter.getStr("Enter new owner Customer ID");
+                                    vehicleService.updateVehicle(updatePlate, newOwnerId, customerService);
+                                } else {
+                                    System.out.println("=> Vehicle not found with license plate: " + updatePlate);
+                                }
+                                break;
+                            case 6:
+                                String deletePlate = ConsoleInputter.getStr("Enter license plate to delete");
+                                vehicleService.deleteVehicle(deletePlate, bookingService, historyList);
+                                break;
+                            case 7:
+                                backToMainVeh = true;
+                                break;
+                        }
+                    }
                     break;
                 case 4:
                     bookingService.displayQueue();
