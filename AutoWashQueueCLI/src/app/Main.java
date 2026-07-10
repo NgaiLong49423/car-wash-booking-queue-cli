@@ -123,11 +123,11 @@ public class Main {
                                 "Back to main menu");
                         switch (subChoice) {
                             case 1:
-                                vehicleService.displayAllVehicles();
+                                vehicleService.displayAllVehicles(customerService);
                                 break;
                             case 2:
                                 String custId = ConsoleInputter.getStr("Enter Customer ID to filter");
-                                vehicleService.displayVehiclesByCustomer(custId);
+                                vehicleService.displayVehiclesByCustomer(custId, customerService);
                                 break;
                             case 3:
                                 String plate = ConsoleInputter.getStr("Enter license plate");

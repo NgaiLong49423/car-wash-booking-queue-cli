@@ -4,6 +4,7 @@ import datastructure.MyLinkedList;
 import model.Vehicle;
 import model.Booking;
 import model.History;
+import model.Customer;
 import util.FileManager;
 
 public class VehicleService {
@@ -13,24 +14,32 @@ public class VehicleService {
         this.vehicleList = new MyLinkedList<>();
     }
 
-    public void displayAllVehicles() {
+    public void displayAllVehicles(CustomerService customerService) {
         System.out.println("\n--- VEHICLE LIST ---");
         if (vehicleList.isEmpty()) {
             System.out.println("No vehicles found in the system!");
             return;
         }
-        vehicleList.display();
+        int size = vehicleList.size();
+        for (int i = 0; i < size; i++) {
+            Vehicle v = vehicleList.get(i);
+            Customer c = customerService.findCustomerById(v.getCustomerId());
+            String ownerName = (c != null) ? c.getName() : "Unknown";
+            System.out.println(v.toString() + " | Owner Name: " + ownerName);
+        }
         System.out.println("--------------------");
     }
 
-    public void displayVehiclesByCustomer(String customerId) {
+    public void displayVehiclesByCustomer(String customerId, CustomerService customerService) {
         System.out.println("\n--- VEHICLE LIST FOR CUSTOMER " + customerId + " ---");
+        Customer c = customerService.findCustomerById(customerId);
+        String ownerName = (c != null) ? c.getName() : "Unknown";
         int size = vehicleList.size();
         boolean found = false;
         for (int i = 0; i < size; i++) {
             Vehicle v = vehicleList.get(i);
             if (v.getCustomerId().equalsIgnoreCase(customerId)) {
-                System.out.println(v.toString());
+                System.out.println(v.toString() + " | Owner Name: " + ownerName);
                 found = true;
             }
         }
@@ -57,7 +66,7 @@ public class VehicleService {
             return;
         }
 
-        // Validate license plate uniqueness
+        // Validate license plate uniqueness (ignoring spaces)
         if (findVehicleByLicense(licensePlate) != null) {
             System.out.println("=> Error: License plate " + licensePlate + " already exists!");
             return;
@@ -88,10 +97,13 @@ public class VehicleService {
     }
 
     public Vehicle findVehicleByLicense(String licensePlate) {
+        if (licensePlate == null) return null;
+        String cleanInput = licensePlate.replace(" ", "");
         int size = vehicleList.size();
         for (int i = 0; i < size; i++) {
             Vehicle v = vehicleList.get(i);
-            if (v.getLicensePlate().equalsIgnoreCase(licensePlate)) {
+            if (v.getLicensePlate() != null && 
+                v.getLicensePlate().replace(" ", "").equalsIgnoreCase(cleanInput)) {
                 return v;
             }
         }
@@ -125,11 +137,13 @@ public class VehicleService {
             return;
         }
 
+        String cleanPlate = licensePlate.replace(" ", "");
+
         // 1. Kiểm tra ràng buộc liên kết Booking
         MyLinkedList<Booking> bookings = bookingService.getBookingList();
         for (int i = 0; i < bookings.size(); i++) {
-            // Biển số xe được dùng làm vehicleId trong Booking (Mã xe / Biển số xe)
-            if (bookings.get(i).getVehicleId().equalsIgnoreCase(licensePlate)) {
+            String bVehId = bookings.get(i).getVehicleId();
+            if (bVehId != null && bVehId.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated booking(s)!");
                 return;
             }
@@ -137,7 +151,8 @@ public class VehicleService {
 
         // 2. Kiểm tra ràng buộc liên kết Lịch sử rửa xe (History)
         for (int i = 0; i < historyList.size(); i++) {
-            if (historyList.get(i).getPlateNumber().equalsIgnoreCase(licensePlate)) {
+            String hPlate = historyList.get(i).getPlateNumber();
+            if (hPlate != null && hPlate.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated history records!");
                 return;
             }
@@ -146,7 +161,8 @@ public class VehicleService {
         // Tiến hành xóa nếu không có liên kết
         int size = vehicleList.size();
         for (int i = 0; i < size; i++) {
-            if (vehicleList.get(i).getLicensePlate().equalsIgnoreCase(licensePlate)) {
+            String listPlate = vehicleList.get(i).getLicensePlate();
+            if (listPlate != null && listPlate.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
                 vehicleList.remove(i);
                 System.out.println("=> Deleted vehicle successfully: " + licensePlate);
                 
