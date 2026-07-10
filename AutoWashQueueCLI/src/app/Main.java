@@ -107,7 +107,69 @@ public class Main {
                     }
                     break;
                 case 2:
-                    washService.displayAllServices();
+                    // Service Management Submenu
+                    boolean backToMainServ = false;
+                    while (!backToMainServ) {
+                        int subChoice = ConsoleInputter.intMenu("SERVICE MANAGEMENT",
+                                "Display all services",
+                                "Add new service",
+                                "Search service",
+                                "Update service details",
+                                "Delete service",
+                                "Sort services by Price",
+                                "Sort services by Duration",
+                                "Back to main menu");
+                        switch (subChoice) {
+                            case 1:
+                                washService.displayAllServices();
+                                break;
+                            case 2:
+                                String name = ConsoleInputter.getStr("Enter service name");
+                                double price = ConsoleInputter.getDouble("Enter price (VND)", 0.01, 100000000.0);
+                                int duration = ConsoleInputter.getInt("Enter duration (minutes)", 1, 1440);
+                                String status = ConsoleInputter.getStr("Enter status (ACTIVE/INACTIVE)");
+                                washService.addService(name, price, duration, status);
+                                break;
+                            case 3:
+                                String query = ConsoleInputter.getStr("Enter search query (ID or Name)");
+                                washService.searchServices(query);
+                                break;
+                            case 4:
+                                String updateId = ConsoleInputter.getStr("Enter service ID to update");
+                                model.WashPackage ws = washService.findServiceById(updateId);
+                                if (ws != null) {
+                                    String newName = ConsoleInputter.updateStr("Enter new name", ws.getName());
+                                    
+                                    System.out.printf("Enter new price (Old: %.1f, Enter to skip): ", ws.getPrice());
+                                    String prStr = ConsoleInputter.scanner.nextLine().trim();
+                                    double newPriceVal = prStr.isEmpty() ? ws.getPrice() : Double.parseDouble(prStr);
+                                    
+                                    int newDuration = ConsoleInputter.updateInt("Enter new duration", ws.getDuration());
+                                    String newStatus = ConsoleInputter.updateStr("Enter new status (ACTIVE/INACTIVE)", ws.getStatus());
+                                    washService.updateService(updateId, newName, newPriceVal, newDuration, newStatus);
+                                } else {
+                                    System.out.println("=> Error: Service not found with ID: " + updateId);
+                                }
+                                break;
+                            case 5:
+                                String deleteId = ConsoleInputter.getStr("Enter service ID to delete");
+                                washService.deleteService(deleteId, bookingService, historyList);
+                                break;
+                            case 6:
+                                int priceSortChoice = ConsoleInputter.intMenu("SORT BY PRICE", "Ascending", "Descending");
+                                washService.sortServicesByPrice(priceSortChoice == 1);
+                                washService.displayAllServices();
+                                break;
+                            case 7:
+                                int durSortChoice = ConsoleInputter.intMenu("SORT BY DURATION", "Ascending", "Descending");
+                                washService.sortServicesByDuration(durSortChoice == 1);
+                                washService.displayAllServices();
+                                break;
+                            case 8:
+                                backToMainServ = true;
+                                break;
+                        }
+                    }
                     break;
                 case 3:
                     // Vehicle Management Submenu

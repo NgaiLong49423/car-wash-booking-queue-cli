@@ -2,6 +2,8 @@ package service;
 
 import datastructure.MyLinkedList;
 import model.WashPackage;
+import model.Booking;
+import model.History;
 import util.FileManager;
 
 public class WashServiceManager {
@@ -21,19 +23,49 @@ public class WashServiceManager {
         System.out.println("--------------------");
     }
 
+    // Default legacy method for backward compatibility
     public void addService(String id, String name, double price) {
-        // Default values for duration and status if not provided (compatibility)
-        addService(id, name, price, 30, "ACTIVE");
+        addService(name, price, 30, "ACTIVE");
     }
 
-    public void addService(String id, String name, double price, int duration, String status) {
-        if (findServiceById(id) != null) {
-            System.out.println("=> Error: Service ID " + id + " already exists!");
+    public void addService(String name, double price, int duration, String status) {
+        // Validate inputs
+        if (name == null || name.trim().isEmpty()) {
+            System.out.println("=> Error: Service name cannot be empty!");
             return;
         }
-        WashPackage newService = new WashPackage(id, name, price, duration, status);
+        if (price <= 0) {
+            System.out.println("=> Error: Service price must be greater than 0!");
+            return;
+        }
+        if (duration <= 0) {
+            System.out.println("=> Error: Service duration must be greater than 0!");
+            return;
+        }
+        if (status == null || (!status.equalsIgnoreCase("ACTIVE") && !status.equalsIgnoreCase("INACTIVE"))) {
+            System.out.println("=> Error: Service status must be either ACTIVE or INACTIVE!");
+            return;
+        }
+
+        // Generate unique Service ID
+        int size = serviceList.size();
+        int maxIdNum = 0;
+        for (int i = 0; i < size; i++) {
+            String currentId = serviceList.get(i).getId();
+            if (currentId != null && currentId.startsWith("S")) {
+                try {
+                    int num = Integer.parseInt(currentId.substring(1));
+                    if (num > maxIdNum) {
+                        maxIdNum = num;
+                    }
+                } catch (Exception e) {}
+            }
+        }
+        String newId = String.format("S%03d", maxIdNum + 1);
+
+        WashPackage newService = new WashPackage(newId, name, price, duration, status.toUpperCase());
         serviceList.addLast(newService);
-        System.out.println("=> Added service successfully: " + name);
+        System.out.println("=> Added service successfully: " + name + " (Service ID: " + newId + ")");
         
         // Auto-save on change (FR-23)
         FileManager.saveServices(serviceList);
@@ -50,41 +82,97 @@ public class WashServiceManager {
         return null;
     }
 
-    public void updateService(String id, String newName, double newPrice) {
-        WashPackage ws = findServiceById(id);
-        if (ws != null) {
-            ws.setName(newName);
-            ws.setPrice(newPrice);
-            System.out.println("=> Updated service successfully: " + id);
-            
-            // Auto-save on change (FR-23)
-            FileManager.saveServices(serviceList);
-        } else {
-            System.out.println("=> Error: Service not found with ID: " + id);
+    public void searchServices(String query) {
+        System.out.println("\n--- SEARCH RESULTS ---");
+        if (query == null || query.trim().isEmpty()) {
+            System.out.println("Search query cannot be empty!");
+            return;
         }
+        int size = serviceList.size();
+        boolean found = false;
+        for (int i = 0; i < size; i++) {
+            WashPackage ws = serviceList.get(i);
+            if (ws.getId().equalsIgnoreCase(query) || 
+                ws.getName().toLowerCase().contains(query.toLowerCase())) {
+                System.out.println(ws.toString());
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("No matching services found!");
+        }
+        System.out.println("----------------------");
+    }
+
+    // Legacy update method for compatibility
+    public void updateService(String id, String newName, double newPrice) {
+        updateService(id, newName, newPrice, 30, "ACTIVE");
     }
 
     public void updateService(String id, String newName, double newPrice, int newDuration, String newStatus) {
         WashPackage ws = findServiceById(id);
-        if (ws != null) {
-            ws.setName(newName);
-            ws.setPrice(newPrice);
-            ws.setDuration(newDuration);
-            ws.setStatus(newStatus);
-            System.out.println("=> Updated service successfully: " + id);
-            
-            // Auto-save on change (FR-23)
-            FileManager.saveServices(serviceList);
-        } else {
+        if (ws == null) {
             System.out.println("=> Error: Service not found with ID: " + id);
+            return;
         }
+
+        // Validate inputs
+        if (newName == null || newName.trim().isEmpty()) {
+            System.out.println("=> Error: Service name cannot be empty!");
+            return;
+        }
+        if (newPrice <= 0) {
+            System.out.println("=> Error: Service price must be greater than 0!");
+            return;
+        }
+        if (newDuration <= 0) {
+            System.out.println("=> Error: Service duration must be greater than 0!");
+            return;
+        }
+        if (newStatus == null || (!newStatus.equalsIgnoreCase("ACTIVE") && !newStatus.equalsIgnoreCase("INACTIVE"))) {
+            System.out.println("=> Error: Service status must be either ACTIVE or INACTIVE!");
+            return;
+        }
+
+        ws.setName(newName);
+        ws.setPrice(newPrice);
+        ws.setDuration(newDuration);
+        ws.setStatus(newStatus.toUpperCase());
+        System.out.println("=> Updated service successfully: " + id);
+        
+        // Auto-save on change (FR-23)
+        FileManager.saveServices(serviceList);
     }
 
-    public void deleteService(String id) {
+    public void deleteService(String id, BookingService bookingService, MyLinkedList<History> historyList) {
+        WashPackage ws = findServiceById(id);
+        if (ws == null) {
+            System.out.println("=> Error: Service not found with ID: " + id);
+            return;
+        }
+
+        // 1. Kiểm tra ràng buộc liên kết Booking
+        MyLinkedList<Booking> bookings = bookingService.getBookingList();
+        for (int i = 0; i < bookings.size(); i++) {
+            if (bookings.get(i).getServiceId().equalsIgnoreCase(id)) {
+                System.out.println("=> Error: Cannot delete service " + id + " because it is linked to booking(s)!");
+                return;
+            }
+        }
+
+        // 2. Kiểm tra ràng buộc liên kết Lịch sử rửa xe (History)
+        for (int i = 0; i < historyList.size(); i++) {
+            if (historyList.get(i).getServiceName().equalsIgnoreCase(ws.getName()) || 
+                historyList.get(i).getHistoryId().equalsIgnoreCase(id)) { // Fallback check
+                System.out.println("=> Error: Cannot delete service " + id + " because it has associated history records!");
+                return;
+            }
+        }
+
+        // Tiến hành xóa
         int size = serviceList.size();
         for (int i = 0; i < size; i++) {
-            WashPackage ws = serviceList.get(i);
-            if (ws.getId().equalsIgnoreCase(id)) {
+            if (serviceList.get(i).getId().equalsIgnoreCase(id)) {
                 serviceList.remove(i);
                 System.out.println("=> Deleted service successfully: " + id);
                 
@@ -93,7 +181,70 @@ public class WashServiceManager {
                 return;
             }
         }
-        System.out.println("=> Error: Service not found with ID: " + id);
+    }
+
+    // Sắp xếp chọn (Selection Sort) theo Giá dịch vụ
+    public void sortServicesByPrice(boolean ascending) {
+        int size = serviceList.size();
+        if (size <= 1) return;
+
+        // Trích xuất ra mảng
+        WashPackage[] arr = new WashPackage[size];
+        for (int i = 0; i < size; i++) {
+            arr[i] = serviceList.get(i);
+        }
+
+        // Thực hiện Selection Sort trên mảng
+        for (int i = 0; i < size - 1; i++) {
+            int targetIdx = i;
+            for (int j = i + 1; j < size; j++) {
+                if (ascending ? (arr[j].getPrice() < arr[targetIdx].getPrice()) : (arr[j].getPrice() > arr[targetIdx].getPrice())) {
+                    targetIdx = j;
+                }
+            }
+            WashPackage temp = arr[i];
+            arr[i] = arr[targetIdx];
+            arr[targetIdx] = temp;
+        }
+
+        // Đắp ngược trở lại LinkedList
+        serviceList.clear();
+        for (int i = 0; i < size; i++) {
+            serviceList.addLast(arr[i]);
+        }
+        System.out.println("=> Sorted services by price " + (ascending ? "ascending" : "descending") + " successfully.");
+    }
+
+    // Sắp xếp chọn (Selection Sort) theo Thời gian thi công
+    public void sortServicesByDuration(boolean ascending) {
+        int size = serviceList.size();
+        if (size <= 1) return;
+
+        // Trích xuất ra mảng
+        WashPackage[] arr = new WashPackage[size];
+        for (int i = 0; i < size; i++) {
+            arr[i] = serviceList.get(i);
+        }
+
+        // Thực hiện Selection Sort trên mảng
+        for (int i = 0; i < size - 1; i++) {
+            int targetIdx = i;
+            for (int j = i + 1; j < size; j++) {
+                if (ascending ? (arr[j].getDuration() < arr[targetIdx].getDuration()) : (arr[j].getDuration() > arr[targetIdx].getDuration())) {
+                    targetIdx = j;
+                }
+            }
+            WashPackage temp = arr[i];
+            arr[i] = arr[targetIdx];
+            arr[targetIdx] = temp;
+        }
+
+        // Đắp ngược trở lại LinkedList
+        serviceList.clear();
+        for (int i = 0; i < size; i++) {
+            serviceList.addLast(arr[i]);
+        }
+        System.out.println("=> Sorted services by duration " + (ascending ? "ascending" : "descending") + " successfully.");
     }
 
     public MyLinkedList<WashPackage> getServiceList() {
