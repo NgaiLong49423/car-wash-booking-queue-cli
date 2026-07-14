@@ -180,4 +180,24 @@ public class CustomerService {
     public MyLinkedList<Customer> getCustomerList() {
         return customerList;
     }
+    
+    public void updatePoint(String id,int newPoints) {
+        Customer c = findCustomerById(id);
+        if (c != null) {
+            c.setPoints(newPoints);
+            if (newPoints >= 2000 && newPoints < 6000) {
+                c.setMembershipLevel("Silver");
+            } else if (newPoints >= 6000 && newPoints < 15000) {
+                c.setMembershipLevel("Gold");
+            } else if (newPoints >= 15000) {
+                c.setMembershipLevel("Platinum");
+            }
+            System.out.println("=> Updated customer successfully: " + id);
+            
+            // Auto-save on change (FR-23)
+            FileManager.saveCustomers(customerList);
+        } else {
+            System.out.println("=> Error: Customer not found with ID: " + id);
+        }
+    }
 }

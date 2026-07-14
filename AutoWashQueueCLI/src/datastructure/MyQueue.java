@@ -1,5 +1,7 @@
 package datastructure;
 
+import model.Booking;
+
 public class MyQueue<T> {
 
     private Node<T> front;
@@ -91,6 +93,46 @@ public class MyQueue<T> {
         while (current != null) {
             System.out.println(current.data);
             current = current.next;
+        }
+    }
+    
+    public void enqueueFront(T data){
+        Node<T> newNode = new Node<>(data);
+        
+        if (isEmpty()) {
+            front = newNode;
+            rear = newNode;
+        } else {
+            newNode.next = front;
+            front = newNode;
+        }
+        size++;
+    }
+    
+    public void dequeueNodeByID(String id){
+        Node<T> current = front;
+        Node<T> temp = null;
+        
+        while (current != null) {
+            Booking b = (Booking) current.data;
+            if (b.getBookingId().equals(id)) {
+                if (current == front) {
+                    front = front.next;
+                    if (front == null) {
+                        rear = null;
+                    } else {
+                        temp.next = current.next;
+                        if (current == rear) {
+                            rear = temp;
+                        }
+                    }
+
+                    size--;
+                    return;
+                }
+            }
+            temp = current;
+            current=current.next;
         }
     }
 }

@@ -6,6 +6,7 @@ import service.BookingService;
 import service.CustomerService;
 import service.VehicleService;
 import service.WashServiceManager;
+import service.HistoryService;
 import util.ConsoleInputter;
 import datastructure.MyLinkedList;
 import model.Period;
@@ -13,6 +14,7 @@ import model.History;
 import model.Booking;
 import model.Customer;
 import model.Vehicle;
+import model.WashPackage;
 import service.SimulationService;
 
 public class Main {
@@ -22,6 +24,7 @@ public class Main {
         WashServiceManager washService = new WashServiceManager();
         VehicleService vehicleService = new VehicleService();
         BookingService bookingService = new BookingService();
+        HistoryService historyService = new HistoryService();
 
         // Temporary lists for Period and History
         MyLinkedList<Period> periodsList = new MyLinkedList<>();
@@ -62,6 +65,9 @@ public class Main {
                     "Vehicle Management",
                     "Queue Management (Booking)",
                     "Simulation Time Settings",
+                    "Complete Booking",
+                    "Cancel Booking",
+                    "Undo Booking",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -279,6 +285,29 @@ public class Main {
                     }
                     break;
                 case 6:
+                    String bookingID = ConsoleInputter.getStr("Nhap booking ID");
+                    Booking b = bookingService.completeBooking(bookingID);
+                    if (b != null) {
+                        Customer c = customerService.findCustomerById(b.getCustomerId());
+                        WashPackage w = washService.findServiceById(b.getServiceId());
+                        Vehicle v = vehicleService.findVehicleByID(b.getVehicleId());
+                        int newPoint = (int)w.getPrice()/1000;
+                        customerService.updatePoint(c.getId(), newPoint);
+                        historyService.addHistory(b, c, w, v, historyList);
+                    }
+                    break;
+                case 7:
+                    String bID = ConsoleInputter.getStr("Nhap booking ID");
+                    bookingService.cancelBooking(bID);
+                    break;
+                case 8:
+                    Booking undoneBooking = bookingService.undoCompletion();
+                    if(undoneBooking!=null){
+                        historyService.removeHistory(undoneBooking, historyList);
+                        System.out.println("Booking Undone");
+                    }
+                    break;
+                case 9:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 

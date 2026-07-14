@@ -2,16 +2,19 @@ package service;
 
 import datastructure.MyLinkedList;
 import datastructure.MyQueue;
+import datastructure.MyStack;
 import model.Booking;
 import util.FileManager;
 
 public class BookingService {
     private MyQueue<Booking> bookingQueue;
     private MyLinkedList<Booking> bookingList;
+    private MyStack<Booking> bookingStack;
 
     public BookingService() {
         this.bookingQueue = new MyQueue<>();
         this.bookingList = new MyLinkedList<>();
+        this.bookingStack = new MyStack<>();
     }
 
     // TÍNH NĂNG 1: Xem các xe đang xếp hàng
@@ -78,5 +81,75 @@ public class BookingService {
 
     public MyLinkedList<Booking> getBookingList() {
         return bookingList;
+    }
+    
+    public Booking completeBooking(String bookingID){
+        Booking b = null;
+        if (bookingList.isEmpty()) {
+            System.out.println("=> Khong co xe nao dang cho de xu ly.");
+        }else{
+            int size = bookingList.size();
+            for (int i = 0; i < size; i++) {
+                b = bookingList.get(i);
+                if (b.getBookingId().equals(bookingID)) {
+                    if (b.getBookingStatus().equalsIgnoreCase("serving")
+                            && b.getPaymentStatus().equalsIgnoreCase("paid")) {
+                        bookingStack.clear();
+                        bookingStack.push(b);
+                        b.setStatus("Completed");
+                        FileManager.saveBookings(bookingList);
+                        break;
+                    } else if (!b.getBookingStatus().equalsIgnoreCase("serving")) {
+                        System.out.println("Xe chua duoc xu ly");
+                    } else {
+                        System.out.println("Chua tra phi");
+                    }
+                }
+            }
+        }
+        return b;
+    }
+    
+    public void cancelBooking(String bookingID){
+        if(bookingList.isEmpty() && bookingQueue.isEmpty()){
+            System.out.println("=> Khong co xe nao dang cho de xu ly.");
+        }else{
+            int size = bookingList.size();
+            for(int i=0; i<size; i++){
+                Booking b = bookingList.get(i);
+                if (b.getBookingId().equals(bookingID)) {
+                    if (!b.getBookingStatus().equalsIgnoreCase("completed")) {
+                        b.setStatus("Cancelled");
+                        break;
+                    } else {
+                        System.out.println("Luot dat nay da duoc hoan thanh");
+                    }
+                }
+            }
+            bookingQueue.dequeueNodeByID(bookingID);
+            
+            FileManager.saveBookings(bookingList);
+        }
+    }
+    
+    public Booking undoCompletion(){
+        if(bookingStack.isEmpty()){
+            System.out.println("Khong co gi de undo");
+            return null;
+        }else{
+            Booking b = bookingStack.pop();
+            int size = bookingList.size();
+            for(int i=0; i<size; i++){
+                Booking currentServ = bookingList.get(i);
+                if(currentServ.getBookingStatus().equalsIgnoreCase("Serving")){
+                    currentServ.setBookingStatus("Waiting");
+                    bookingQueue.enqueueFront(currentServ);
+                    break;
+                }
+            }
+            b.setBookingStatus("Serving");
+            FileManager.saveBookings(bookingList);
+            return b;
+        }
     }
 }
