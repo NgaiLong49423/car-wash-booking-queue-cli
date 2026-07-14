@@ -303,6 +303,7 @@ public class Main {
                 case 8:
                     Booking undoneBooking = bookingService.undoCompletion();
                     if(undoneBooking!=null){
+                        customerService.undoCustomer(undoneBooking);
                         historyService.removeHistory(undoneBooking, historyList);
                         System.out.println("Booking Undone");
                     }

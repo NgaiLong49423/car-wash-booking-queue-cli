@@ -1,11 +1,13 @@
 package service;
 
 import datastructure.MyLinkedList;
+import datastructure.MyStack;
 import model.*;
 import util.FileManager;
 
 public class CustomerService {
     private MyLinkedList<Customer> customerList;
+    private MyStack<Customer> customerStack;
 
     public CustomerService() {
         this.customerList = new MyLinkedList<>();
@@ -193,11 +195,30 @@ public class CustomerService {
                 c.setMembershipLevel("Platinum");
             }
             System.out.println("=> Updated customer successfully: " + id);
+            customerStack.clear();
+            customerStack.push(c);
             
             // Auto-save on change (FR-23)
             FileManager.saveCustomers(customerList);
         } else {
             System.out.println("=> Error: Customer not found with ID: " + id);
+        }
+    }
+    
+    public void undoCustomer(Booking b){
+        Customer c = findCustomerById(b.getCustomerId());
+        if (c != null) {
+            if(customerStack.isEmpty()){
+                System.out.println("Khong co gi de undo");
+            }else{
+                Customer prevstate = customerStack.pop();
+                c = prevstate;
+            }
+            
+            // Auto-save on change (FR-23)
+            FileManager.saveCustomers(customerList);
+        } else {
+            System.out.println("=> Error: Customer not found with ID: " + b.getCustomerId());
         }
     }
 }
