@@ -6,6 +6,7 @@ import service.BookingService;
 import service.CustomerService;
 import service.VehicleService;
 import service.WashServiceManager;
+import service.HistoryService;
 import util.ConsoleInputter;
 import datastructure.MyLinkedList;
 import model.Period;
@@ -22,6 +23,7 @@ public class Main {
         WashServiceManager washService = new WashServiceManager();
         VehicleService vehicleService = new VehicleService();
         BookingService bookingService = new BookingService();
+        HistoryService historyService = new HistoryService();
 
         // Temporary lists for Period and History
         MyLinkedList<Period> periodsList = new MyLinkedList<>();
@@ -62,6 +64,7 @@ public class Main {
                     "Vehicle Management",
                     "Queue Management (Booking)",
                     "Simulation Time Settings",
+                    "History Reports",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -279,6 +282,30 @@ public class Main {
                     }
                     break;
                 case 6:
+                    // History Reports Submenu
+                    boolean backToMainHist = false;
+                    while (!backToMainHist) {
+                        int subChoice = ConsoleInputter.intMenu("HISTORY REPORTS",
+                                "Global History Report",
+                                "Customer History Report",
+                                "Back to main menu");
+                        switch (subChoice) {
+                            case 1:
+                                historyService.displayGlobalHistory(historyList);
+                                break;
+                            case 2:
+                                String custId = ConsoleInputter.getStr("Enter customer ID");
+                                historyService.displayCustomerHistory(historyList, custId);
+                                break;
+                            case 3:
+                                backToMainHist = true;
+                                break;
+                            default:
+                                System.out.println("Please select a valid option!");
+                        }
+                    }
+                    break;
+                case 7:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 
