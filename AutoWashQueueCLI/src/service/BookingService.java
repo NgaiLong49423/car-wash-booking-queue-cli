@@ -103,7 +103,7 @@ public class BookingService {
     public void recordCompletion(Booking completedBooking, Booking promotedBooking) {
         completionStack.push(new CompletionRecord(completedBooking, promotedBooking));
     }
-    
+
     public WaitlistEntry peekHighestPriorityWaitlist(String date, String period) {
         MyLinkedList<WaitlistEntry> entries = drainWaitlist();
         WaitlistEntry selected = selectHighestPriority(entries, date, period);
