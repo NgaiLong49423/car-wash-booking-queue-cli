@@ -1,5 +1,10 @@
-## [0.4.0] - 2026-07-11
+## [Unreleased]
 
+### Added
+
+* Implemented Global and Customer History Reports (Issue #13). Total Revenue calculation is included in the Global Report.
+
+## [0.4.0] - 2026-07-11
 ### Author
 
 * Prepared by Ngô Gia Long (SE190732) and Agent.

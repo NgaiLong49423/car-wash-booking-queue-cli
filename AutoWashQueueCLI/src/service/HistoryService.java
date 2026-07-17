@@ -16,8 +16,10 @@ public class HistoryService {
                 "Booking ID", "Customer ID", "Customer Name", "License Plate", "Service Name", "Completed Time", "Amount Paid", "Loyalty Points");
         System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
 
+        double totalRevenue = 0;
         for (int i = 0; i < historyList.size(); i++) {
             History h = historyList.get(i);
+            totalRevenue += h.getAmountPaid();
             System.out.printf("%-15s | %-12s | %-20s | %-15s | %-25s | %-20s | %-12.0f | %-15d\n",
                     h.getBookingId(),
                     h.getCustomerId(),
@@ -28,6 +30,8 @@ public class HistoryService {
                     h.getAmountPaid(),
                     h.getLoyaltyPointsEarned());
         }
+        System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
+        System.out.printf("Total Revenue: %.0f\n", totalRevenue);
         System.out.println("=====================================================================================================================================================");
     }
 
