@@ -16,6 +16,8 @@ import model.Customer;
 import model.Vehicle;
 import model.WashPackage;
 import service.SimulationService;
+import service.CompletionService;
+import model.CompletionResult;
 
 public class Main {
     public static void main(String[] args) {
@@ -47,6 +49,8 @@ public class Main {
 
         // Load extra data (Bookings, Periods, History)
         FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
+        CompletionService completionService = new CompletionService(bookingService, customerService,
+                washService, vehicleService, historyList);
 
         // Populate active bookingQueue from loaded bookingList for compatibility
         MyLinkedList<Booking> list = bookingService.getBookingList();
@@ -285,15 +289,19 @@ public class Main {
                     }
                     break;
                 case 6:
-                    String bookingID = ConsoleInputter.getStr("Nhap booking ID");
-                    Booking b = bookingService.completeBooking(bookingID);
-                    if (b != null) {
-                        Customer c = customerService.findCustomerById(b.getCustomerId());
-                        WashPackage w = washService.findServiceById(b.getServiceId());
-                        Vehicle v = vehicleService.findVehicleByID(b.getVehicleId());
-                        int newPoint = (int)w.getPrice()/1000;
-                        customerService.updatePoint(c.getId(), newPoint);
-                        historyService.addHistory(b, c, w, v, historyList);
+                    String bookingID = ConsoleInputter.getStr("Enter booking ID");
+                    CompletionResult completionResult = completionService.completeBooking(bookingID);
+                    System.out.println("=> " + completionResult.getMessage());
+                    if (completionResult.isSuccessful()) {
+                        Customer completedCustomer = completionResult.getCustomer();
+                        System.out.println("   Loyalty points: " + completionResult.getPreviousPoints()
+                                + " -> " + completedCustomer.getPoints());
+                        System.out.println("   Membership tier: " + completionResult.getPreviousTier()
+                                + " -> " + completedCustomer.getMembershipLevel());
+                        if (completionResult.getPromotedBooking() != null) {
+                            System.out.println("   Promoted from waitlist: "
+                                    + completionResult.getPromotedBooking().getBookingId());
+                        }
                     }
                     break;
                 case 7:

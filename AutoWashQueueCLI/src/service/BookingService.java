@@ -4,17 +4,22 @@ import datastructure.MyLinkedList;
 import datastructure.MyQueue;
 import datastructure.MyStack;
 import model.Booking;
+import model.CompletionRecord;
 import util.FileManager;
 
 public class BookingService {
     private MyQueue<Booking> bookingQueue;
     private MyLinkedList<Booking> bookingList;
     private MyStack<Booking> bookingStack;
+    private MyStack<CompletionRecord> completionStack;
+    private MyLinkedList<Booking> waitlist;
 
     public BookingService() {
         this.bookingQueue = new MyQueue<>();
         this.bookingList = new MyLinkedList<>();
         this.bookingStack = new MyStack<>();
+        this.completionStack = new MyStack<>();
+        this.waitlist = new MyLinkedList<>();
     }
 
     // TÍNH NĂNG 1: Xem các xe đang xếp hàng
@@ -81,6 +86,21 @@ public class BookingService {
 
     public MyLinkedList<Booking> getBookingList() {
         return bookingList;
+    }
+
+    public MyLinkedList<Booking> getWaitlist() {
+        return waitlist;
+    }
+
+    /** Registers a WAITING booking in the waitlist managed by the activation flow. */
+    public void addToWaitlist(Booking booking) {
+        if (booking != null) {
+            waitlist.addLast(booking);
+        }
+    }
+
+    public void recordCompletion(Booking completedBooking, Booking promotedBooking) {
+        completionStack.push(new CompletionRecord(completedBooking, promotedBooking));
     }
     
     public Booking completeBooking(String bookingID){
