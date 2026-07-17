@@ -85,6 +85,11 @@ public class BookingService {
         return bookingQueue;
     }
 
+    /** Checks whether a WAITING booking occupies a main-queue position. */
+    public boolean isInMainQueue(String bookingId) {
+        return bookingQueue.containsBookingById(bookingId);
+    }
+
     public MyLinkedList<Booking> getBookingList() {
         return bookingList;
     }

@@ -79,11 +79,19 @@ public class CancellationService {
         for (int i = 0; i < bookings.size(); i++) {
             Booking booking = bookings.get(i);
             if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
-                    && "COMPLETED".equalsIgnoreCase(booking.getBookingStatus())) {
+                    && occupiesServiceTime(booking)) {
                 usedMinutes += getDuration(booking);
             }
         }
         return getPeriodDuration(period) - usedMinutes;
+    }
+
+    private boolean occupiesServiceTime(Booking booking) {
+        String status = booking.getBookingStatus();
+        return "COMPLETED".equalsIgnoreCase(status)
+                || "SERVING".equalsIgnoreCase(status)
+                || ("WAITING".equalsIgnoreCase(status)
+                && bookingService.isInMainQueue(booking.getBookingId()));
     }
 
     private int getDuration(Booking booking) {

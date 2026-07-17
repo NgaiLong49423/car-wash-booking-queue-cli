@@ -120,6 +120,23 @@ public class MyQueue<T> {
         return false;
     }
 
+    /** Returns whether this queue contains a booking with the supplied ID. */
+    public boolean containsBookingById(String id) {
+        if (id == null) {
+            return false;
+        }
+
+        Node<T> current = front;
+        while (current != null) {
+            Booking booking = (Booking) current.data;
+            if (id.equalsIgnoreCase(booking.getBookingId())) {
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
+    }
+
     /** Legacy compatibility wrapper. */
     public void dequeueNodeByID(String id){
         removeBookingById(id);
