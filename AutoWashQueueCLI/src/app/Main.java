@@ -322,7 +322,7 @@ public class Main {
                                 "Logout");
                         switch (subChoice) {
                             case 1:
-                                historyService.displayCustomerHistory(historyList, currentCustomer.getCustomerId());
+                                historyService.displayCustomerHistory(historyList, currentCustomer.getId());
                                 break;
                             case 2:
                                 backToMainCust = true;
