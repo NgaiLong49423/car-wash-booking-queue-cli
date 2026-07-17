@@ -1,17 +1,12 @@
+> **Document:** Software Requirements Specification (SRS)
+> **File:** `docs/requirements/SRS.md`
+> **Version:** v3.0.4
+> **Created:** 2026-06-26
+> **Last Updated:** 2026-07-17
+> **Status:** Active
+
 # Software Requirements Specification (SRS)
 # Car Wash Booking Queue CLI
-
-## Thông tin tài liệu
-
-| Thuộc tính | Giá trị |
-|---|---|
-| Tên tài liệu | Software Requirements Specification (SRS) |
-| Tên hệ thống | Car Wash Booking Queue CLI |
-| Phiên bản | v3.0.3 |
-| Ngày tạo | 2026-06-26 |
-| Sửa đổi gần nhất | 2026-07-02 |
-| Ngôn ngữ | Tiếng Việt |
-| Trạng thái | Hoàn thiện |
 
 ## Lịch sử phiên bản
 
@@ -21,6 +16,7 @@
 | v3.0.1 | 2026-06-26 | Review nghiệp vụ | Làm rõ quy tắc booking dư khi kích hoạt, tính lại loyalty, kiểm tra thời gian còn lại, Undo và Cancel SERVING |
 | v3.0.2 | 2026-06-26 | Rà soát và đồng bộ SRS | Đồng bộ các quy tắc nghiệp vụ, FR và UC; sửa mâu thuẫn về loyalty, Undo, Activate, Waitlist và khôi phục hàng chờ |
 | v3.0.3 | 2026-07-02 | Yêu cầu người dùng | Cập nhật yêu cầu ngôn ngữ ứng dụng hiển thị 100% tiếng Anh |
+| v3.0.4 | 2026-07-17 | Agent Review | Fix lỗi logic toán học thiếu sót các trạng thái chiếm dụng thời gian trong công thức tính thời gian còn lại (Mục 3.9.2) |
 
 ## 1. Giới thiệu
 
@@ -262,7 +258,7 @@ Công thức:
 usedMinutes = tổng serviceDuration của các booking thỏa mãn:
 - cùng ngày với buổi cần kiểm tra
 - cùng period với buổi cần kiểm tra
-- trạng thái booking là COMPLETED
+- trạng thái booking thuộc một trong các loại sau: COMPLETED, SERVING, hoặc WAITING (chỉ tính xe WAITING đang nằm trong hàng chờ chính - Main Queue, không tính xe trong Waitlist)
 
 remainingMinutes = periodTotalMinutes - usedMinutes
 ```
@@ -553,7 +549,7 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
   3. Ghi nhận booking vào lịch sử rửa xe (`history.txt`).
   4. Gọi chức năng tính toán lại loyalty của khách hàng (FR-19).
   5. Đẩy booking vào Stack hoàn tác.
-  6. Tính lại `usedMinutes` của buổi hiện tại bằng tổng thời gian dịch vụ của các booking `COMPLETED` trong cùng ngày và cùng buổi.
+  6. Tính lại `usedMinutes` của buổi hiện tại bằng tổng thời gian dịch vụ của các booking `COMPLETED`, `SERVING` và `WAITING` (chỉ tính xe trong Main Queue) trong cùng ngày và cùng buổi.
   7. Tính `remainingMinutes = periodTotalMinutes - usedMinutes`.
   8. Nếu Waitlist còn booking, hệ thống lấy booking có độ ưu tiên cao nhất trong Waitlist để kiểm tra.
   9. Nếu `remainingMinutes >= serviceDuration` của booking đó, hệ thống chuyển booking từ Waitlist vào cuối hàng chờ chính (Main Queue).
@@ -1319,7 +1315,7 @@ Mỗi Use Case trong hệ thống được cấu trúc theo mẫu chuẩn sau:
 5. Hệ thống ghi bản ghi lịch sử rửa xe vào `history.txt`.
 6. Hệ thống tính toán lại loyalty cho khách hàng liên quan dựa trên các booking `COMPLETED`.
 7. Hệ thống tạo bản ghi hoàn tác và đẩy vào Stack. Nếu có booking được kéo từ Waitlist lên Main Queue, bản ghi hoàn tác phải lưu mã booking đó.
-8. Hệ thống tính lại `usedMinutes` của buổi hiện tại từ các booking `COMPLETED`.
+8. Hệ thống tính lại `usedMinutes` của buổi hiện tại từ các booking `COMPLETED`, `SERVING` và `WAITING` (chỉ tính xe trong Main Queue).
 9. Hệ thống tính `remainingMinutes = periodTotalMinutes - usedMinutes`.
 10. Nếu Waitlist còn booking, hệ thống lấy booking có độ ưu tiên cao nhất để kiểm tra.
 11. Nếu `remainingMinutes >= serviceDuration` của booking đó, hệ thống chuyển booking từ Waitlist lên cuối Main Queue.
