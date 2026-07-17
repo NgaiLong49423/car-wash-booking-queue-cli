@@ -81,7 +81,10 @@ jobs:
           Return only the Markdown review body. Do not wrap it in a code fence.
           '@.Replace('{PR_NUMBER}', $env:PR_NUMBER).Replace('{REPOSITORY}', $env:REPOSITORY)
 
-          $review = & agy --print --mode plan --print-timeout 10m $prompt
+          # In this CLI version, the prompt must immediately follow `--print`.
+          # The prompt above still requires careful plan-first analysis before
+          # the final review; the GitHub job itself has a 15-minute limit.
+          $review = & agy --print $prompt
           if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($review)) {
             throw 'Antigravity did not produce a review.'
           }
