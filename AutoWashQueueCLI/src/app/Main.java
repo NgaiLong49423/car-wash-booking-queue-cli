@@ -13,7 +13,12 @@ import model.History;
 import model.Booking;
 import model.Customer;
 import model.Vehicle;
+import model.WashPackage;
 import service.SimulationService;
+import service.CompletionService;
+import model.CompletionResult;
+import service.CancellationService;
+import model.CancellationResult;
 
 public class Main {
     public static void main(String[] args) {
@@ -44,7 +49,20 @@ public class Main {
 
         // Load extra data (Bookings, Periods, History)
         FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
-        bookingService.rebuildCurrentQueue(simulationService.getCurrentDateStr(), simulationService.getCurrentPeriodStr(), customerService);
+        CompletionService completionService = new CompletionService(bookingService, customerService,
+                washService, vehicleService, historyList);
+        CancellationService cancellationService = new CancellationService(bookingService, washService);
+
+        // Populate the current main queue from bookings of the active period.
+        MyLinkedList<Booking> list = bookingService.getBookingList();
+        for (int i = 0; i < list.size(); i++) {
+            Booking b = list.get(i);
+            if ("WAITING".equalsIgnoreCase(b.getBookingStatus())
+                    && b.getDate().equalsIgnoreCase(simulationService.getCurrentDateStr())
+                    && b.getPeriod().equalsIgnoreCase(simulationService.getCurrentPeriodStr())) {
+                bookingService.getBookingQueue().enqueue(b);
+            }
+        }
 
         // 3. Main Menu Loop
         while (true) {
@@ -54,6 +72,8 @@ public class Main {
                     "Vehicle Management",
                     "Queue Management (Booking)",
                     "Simulation Time Settings",
+                    "Complete Booking",
+                    "Cancel Booking",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -240,25 +260,20 @@ public class Main {
                 case 4:
                     boolean backToMainBooking = false;
                     while (!backToMainBooking) {
-                        int bookingChoice = ConsoleInputter.intMenu("QUEUE MANAGEMENT (BOOKING)",
+                        int bookingChoice = ConsoleInputter.intMenu("QUEUE MONITORING",
                                 "Display main queue",
                                 "Display waitlist",
                                 "Display future bookings",
                                 "Display customer active bookings",
-                                "Create booking",
-                                "Process next booking",
                                 "Back to main menu");
-
                         switch (bookingChoice) {
                             case 1:
-                                bookingService.displayMainQueue(simulationService.getCurrentDateStr(),
-                                        simulationService.getCurrentPeriodStr(), customerService,
-                                        vehicleService, washService);
+                                bookingService.displayMainQueue(simulationService.getCurrentPeriodStr(),
+                                        customerService, vehicleService, washService);
                                 break;
                             case 2:
-                                bookingService.displayWaitlist(simulationService.getCurrentDateStr(),
-                                        simulationService.getCurrentPeriodStr(), customerService,
-                                        vehicleService, washService);
+                                bookingService.displayWaitlist(simulationService.getCurrentPeriodStr(),
+                                        customerService, vehicleService, washService);
                                 break;
                             case 3:
                                 String futureDate = ConsoleInputter.getStr("Enter booking date (YYYY-MM-DD)");
@@ -273,18 +288,6 @@ public class Main {
                                         vehicleService, washService);
                                 break;
                             case 5:
-                                String customerId = ConsoleInputter.getStr("Enter customer ID");
-                                String vehicleInput = ConsoleInputter.getStr("Enter vehicle ID or license plate");
-                                String serviceId = ConsoleInputter.getStr("Enter service ID");
-                                String bookingDate = ConsoleInputter.getStr("Enter booking date (YYYY-MM-DD)");
-                                String bookingPeriod = ConsoleInputter.getStr("Enter period (MORNING/AFTERNOON/EVENING)");
-                                bookingService.createBooking(customerId, vehicleInput, serviceId, bookingDate, bookingPeriod,
-                                        customerService, vehicleService, washService, simulationService);
-                                break;
-                            case 6:
-                                bookingService.processNextBooking();
-                                break;
-                            case 7:
                                 backToMainBooking = true;
                                 break;
                         }
@@ -321,6 +324,31 @@ public class Main {
                     }
                     break;
                 case 6:
+                    String bookingID = ConsoleInputter.getStr("Enter booking ID");
+                    CompletionResult completionResult = completionService.completeBooking(bookingID);
+                    System.out.println("=> " + completionResult.getMessage());
+                    if (completionResult.isSuccessful()) {
+                        Customer completedCustomer = completionResult.getCustomer();
+                        System.out.println("   Loyalty points: " + completionResult.getPreviousPoints()
+                                + " -> " + completedCustomer.getPoints());
+                        System.out.println("   Membership tier: " + completionResult.getPreviousTier()
+                                + " -> " + completedCustomer.getMembershipLevel());
+                        if (completionResult.getPromotedBooking() != null) {
+                            System.out.println("   Promoted from waitlist: "
+                                    + completionResult.getPromotedBooking().getBookingId());
+                        }
+                    }
+                    break;
+                case 7:
+                    String bID = ConsoleInputter.getStr("Enter booking ID to cancel");
+                    CancellationResult cancellationResult = cancellationService.cancelAsAdmin(bID);
+                    System.out.println("=> " + cancellationResult.getMessage());
+                    if (cancellationResult.isSuccessful() && cancellationResult.getPromotedBooking() != null) {
+                        System.out.println("   Promoted from waitlist: "
+                                + cancellationResult.getPromotedBooking().getBookingId());
+                    }
+                    break;
+                case 8:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 

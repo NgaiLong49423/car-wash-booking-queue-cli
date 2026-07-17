@@ -1,19 +1,12 @@
+> **Document:** Product Requirements Document (PRD)
+> **File:** `docs/requirements/PRD.md`
+> **Version:** v1.0.1
+> **Created:** 2026-06-26
+> **Last Updated:** 2026-07-17
+> **Status:** Active
+
 # Product Requirements Document (PRD)
 # Car Wash Booking Queue CLI
-
-## Thông tin tài liệu
-
-| Thuộc tính | Giá trị |
-|---|---|
-| Tên tài liệu | Product Requirements Document (PRD) |
-| Tên sản phẩm | Car Wash Booking Queue CLI |
-| Nguồn chuyển đổi | SRS.md v3.0.3 |
-| Ngày tạo | 2026-06-26 |
-| Sửa đổi gần nhất | 2026-07-02 |
-| Ngôn ngữ | Tiếng Việt |
-| Nguyên tắc chuyển đổi | Chỉ rút gọn và tái cấu trúc nội dung đã có trong SRS; không thêm chức năng mới, không thêm giả định ngoài SRS |
-
----
 
 ## 1. Product Overview
 
@@ -242,7 +235,7 @@ Tại một thời điểm chỉ có tối đa 1 booking ở trạng thái `SERV
 Hệ thống tính thời gian còn lại bằng dữ liệu booking đã hoàn tất trong cùng ngày và cùng buổi:
 
 ```text
-usedMinutes = tổng serviceDuration của các booking cùng ngày, cùng period, trạng thái COMPLETED
+usedMinutes = tổng serviceDuration của các booking cùng ngày, cùng period, trạng thái COMPLETED, SERVING, hoặc WAITING (chỉ tính xe trong Main Queue)
 remainingMinutes = periodTotalMinutes - usedMinutes
 ```
 

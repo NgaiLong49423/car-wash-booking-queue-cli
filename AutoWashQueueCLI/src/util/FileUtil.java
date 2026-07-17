@@ -79,6 +79,11 @@ public class FileUtil {
      * - `StandardCharsets.UTF_8`.
      */
     public static BufferedWriter openUtf8Writer(String fileName) throws IOException {
-        return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName), StandardCharsets.UTF_8));
+        File file = new File(fileName);
+        File parentDirectory = file.getParentFile();
+        if (parentDirectory != null && !parentDirectory.exists() && !parentDirectory.mkdirs()) {
+            throw new IOException("Cannot create data directory: " + parentDirectory.getPath());
+        }
+        return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     }
 }
