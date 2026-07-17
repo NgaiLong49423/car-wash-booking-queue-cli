@@ -1,5 +1,7 @@
 package datastructure;
 
+import model.Booking;
+
 public class MyQueue<T> {
 
     private Node<T> front;
@@ -92,5 +94,51 @@ public class MyQueue<T> {
             System.out.println(current.data);
             current = current.next;
         }
+    }
+
+    /** Removes a booking by ID and returns whether a queue entry was removed. */
+    public boolean removeBookingById(String id) {
+        Node<T> current = front;
+        Node<T> previous = null;
+
+        while (current != null) {
+            Booking b = (Booking) current.data;
+            if (b.getBookingId().equalsIgnoreCase(id)) {
+                if (current == front) {
+                    front = front.next;
+                } else {
+                    previous.next = current.next;
+                }
+                if (current == rear) rear = previous;
+                size--;
+                if (size == 0) rear = null;
+                return true;
+            }
+            previous = current;
+            current=current.next;
+        }
+        return false;
+    }
+
+    /** Returns whether this queue contains a booking with the supplied ID. */
+    public boolean containsBookingById(String id) {
+        if (id == null) {
+            return false;
+        }
+
+        Node<T> current = front;
+        while (current != null) {
+            Booking booking = (Booking) current.data;
+            if (id.equalsIgnoreCase(booking.getBookingId())) {
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
+    }
+
+    /** Legacy compatibility wrapper. */
+    public void dequeueNodeByID(String id){
+        removeBookingById(id);
     }
 }

@@ -17,6 +17,8 @@ import model.WashPackage;
 import service.SimulationService;
 import service.CompletionService;
 import model.CompletionResult;
+import service.CancellationService;
+import model.CancellationResult;
 
 public class Main {
     public static void main(String[] args) {
@@ -49,6 +51,7 @@ public class Main {
         FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
         CompletionService completionService = new CompletionService(bookingService, customerService,
                 washService, vehicleService, historyList);
+        CancellationService cancellationService = new CancellationService(bookingService, washService);
 
         // Populate active bookingQueue from loaded bookingList for compatibility
         MyLinkedList<Booking> list = bookingService.getBookingList();
@@ -68,6 +71,7 @@ public class Main {
                     "Queue Management (Booking)",
                     "Simulation Time Settings",
                     "Complete Booking",
+                    "Cancel Booking",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -301,6 +305,15 @@ public class Main {
                     }
                     break;
                 case 7:
+                    String bID = ConsoleInputter.getStr("Enter booking ID to cancel");
+                    CancellationResult cancellationResult = cancellationService.cancelAsAdmin(bID);
+                    System.out.println("=> " + cancellationResult.getMessage());
+                    if (cancellationResult.isSuccessful() && cancellationResult.getPromotedBooking() != null) {
+                        System.out.println("   Promoted from waitlist: "
+                                + cancellationResult.getPromotedBooking().getBookingId());
+                    }
+                    break;
+                case 8:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 
