@@ -53,11 +53,13 @@ public class Main {
                 washService, vehicleService, historyList);
         CancellationService cancellationService = new CancellationService(bookingService, washService);
 
-        // Populate active bookingQueue from loaded bookingList for compatibility
+        // Populate the current main queue from bookings of the active period.
         MyLinkedList<Booking> list = bookingService.getBookingList();
         for (int i = 0; i < list.size(); i++) {
             Booking b = list.get(i);
-            if ("WAITING".equalsIgnoreCase(b.getBookingStatus()) || "Dang cho".equalsIgnoreCase(b.getBookingStatus()) || "SERVING".equalsIgnoreCase(b.getBookingStatus()) || "Dang rua".equalsIgnoreCase(b.getBookingStatus())) {
+            if ("WAITING".equalsIgnoreCase(b.getBookingStatus())
+                    && b.getDate().equalsIgnoreCase(simulationService.getCurrentDateStr())
+                    && b.getPeriod().equalsIgnoreCase(simulationService.getCurrentPeriodStr())) {
                 bookingService.getBookingQueue().enqueue(b);
             }
         }
@@ -256,7 +258,40 @@ public class Main {
                     }
                     break;
                 case 4:
-                    bookingService.displayQueue();
+                    boolean backToMainBooking = false;
+                    while (!backToMainBooking) {
+                        int bookingChoice = ConsoleInputter.intMenu("QUEUE MONITORING",
+                                "Display main queue",
+                                "Display waitlist",
+                                "Display future bookings",
+                                "Display customer active bookings",
+                                "Back to main menu");
+                        switch (bookingChoice) {
+                            case 1:
+                                bookingService.displayMainQueue(simulationService.getCurrentPeriodStr(),
+                                        customerService, vehicleService, washService);
+                                break;
+                            case 2:
+                                bookingService.displayWaitlist(simulationService.getCurrentPeriodStr(),
+                                        customerService, vehicleService, washService);
+                                break;
+                            case 3:
+                                String futureDate = ConsoleInputter.getStr("Enter booking date (YYYY-MM-DD)");
+                                String futurePeriod = ConsoleInputter.getStr("Enter period (MORNING/AFTERNOON/EVENING)");
+                                bookingService.displayFutureBookings(futureDate, futurePeriod, customerService,
+                                        vehicleService, washService, simulationService.getCurrentDateStr(),
+                                        simulationService.getCurrentPeriodStr());
+                                break;
+                            case 4:
+                                String customerBookingId = ConsoleInputter.getStr("Enter customer ID");
+                                bookingService.displayCustomerActiveBookings(customerBookingId, customerService,
+                                        vehicleService, washService);
+                                break;
+                            case 5:
+                                backToMainBooking = true;
+                                break;
+                        }
+                    }
                     break;
                 case 5:
                     // Simulation Time Settings Submenu

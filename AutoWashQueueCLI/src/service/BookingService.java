@@ -7,7 +7,9 @@ import datastructure.MyStack;
 import model.Booking;
 import model.CompletionRecord;
 import model.Customer;
+import model.Vehicle;
 import model.WaitlistEntry;
+import model.WashPackage;
 import util.FileManager;
 
 public class BookingService {
@@ -25,33 +27,148 @@ public class BookingService {
 
     // Feature 1: Display the current booking queue.
     public void displayQueue() {
-        System.out.println("\n--- BOOKING QUEUE ---");
-        if (bookingQueue.isEmpty()) {
-            System.out.println("There are no bookings waiting to be served.");
+        displayMainQueue(null, null, null, null);
+    }
+
+    /** Displays the main queue in FIFO order. */
+    public void displayMainQueue(String period, CustomerService customerService,
+            VehicleService vehicleService, WashServiceManager washService) {
+        System.out.println("\n--- MAIN QUEUE (FIFO) ---");
+        printCapacity(period);
+        printBookingTable(bookingQueue.snapshot(), customerService, vehicleService, washService);
+    }
+
+    /** Displays the waitlist from highest to lowest priority without changing it. */
+    public void displayWaitlist(String period, CustomerService customerService,
+            VehicleService vehicleService, WashServiceManager washService) {
+        System.out.println("\n--- WAITLIST (PRIORITY ORDER) ---");
+        printCapacity(period);
+        MyLinkedList<WaitlistEntry> entries = waitlist.snapshotInPriorityOrder();
+        MyLinkedList<Booking> bookings = new MyLinkedList<>();
+        for (int i = 0; i < entries.size(); i++) {
+            bookings.addLast(entries.get(i).getBooking());
+        }
+        printBookingTable(bookings, customerService, vehicleService, washService);
+    }
+
+    /** Displays WAITING bookings for an inactive or future period. */
+    public void displayFutureBookings(String date, String period,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService, String currentDate, String currentPeriod) {
+        if (date == null || date.trim().isEmpty() || !isValidPeriod(period)) {
+            System.out.println("=> Error: Enter a valid date and period.");
             return;
         }
-        bookingQueue.display();
-        System.out.println("-----------------------");
+        if (date.equalsIgnoreCase(currentDate) && period.equalsIgnoreCase(currentPeriod)) {
+            System.out.println("=> This is the current period. Use the queue monitoring options instead.");
+            return;
+        }
+
+        MyLinkedList<Booking> futureBookings = new MyLinkedList<>();
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            if (date.equalsIgnoreCase(booking.getDate())
+                    && period.equalsIgnoreCase(booking.getPeriod())
+                    && "WAITING".equalsIgnoreCase(booking.getBookingStatus())) {
+                futureBookings.addLast(booking);
+            }
+        }
+        System.out.println("\n--- FUTURE BOOKINGS: " + date + " " + period.toUpperCase() + " ---");
+        printBookingTable(futureBookings, customerService, vehicleService, washService);
+    }
+
+    /** Displays only WAITING and SERVING bookings that belong to one customer. */
+    public void displayCustomerActiveBookings(String customerId,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService) {
+        Customer customer = customerService.findCustomerById(customerId);
+        if (customer == null) {
+            System.out.println("=> Error: Customer not found with ID: " + customerId);
+            return;
+        }
+
+        MyLinkedList<Booking> customerBookings = new MyLinkedList<>();
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            boolean unfinished = "WAITING".equalsIgnoreCase(booking.getBookingStatus())
+                    || "SERVING".equalsIgnoreCase(booking.getBookingStatus());
+            if (customer.getId().equalsIgnoreCase(booking.getCustomerId()) && unfinished) {
+                customerBookings.addLast(booking);
+            }
+        }
+        System.out.println("\n--- ACTIVE BOOKINGS: " + customer.getName() + " ---");
+        printBookingTable(customerBookings, customerService, vehicleService, washService);
+    }
+
+    private boolean isValidPeriod(String period) {
+        return period != null && ("MORNING".equalsIgnoreCase(period)
+                || "AFTERNOON".equalsIgnoreCase(period)
+                || "EVENING".equalsIgnoreCase(period));
+    }
+
+    private void printCapacity(String period) {
+        if (!isValidPeriod(period)) {
+            return;
+        }
+        int mainCapacity = "EVENING".equalsIgnoreCase(period) ? 5 : 10;
+        int waitlistCapacity = "EVENING".equalsIgnoreCase(period) ? 2 : 3;
+        int usedSlots = bookingQueue.size() + waitlist.size();
+        System.out.println(period.toUpperCase() + ": " + usedSlots + "/"
+                + (mainCapacity + waitlistCapacity) + " slots");
+    }
+
+    private void printBookingTable(MyLinkedList<Booking> bookings,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService) {
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings found.");
+            return;
+        }
+        System.out.printf("%-10s %-15s %-20s %-12s %-12s%n",
+                "BOOKING ID", "LICENSE PLATE", "SERVICE", "TIER", "STATUS");
+        System.out.println("-----------------------------------------------------------------------");
+        for (int i = 0; i < bookings.size(); i++) {
+            Booking booking = bookings.get(i);
+            Vehicle vehicle = findVehicle(booking.getVehicleId(), vehicleService);
+            WashPackage washPackage = washService.findServiceById(booking.getServiceId());
+            Customer customer = customerService.findCustomerById(booking.getCustomerId());
+            String licensePlate = vehicle == null ? booking.getVehicleId() : vehicle.getLicensePlate();
+            String serviceName = washPackage == null ? booking.getServiceId() : washPackage.getName();
+            String tier = customer == null ? "UNKNOWN" : customer.getMembershipLevel();
+            System.out.printf("%-10s %-15s %-20s %-12s %-12s%n", booking.getBookingId(),
+                    licensePlate, serviceName, tier, booking.getBookingStatus());
+        }
+    }
+
+    private Vehicle findVehicle(String vehicleId, VehicleService vehicleService) {
+        for (int i = 0; i < vehicleService.getVehicleList().size(); i++) {
+            Vehicle vehicle = vehicleService.getVehicleList().get(i);
+            if (vehicleId.equalsIgnoreCase(vehicle.getId())
+                    || vehicleId.equalsIgnoreCase(vehicle.getLicensePlate())) {
+                return vehicle;
+            }
+        }
+        return null;
     }
 
     // Feature 2: Add a booking to the end of the queue.
     public void addBooking(String bookingId, String licensePlate, String serviceId) {
         Booking newBooking = new Booking(
-                bookingId, 
+                bookingId,
                 "C000", // Default Customer ID for now (Issue 3 / 7 responsibility)
                 licensePlate, // Vehicle identifier (vehicle ID or license plate)
-                serviceId, 
+                serviceId,
                 "2026-07-10", // Default Date (Issue 6 responsibility)
                 "MORNING", // Default Period (Issue 6 responsibility)
-                "WAITING", 
-                "UNPAID", 
-                "NONE", 
+                "WAITING",
+                "UNPAID",
+                "NONE",
                 System.currentTimeMillis()
         );
         bookingQueue.enqueue(newBooking);
         bookingList.addLast(newBooking);
         System.out.println("=> Booking created. Vehicle " + licensePlate + " was added to the queue.");
-        
+
         // Auto-save bookings on change (FR-23)
         FileManager.saveBookings(bookingList);
     }
@@ -74,13 +191,13 @@ public class BookingService {
                 break;
             }
         }
-        
+
         System.out.println("=> NOW SERVING: " + nextToWash.toString());
-        
+
         // Auto-save bookings on change (FR-23)
         FileManager.saveBookings(bookingList);
     }
-    
+
     public MyQueue<Booking> getBookingQueue() {
         return bookingQueue;
     }

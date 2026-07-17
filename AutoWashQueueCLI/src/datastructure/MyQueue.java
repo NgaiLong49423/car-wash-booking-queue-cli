@@ -84,6 +84,17 @@ public class MyQueue<T> {
         size = 0;
     }
 
+    /** Returns a read-only snapshot in FIFO order without changing this queue. */
+    public MyLinkedList<T> snapshot() {
+        MyLinkedList<T> items = new MyLinkedList<>();
+        Node<T> current = front;
+        while (current != null) {
+            items.addLast(current.data);
+            current = current.next;
+        }
+        return items;
+    }
+
     /**
      * In toàn bộ queue.
      */
