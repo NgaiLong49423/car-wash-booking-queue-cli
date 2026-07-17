@@ -1,25 +1,26 @@
 package service;
 
 import datastructure.MyLinkedList;
+import datastructure.MyPriorityQueue;
 import datastructure.MyQueue;
 import datastructure.MyStack;
 import model.Booking;
 import model.CompletionRecord;
+import model.Customer;
+import model.WaitlistEntry;
 import util.FileManager;
 
 public class BookingService {
     private MyQueue<Booking> bookingQueue;
     private MyLinkedList<Booking> bookingList;
-    private MyStack<Booking> bookingStack;
     private MyStack<CompletionRecord> completionStack;
-    private MyLinkedList<Booking> waitlist;
+    private MyPriorityQueue<WaitlistEntry> waitlist;
 
     public BookingService() {
         this.bookingQueue = new MyQueue<>();
         this.bookingList = new MyLinkedList<>();
-        this.bookingStack = new MyStack<>();
         this.completionStack = new MyStack<>();
-        this.waitlist = new MyLinkedList<>();
+        this.waitlist = new MyPriorityQueue<>();
     }
 
     // Feature 1: Display the current booking queue.
@@ -88,14 +89,14 @@ public class BookingService {
         return bookingList;
     }
 
-    public MyLinkedList<Booking> getWaitlist() {
+    public MyPriorityQueue<WaitlistEntry> getWaitlist() {
         return waitlist;
     }
 
-    /** Registers a WAITING booking in the waitlist managed by the activation flow. */
-    public void addToWaitlist(Booking booking) {
-        if (booking != null) {
-            waitlist.addLast(booking);
+    /** Registers a WAITING booking in the Max Heap waitlist. */
+    public void addToWaitlist(Booking booking, Customer customer) {
+        if (booking != null && customer != null) {
+            waitlist.insert(new WaitlistEntry(booking, getTierPriority(customer)));
         }
     }
 
@@ -103,73 +104,59 @@ public class BookingService {
         completionStack.push(new CompletionRecord(completedBooking, promotedBooking));
     }
     
-    public Booking completeBooking(String bookingID){
-        Booking b = null;
-        if (bookingList.isEmpty()) {
-            System.out.println("=> There are no bookings in the system.");
-        }else{
-            int size = bookingList.size();
-            for (int i = 0; i < size; i++) {
-                b = bookingList.get(i);
-                if (b.getBookingId().equals(bookingID)) {
-                    if (b.getBookingStatus().equalsIgnoreCase("serving")
-                            && b.getPaymentStatus().equalsIgnoreCase("paid")) {
-                        bookingStack.clear();
-                        bookingStack.push(b);
-                        b.setStatus("COMPLETED");
-                        FileManager.saveBookings(bookingList);
-                        break;
-                    } else if (!b.getBookingStatus().equalsIgnoreCase("serving")) {
-                        System.out.println("The booking has not been processed yet.");
-                    } else {
-                        System.out.println("The booking has not been paid.");
-                    }
-                }
-            }
-        }
-        return b;
+    public WaitlistEntry peekHighestPriorityWaitlist(String date, String period) {
+        MyLinkedList<WaitlistEntry> entries = drainWaitlist();
+        WaitlistEntry selected = selectHighestPriority(entries, date, period);
+        restoreWaitlist(entries);
+        return selected;
     }
-    
-    public void cancelBooking(String bookingID){
-        if(bookingList.isEmpty() && bookingQueue.isEmpty()){
-            System.out.println("=> There are no bookings in the system.");
-        }else{
-            int size = bookingList.size();
-            for(int i=0; i<size; i++){
-                Booking b = bookingList.get(i);
-                if (b.getBookingId().equals(bookingID)) {
-                    if (!b.getBookingStatus().equalsIgnoreCase("completed")) {
-                        b.setStatus("CANCELLED");
-                        break;
-                    } else {
-                        System.out.println("This booking has already been completed.");
-                    }
-                }
-            }
-            bookingQueue.dequeueNodeByID(bookingID);
-            
-            FileManager.saveBookings(bookingList);
-        }
-    }
-    
-    public Booking undoCompletion(){
-        if(bookingStack.isEmpty()){
-            System.out.println("There is no completed booking to undo.");
-            return null;
-        }else{
-            Booking b = bookingStack.pop();
-            int size = bookingList.size();
-            for(int i=0; i<size; i++){
-                Booking currentServ = bookingList.get(i);
-                if(currentServ.getBookingStatus().equalsIgnoreCase("Serving")){
-                    currentServ.setBookingStatus("WAITING");
-                    bookingQueue.enqueueFront(currentServ);
+
+    public Booking pollHighestPriorityWaitlist(String date, String period) {
+        MyLinkedList<WaitlistEntry> entries = drainWaitlist();
+        WaitlistEntry selected = selectHighestPriority(entries, date, period);
+        if (selected != null) {
+            for (int i = 0; i < entries.size(); i++) {
+                if (entries.get(i) == selected) {
+                    entries.remove(i);
                     break;
                 }
             }
-            b.setBookingStatus("SERVING");
-            FileManager.saveBookings(bookingList);
-            return b;
         }
+        restoreWaitlist(entries);
+        return selected == null ? null : selected.getBooking();
+    }
+
+    private WaitlistEntry selectHighestPriority(MyLinkedList<WaitlistEntry> entries, String date, String period) {
+        WaitlistEntry selected = null;
+        for (int i = 0; i < entries.size(); i++) {
+            WaitlistEntry entry = entries.get(i);
+            Booking booking = entry.getBooking();
+            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
+                    && (selected == null || entry.compareTo(selected) > 0)) {
+                selected = entry;
+            }
+        }
+        return selected;
+    }
+
+    private MyLinkedList<WaitlistEntry> drainWaitlist() {
+        MyLinkedList<WaitlistEntry> entries = new MyLinkedList<>();
+        while (!waitlist.isEmpty()) {
+            entries.addLast(waitlist.poll());
+        }
+        return entries;
+    }
+
+    private void restoreWaitlist(MyLinkedList<WaitlistEntry> entries) {
+        for (int i = 0; i < entries.size(); i++) {
+            waitlist.insert(entries.get(i));
+        }
+    }
+
+    private int getTierPriority(Customer customer) {
+        if ("PLATINUM".equalsIgnoreCase(customer.getMembershipLevel())) return 4;
+        if ("GOLD".equalsIgnoreCase(customer.getMembershipLevel())) return 3;
+        if ("SILVER".equalsIgnoreCase(customer.getMembershipLevel())) return 2;
+        return 1;
     }
 }

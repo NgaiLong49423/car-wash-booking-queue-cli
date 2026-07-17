@@ -1,13 +1,11 @@
 package service;
 
 import datastructure.MyLinkedList;
-import datastructure.MyStack;
 import model.*;
 import util.FileManager;
 
 public class CustomerService {
     private MyLinkedList<Customer> customerList;
-    private MyStack<Customer> customerStack;
 
     public CustomerService() {
         this.customerList = new MyLinkedList<>();
@@ -181,44 +179,5 @@ public class CustomerService {
 
     public MyLinkedList<Customer> getCustomerList() {
         return customerList;
-    }
-    
-    public void updatePoint(String id,int newPoints) {
-        Customer c = findCustomerById(id);
-        if (c != null) {
-            c.setPoints(newPoints);
-            if (newPoints >= 2000 && newPoints < 6000) {
-                c.setMembershipLevel("Silver");
-            } else if (newPoints >= 6000 && newPoints < 15000) {
-                c.setMembershipLevel("Gold");
-            } else if (newPoints >= 15000) {
-                c.setMembershipLevel("Platinum");
-            }
-            System.out.println("=> Updated customer successfully: " + id);
-            customerStack.clear();
-            customerStack.push(c);
-            
-            // Auto-save on change (FR-23)
-            FileManager.saveCustomers(customerList);
-        } else {
-            System.out.println("=> Error: Customer not found with ID: " + id);
-        }
-    }
-    
-    public void undoCustomer(Booking b){
-        Customer c = findCustomerById(b.getCustomerId());
-        if (c != null) {
-            if(customerStack.isEmpty()){
-                System.out.println("Khong co gi de undo");
-            }else{
-                Customer prevstate = customerStack.pop();
-                c = prevstate;
-            }
-            
-            // Auto-save on change (FR-23)
-            FileManager.saveCustomers(customerList);
-        } else {
-            System.out.println("=> Error: Customer not found with ID: " + b.getCustomerId());
-        }
     }
 }

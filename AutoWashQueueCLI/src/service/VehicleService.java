@@ -176,17 +176,4 @@ public class VehicleService {
     public MyLinkedList<Vehicle> getVehicleList() {
         return vehicleList;
     }
-    
-    public Vehicle findVehicleByID(String ID) {
-        if (ID == null) return null;
-        int size = vehicleList.size();
-        for (int i = 0; i < size; i++) {
-            Vehicle v = vehicleList.get(i);
-            if (v.getId() != null && 
-                v.getId().equals(ID)) {
-                return v;
-            }
-        }
-        return null;
-    }
 }

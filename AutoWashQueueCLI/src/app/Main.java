@@ -6,7 +6,6 @@ import service.BookingService;
 import service.CustomerService;
 import service.VehicleService;
 import service.WashServiceManager;
-import service.HistoryService;
 import util.ConsoleInputter;
 import datastructure.MyLinkedList;
 import model.Period;
@@ -26,7 +25,6 @@ public class Main {
         WashServiceManager washService = new WashServiceManager();
         VehicleService vehicleService = new VehicleService();
         BookingService bookingService = new BookingService();
-        HistoryService historyService = new HistoryService();
 
         // Temporary lists for Period and History
         MyLinkedList<Period> periodsList = new MyLinkedList<>();
@@ -70,8 +68,6 @@ public class Main {
                     "Queue Management (Booking)",
                     "Simulation Time Settings",
                     "Complete Booking",
-                    "Cancel Booking",
-                    "Undo Booking",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -305,18 +301,6 @@ public class Main {
                     }
                     break;
                 case 7:
-                    String bID = ConsoleInputter.getStr("Nhap booking ID");
-                    bookingService.cancelBooking(bID);
-                    break;
-                case 8:
-                    Booking undoneBooking = bookingService.undoCompletion();
-                    if(undoneBooking!=null){
-                        customerService.undoCustomer(undoneBooking);
-                        historyService.removeHistory(undoneBooking, historyList);
-                        System.out.println("Booking Undone");
-                    }
-                    break;
-                case 9:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 

@@ -6,6 +6,7 @@ import model.CompletionResult;
 import model.Customer;
 import model.History;
 import model.Vehicle;
+import model.WaitlistEntry;
 import model.WashPackage;
 import util.FileManager;
 import java.time.LocalDateTime;
@@ -43,7 +44,7 @@ public class CompletionService {
 
         Customer customer = customerService.findCustomerById(booking.getCustomerId());
         WashPackage packageToComplete = washServiceManager.findServiceById(booking.getServiceId());
-        Vehicle vehicle = vehicleService.findVehicleByID(booking.getVehicleId());
+        Vehicle vehicle = findVehicleById(booking.getVehicleId());
         if (customer == null || packageToComplete == null || vehicle == null) {
             return failed("Booking references missing customer, vehicle, or service data.");
         }
@@ -87,33 +88,14 @@ public class CompletionService {
     }
 
     private Booking promoteTopWaitlistBooking(String date, String period) {
-        Booking topBooking = null;
-        int topIndex = -1;
-        MyLinkedList<Booking> waitlist = bookingService.getWaitlist();
-        for (int i = 0; i < waitlist.size(); i++) {
-            Booking candidate = waitlist.get(i);
-            if ("WAITING".equalsIgnoreCase(candidate.getBookingStatus())
-                    && date.equals(candidate.getDate()) && period.equalsIgnoreCase(candidate.getPeriod())
-                    && (topBooking == null || comparePriority(candidate, topBooking) > 0)) {
-                topBooking = candidate;
-                topIndex = i;
-            }
-        }
+        WaitlistEntry topEntry = bookingService.peekHighestPriorityWaitlist(date, period);
+        Booking topBooking = topEntry == null ? null : topEntry.getBooking();
         if (topBooking == null || getRemainingMinutes(date, period) < getDuration(topBooking)) {
             return null;
         }
-        waitlist.remove(topIndex);
-        bookingService.getBookingQueue().enqueue(topBooking);
-        return topBooking;
-    }
-
-    private int comparePriority(Booking left, Booking right) {
-        int leftRank = tierRank(customerService.findCustomerById(left.getCustomerId()));
-        int rightRank = tierRank(customerService.findCustomerById(right.getCustomerId()));
-        if (leftRank != rightRank) {
-            return leftRank - rightRank;
-        }
-        return Long.compare(right.getCreatedTime(), left.getCreatedTime());
+        Booking promotedBooking = bookingService.pollHighestPriorityWaitlist(date, period);
+        bookingService.getBookingQueue().enqueue(promotedBooking);
+        return promotedBooking;
     }
 
     private int getRemainingMinutes(String date, String period) {
@@ -141,15 +123,6 @@ public class CompletionService {
         return 0;
     }
 
-    private int tierRank(Customer customer) {
-        if (customer == null) return 0;
-        String tier = customer.getMembershipLevel();
-        if ("PLATINUM".equalsIgnoreCase(tier)) return 4;
-        if ("GOLD".equalsIgnoreCase(tier)) return 3;
-        if ("SILVER".equalsIgnoreCase(tier)) return 2;
-        return 1;
-    }
-
     private String determineTier(int visitCount, double totalSpent) {
         if (visitCount >= 30 || totalSpent >= 15000000) return "PLATINUM";
         if (visitCount >= 15 || totalSpent >= 6000000) return "GOLD";
@@ -172,6 +145,15 @@ public class CompletionService {
         MyLinkedList<Booking> bookings = bookingService.getBookingList();
         for (int i = 0; i < bookings.size(); i++) {
             if (bookingId.equalsIgnoreCase(bookings.get(i).getBookingId())) return bookings.get(i);
+        }
+        return null;
+    }
+
+    private Vehicle findVehicleById(String vehicleId) {
+        if (vehicleId == null) return null;
+        for (int i = 0; i < vehicleService.getVehicleList().size(); i++) {
+            Vehicle vehicle = vehicleService.getVehicleList().get(i);
+            if (vehicleId.equalsIgnoreCase(vehicle.getId())) return vehicle;
         }
         return null;
     }
