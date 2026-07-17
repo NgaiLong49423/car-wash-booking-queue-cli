@@ -6,7 +6,9 @@ on:
 
 concurrency:
   group: antigravity-pr-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  # Keep an in-progress review alive. A new push queues another review instead
+  # of interrupting the current Antigravity conversation mid-response.
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -66,7 +68,10 @@ jobs:
           Review only defects, risks, regressions, missing acceptance criteria, and
           workflow violations introduced by this PR. Use Vietnamese for all review
           text. Follow the review skill's required structure, severity rules, and
-          decision rules. Include the marker `<!-- antigravity-pr-review -->`.
+          decision rules. You are running in plan mode for careful analysis: finish
+          the read-only investigation, then return the final review itself, not a
+          plan, explanation of the CLI, or a list of future actions. Include the
+          marker `<!-- antigravity-pr-review -->`.
 
           End with the exact `## Quyết định review` block required by the skill. Its
           `GitHub review state` value must be exactly `REQUEST_CHANGES` only when a
@@ -79,6 +84,14 @@ jobs:
           $review = & agy --print --mode plan --print-timeout 10m $prompt
           if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($review)) {
             throw 'Antigravity did not produce a review.'
+          }
+
+          if (
+            $review -notmatch '<!--\s*antigravity-pr-review\s*-->' -or
+            $review -notmatch '(?m)^##\s+Quyết định review\s*$' -or
+            $review -notmatch '(?mi)^GitHub review state:\s*(REQUEST_CHANGES|COMMENT)\s*$'
+          ) {
+            throw 'Antigravity returned an incomplete review. It was not posted to the pull request.'
           }
 
           $review | Set-Content -Path review.md -Encoding utf8
