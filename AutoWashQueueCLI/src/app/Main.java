@@ -44,15 +44,7 @@ public class Main {
 
         // Load extra data (Bookings, Periods, History)
         FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
-
-        // Populate active bookingQueue from loaded bookingList for compatibility
-        MyLinkedList<Booking> list = bookingService.getBookingList();
-        for (int i = 0; i < list.size(); i++) {
-            Booking b = list.get(i);
-            if ("WAITING".equalsIgnoreCase(b.getBookingStatus()) || "Dang cho".equalsIgnoreCase(b.getBookingStatus()) || "SERVING".equalsIgnoreCase(b.getBookingStatus()) || "Dang rua".equalsIgnoreCase(b.getBookingStatus())) {
-                bookingService.getBookingQueue().enqueue(b);
-            }
-        }
+        bookingService.rebuildCurrentQueue(simulationService.getCurrentDateStr(), simulationService.getCurrentPeriodStr(), customerService);
 
         // 3. Main Menu Loop
         while (true) {
@@ -246,7 +238,39 @@ public class Main {
                     }
                     break;
                 case 4:
-                    bookingService.displayQueue();
+                    boolean backToMainBooking = false;
+                    while (!backToMainBooking) {
+                        int bookingChoice = ConsoleInputter.intMenu("QUEUE MANAGEMENT (BOOKING)",
+                                "Display main queue",
+                                "Display waitlist",
+                                "Create booking",
+                                "Process next booking",
+                                "Back to main menu");
+
+                        switch (bookingChoice) {
+                            case 1:
+                                bookingService.displayQueue();
+                                break;
+                            case 2:
+                                bookingService.displayWaitlist();
+                                break;
+                            case 3:
+                                String customerId = ConsoleInputter.getStr("Enter customer ID");
+                                String vehicleInput = ConsoleInputter.getStr("Enter vehicle ID or license plate");
+                                String serviceId = ConsoleInputter.getStr("Enter service ID");
+                                String bookingDate = ConsoleInputter.getStr("Enter booking date (YYYY-MM-DD)");
+                                String bookingPeriod = ConsoleInputter.getStr("Enter period (MORNING/AFTERNOON/EVENING)");
+                                bookingService.createBooking(customerId, vehicleInput, serviceId, bookingDate, bookingPeriod,
+                                        customerService, vehicleService, washService, simulationService);
+                                break;
+                            case 4:
+                                bookingService.processNextBooking();
+                                break;
+                            case 5:
+                                backToMainBooking = true;
+                                break;
+                        }
+                    }
                     break;
                 case 5:
                     // Simulation Time Settings Submenu

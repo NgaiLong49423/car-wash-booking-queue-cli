@@ -82,6 +82,15 @@ public class WashServiceManager {
         return null;
     }
 
+    public boolean isServiceActive(String serviceId) {
+        WashPackage ws = findServiceById(serviceId);
+        if (ws == null) {
+            return false;
+        }
+
+        return "ACTIVE".equalsIgnoreCase(ws.getStatus());
+    }
+
     public void searchServices(String query) {
         System.out.println("\n--- SEARCH RESULTS ---");
         if (query == null || query.trim().isEmpty()) {
