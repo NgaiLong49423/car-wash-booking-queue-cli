@@ -1,7 +1,7 @@
 # Report 1 template contract
 
-- Reference: `C:\Users\Lenovo\Downloads\Report_1_Template.docx`
-- SHA-256: obtained before authoring from the build script.
+- Reference: `<PATH_TO_Report_1_Template.docx>`
+- SHA-256: `<FILL_SHA256_HERE>`
 - Page system: one portrait US Letter section; 0.95-inch margins on all sides; no headers, footers, or fields; no content controls or existing drawings.
 - Typography: template uses Helvetica Neue with direct formatting; headings are manually styled Normal paragraphs rather than Word heading styles. Preserve the template's font family, centering, bolding, and color roles when replacing text.
 - Layout: first page contains the project/course metadata, student-information table, report title, and Sections 1.1-1.5. The two supplied 3-column tables are editable source patterns. The blank image placeholders in 1.4 may be replaced with centered diagram images and captions.
