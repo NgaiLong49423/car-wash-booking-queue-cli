@@ -81,23 +81,122 @@ public class BookingService {
     }
 
     public void displayQueue() {
-        System.out.println("\n--- HANG DOI RUA XE ---");
-        if (bookingQueue.isEmpty()) {
-            System.out.println("Hien tai khong co xe nao dang cho.");
-            return;
-        }
-        bookingQueue.display();
-        System.out.println("-----------------------");
+        displayMainQueue(null, null, null, null, null);
     }
 
     public void displayWaitlist() {
-        System.out.println("\n--- WAITLIST ---");
-        if (waitlistQueue.isEmpty()) {
-            System.out.println("Waitlist is empty.");
+        displayWaitlist(null, null, null, null, null);
+    }
+
+    /** Displays the current main queue in FIFO order. */
+    public void displayMainQueue(String currentDate, String currentPeriod,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService) {
+        rebuildForMonitoring(currentDate, currentPeriod, customerService);
+        System.out.println("\n--- MAIN QUEUE (FIFO) ---");
+        printCapacity(currentPeriod);
+        printBookingTable(bookingQueue.snapshot(), customerService, vehicleService, washService);
+    }
+
+    /** Displays the current waitlist from highest to lowest priority. */
+    public void displayWaitlist(String currentDate, String currentPeriod,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService) {
+        rebuildForMonitoring(currentDate, currentPeriod, customerService);
+        System.out.println("\n--- WAITLIST (PRIORITY ORDER) ---");
+        printCapacity(currentPeriod);
+        printBookingTable(waitlistQueue.snapshotInPriorityOrder(), customerService, vehicleService, washService);
+    }
+
+    /** Displays WAITING bookings for an inactive or future period. */
+    public void displayFutureBookings(String date, String period,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService, String currentDate, String currentPeriod) {
+        if (isEmpty(date) || !isValidPeriod(period)) {
+            System.out.println("=> Error: Enter a valid date and period.");
             return;
         }
-        waitlistQueue.display();
-        System.out.println("----------------");
+        if (date.equalsIgnoreCase(currentDate) && period.equalsIgnoreCase(currentPeriod)) {
+            System.out.println("=> This is the current period. Use the queue monitoring options instead.");
+            return;
+        }
+
+        MyLinkedList<Booking> futureBookings = new MyLinkedList<>();
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            if (date.equalsIgnoreCase(booking.getDate())
+                    && period.equalsIgnoreCase(booking.getPeriod())
+                    && "WAITING".equalsIgnoreCase(booking.getBookingStatus())) {
+                futureBookings.addLast(booking);
+            }
+        }
+
+        System.out.println("\n--- FUTURE BOOKINGS: " + date + " " + period.toUpperCase() + " ---");
+        printBookingTable(futureBookings, customerService, vehicleService, washService);
+    }
+
+    /** Displays only a customer's unfinished bookings. */
+    public void displayCustomerActiveBookings(String customerId,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService) {
+        Customer customer = customerService.findCustomerById(customerId);
+        if (customer == null) {
+            System.out.println("=> Error: Customer not found with ID: " + customerId);
+            return;
+        }
+
+        MyLinkedList<Booking> customerBookings = new MyLinkedList<>();
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            boolean unfinished = "WAITING".equalsIgnoreCase(booking.getBookingStatus())
+                    || "SERVING".equalsIgnoreCase(booking.getBookingStatus());
+            if (customer.getId().equalsIgnoreCase(booking.getCustomerId()) && unfinished) {
+                customerBookings.addLast(booking);
+            }
+        }
+
+        System.out.println("\n--- ACTIVE BOOKINGS: " + customer.getName() + " ---");
+        printBookingTable(customerBookings, customerService, vehicleService, washService);
+    }
+
+    private void rebuildForMonitoring(String currentDate, String currentPeriod,
+            CustomerService customerService) {
+        if (currentDate != null && currentPeriod != null && customerService != null) {
+            rebuildCurrentQueue(currentDate, currentPeriod, customerService);
+        }
+    }
+
+    private void printCapacity(String period) {
+        if (period == null || !isValidPeriod(period)) {
+            return;
+        }
+        int usedSlots = bookingQueue.size() + waitlistQueue.size();
+        int totalSlots = getMainCapacity(period) + getWaitlistCapacity(period);
+        System.out.println(period.toUpperCase() + ": " + usedSlots + "/" + totalSlots + " slots");
+    }
+
+    private void printBookingTable(MyLinkedList<Booking> bookings,
+            CustomerService customerService, VehicleService vehicleService,
+            WashServiceManager washService) {
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings found.");
+            return;
+        }
+
+        System.out.printf("%-10s %-15s %-20s %-12s %-12s%n",
+                "BOOKING ID", "LICENSE PLATE", "SERVICE", "TIER", "STATUS");
+        System.out.println("-----------------------------------------------------------------------");
+        for (int i = 0; i < bookings.size(); i++) {
+            Booking booking = bookings.get(i);
+            Vehicle vehicle = vehicleService == null ? null : vehicleService.findVehicleByIdOrLicense(booking.getVehicleId());
+            WashPackage washPackage = washService == null ? null : washService.findServiceById(booking.getServiceId());
+            Customer customer = customerService == null ? null : customerService.findCustomerById(booking.getCustomerId());
+            String licensePlate = vehicle == null ? booking.getVehicleId() : vehicle.getLicensePlate();
+            String serviceName = washPackage == null ? booking.getServiceId() : washPackage.getName();
+            String tier = customer == null ? "UNKNOWN" : customer.getMembershipLevel();
+            System.out.printf("%-10s %-15s %-20s %-12s %-12s%n",
+                    booking.getBookingId(), licensePlate, serviceName, tier, booking.getBookingStatus());
+        }
     }
 
     public void addBooking(String bookingId, String licensePlate, String serviceId) {

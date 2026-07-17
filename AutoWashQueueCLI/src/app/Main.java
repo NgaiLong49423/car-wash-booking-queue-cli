@@ -243,18 +243,36 @@ public class Main {
                         int bookingChoice = ConsoleInputter.intMenu("QUEUE MANAGEMENT (BOOKING)",
                                 "Display main queue",
                                 "Display waitlist",
+                                "Display future bookings",
+                                "Display customer active bookings",
                                 "Create booking",
                                 "Process next booking",
                                 "Back to main menu");
 
                         switch (bookingChoice) {
                             case 1:
-                                bookingService.displayQueue();
+                                bookingService.displayMainQueue(simulationService.getCurrentDateStr(),
+                                        simulationService.getCurrentPeriodStr(), customerService,
+                                        vehicleService, washService);
                                 break;
                             case 2:
-                                bookingService.displayWaitlist();
+                                bookingService.displayWaitlist(simulationService.getCurrentDateStr(),
+                                        simulationService.getCurrentPeriodStr(), customerService,
+                                        vehicleService, washService);
                                 break;
                             case 3:
+                                String futureDate = ConsoleInputter.getStr("Enter booking date (YYYY-MM-DD)");
+                                String futurePeriod = ConsoleInputter.getStr("Enter period (MORNING/AFTERNOON/EVENING)");
+                                bookingService.displayFutureBookings(futureDate, futurePeriod, customerService,
+                                        vehicleService, washService, simulationService.getCurrentDateStr(),
+                                        simulationService.getCurrentPeriodStr());
+                                break;
+                            case 4:
+                                String customerBookingId = ConsoleInputter.getStr("Enter customer ID");
+                                bookingService.displayCustomerActiveBookings(customerBookingId, customerService,
+                                        vehicleService, washService);
+                                break;
+                            case 5:
                                 String customerId = ConsoleInputter.getStr("Enter customer ID");
                                 String vehicleInput = ConsoleInputter.getStr("Enter vehicle ID or license plate");
                                 String serviceId = ConsoleInputter.getStr("Enter service ID");
@@ -263,10 +281,10 @@ public class Main {
                                 bookingService.createBooking(customerId, vehicleInput, serviceId, bookingDate, bookingPeriod,
                                         customerService, vehicleService, washService, simulationService);
                                 break;
-                            case 4:
+                            case 6:
                                 bookingService.processNextBooking();
                                 break;
-                            case 5:
+                            case 7:
                                 backToMainBooking = true;
                                 break;
                         }

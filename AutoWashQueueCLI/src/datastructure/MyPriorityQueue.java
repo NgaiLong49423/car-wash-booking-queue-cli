@@ -144,6 +144,21 @@ public class MyPriorityQueue<T extends Comparable<T>> {
     }
 
     /**
+     * Returns a snapshot from highest to lowest priority and restores this heap
+     * before returning, so monitoring operations do not change queue state.
+     */
+    public MyLinkedList<T> snapshotInPriorityOrder() {
+        MyLinkedList<T> items = new MyLinkedList<>();
+        while (!isEmpty()) {
+            items.addLast(poll());
+        }
+        for (int i = 0; i < items.size(); i++) {
+            insert(items.get(i));
+        }
+        return items;
+    }
+
+    /**
      * Duyệt và in toàn bộ phần tử trong heap ra màn hình.
      *
      * Lưu ý:
