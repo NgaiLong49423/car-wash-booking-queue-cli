@@ -1,13 +1,13 @@
 from pathlib import Path
 from shutil import copy2
+import os
 from docx import Document
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from PIL import Image, ImageDraw, ImageFont
-
-ROOT = Path(r"D:\Semester 4\CSD201\autowash-priority-booking-engine")
-TEMPLATE = Path(r"C:\Users\Lenovo\Downloads\Report_1_Template.docx")
+ROOT = Path(__file__).resolve().parents[1]
+TEMPLATE = Path(os.environ.get("REPORT1_TEMPLATE", ROOT / ".report1-work" / "Report_1_Template.docx"))
 OUT = ROOT / "docs" / "reports" / "Report_1_AutoWash_Priority_Booking_Engine.docx"
 ASSETS = ROOT / ".report1-work" / "assets"
 ASSETS.mkdir(parents=True, exist_ok=True)
