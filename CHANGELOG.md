@@ -3,6 +3,7 @@
 ### Added
 
 * Implemented Global and Customer History Reports (Issue #13). Total Revenue calculation is included in the Global Report.
+* Added Customer Portal in Main Menu to allow customers to log in using their ID and view their personal wash history (Issue #13, UC-06).
 
 ## [0.4.0] - 2026-07-11
 ### Author

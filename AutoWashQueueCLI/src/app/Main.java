@@ -65,6 +65,7 @@ public class Main {
                     "Queue Management (Booking)",
                     "Simulation Time Settings",
                     "History Reports",
+                    "Customer Portal",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -306,6 +307,33 @@ public class Main {
                     }
                     break;
                 case 7:
+                    // Customer Portal
+                    String loginId = ConsoleInputter.getStr("Enter your Customer ID to login");
+                    Customer currentCustomer = customerService.findCustomerById(loginId);
+                    if (currentCustomer == null) {
+                        System.out.println("=> Login failed. Customer not found.");
+                        break;
+                    }
+                    System.out.println("=> Welcome back, " + currentCustomer.getName() + "!");
+                    boolean backToMainCust = false;
+                    while (!backToMainCust) {
+                        int subChoice = ConsoleInputter.intMenu("CUSTOMER PORTAL",
+                                "View my wash history",
+                                "Logout");
+                        switch (subChoice) {
+                            case 1:
+                                historyService.displayCustomerHistory(historyList, currentCustomer.getCustomerId());
+                                break;
+                            case 2:
+                                backToMainCust = true;
+                                System.out.println("=> Logged out successfully.");
+                                break;
+                            default:
+                                System.out.println("Please select a valid option!");
+                        }
+                    }
+                    break;
+                case 8:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 
