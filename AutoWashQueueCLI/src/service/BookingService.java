@@ -126,6 +126,21 @@ public class BookingService {
         return selected == null ? null : selected.getBooking();
     }
 
+    /** Removes a specific booking from the waitlist, if it is present. */
+    public boolean removeFromWaitlist(String bookingId) {
+        MyLinkedList<WaitlistEntry> entries = drainWaitlist();
+        boolean removed = false;
+        for (int i = 0; i < entries.size(); i++) {
+            if (bookingId.equalsIgnoreCase(entries.get(i).getBooking().getBookingId())) {
+                entries.remove(i);
+                removed = true;
+                break;
+            }
+        }
+        restoreWaitlist(entries);
+        return removed;
+    }
+
     private WaitlistEntry selectHighestPriority(MyLinkedList<WaitlistEntry> entries, String date, String period) {
         WaitlistEntry selected = null;
         for (int i = 0; i < entries.size(); i++) {
