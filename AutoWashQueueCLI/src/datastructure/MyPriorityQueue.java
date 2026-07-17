@@ -9,7 +9,7 @@ package datastructure;
  *
  * T extends Comparable<T> nghĩa là kiểu T phải biết tự so sánh với T khác.
  * Ví dụ:
- * Booking implements Comparable<Booking>
+ * WaitlistEntry implements Comparable<WaitlistEntry>
  */
 public class MyPriorityQueue<T extends Comparable<T>> {
 

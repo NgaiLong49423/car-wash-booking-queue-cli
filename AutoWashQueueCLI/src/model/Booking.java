@@ -1,6 +1,6 @@
 package model;
 
-public class Booking implements Comparable<Booking> {
+public class Booking {
     private String bookingId;
     private String customerId;
     private String vehicleId;
@@ -11,7 +11,6 @@ public class Booking implements Comparable<Booking> {
     private String paymentStatus;
     private String paymentMethod;
     private long createdTime;
-    private int priorityRank;
 
     public Booking(String bookingId, String customerId, String vehicleId, String serviceId, String date, String period,
                    String bookingStatus, String paymentStatus, String paymentMethod, long createdTime) {
@@ -25,7 +24,6 @@ public class Booking implements Comparable<Booking> {
         this.paymentStatus = paymentStatus;
         this.paymentMethod = paymentMethod;
         this.createdTime = createdTime;
-        this.priorityRank = 1;
     }
 
     // Deprecated/Legacy constructor for compatibility with existing BookingService if needed, but we will update BookingService too.
@@ -64,31 +62,11 @@ public class Booking implements Comparable<Booking> {
     public long getCreatedTime() { return createdTime; }
     public void setCreatedTime(long createdTime) { this.createdTime = createdTime; }
 
-    public int getPriorityRank() { return priorityRank; }
-    public void setPriorityRank(int priorityRank) { this.priorityRank = priorityRank; }
-
     // Legacy getter used in existing code
     public String getLicensePlate() { return vehicleId; }
     public void setLicensePlate(String licensePlate) { this.vehicleId = licensePlate; }
     public String getStatus() { return bookingStatus; }
     public void setStatus(String status) { this.bookingStatus = status; }
-
-    @Override
-    public int compareTo(Booking other) {
-        if (this.priorityRank != other.priorityRank) {
-            return this.priorityRank - other.priorityRank;
-        }
-
-        if (this.createdTime < other.createdTime) {
-            return 1;
-        }
-
-        if (this.createdTime > other.createdTime) {
-            return -1;
-        }
-
-        return 0;
-    }
 
     @Override
     public String toString() {
