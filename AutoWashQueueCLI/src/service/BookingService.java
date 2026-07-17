@@ -22,23 +22,23 @@ public class BookingService {
         this.waitlist = new MyLinkedList<>();
     }
 
-    // TÍNH NĂNG 1: Xem các xe đang xếp hàng
+    // Feature 1: Display the current booking queue.
     public void displayQueue() {
-        System.out.println("\n--- HANG DOI RUA XE ---");
+        System.out.println("\n--- BOOKING QUEUE ---");
         if (bookingQueue.isEmpty()) {
-            System.out.println("Hien tai khong co xe nao dang cho.");
+            System.out.println("There are no bookings waiting to be served.");
             return;
         }
         bookingQueue.display();
         System.out.println("-----------------------");
     }
 
-    // TÍNH NĂNG 2: Xếp xe vào hàng đợi (Thêm vào cuối - enqueue)
+    // Feature 2: Add a booking to the end of the queue.
     public void addBooking(String bookingId, String licensePlate, String serviceId) {
         Booking newBooking = new Booking(
                 bookingId, 
                 "C000", // Default Customer ID for now (Issue 3 / 7 responsibility)
-                licensePlate, // Vehicle identifier (Mã xe / Biển số)
+                licensePlate, // Vehicle identifier (vehicle ID or license plate)
                 serviceId, 
                 "2026-07-10", // Default Date (Issue 6 responsibility)
                 "MORNING", // Default Period (Issue 6 responsibility)
@@ -49,16 +49,16 @@ public class BookingService {
         );
         bookingQueue.enqueue(newBooking);
         bookingList.addLast(newBooking);
-        System.out.println("=> Da dat lich! Xe " + licensePlate + " da vao hang doi.");
+        System.out.println("=> Booking created. Vehicle " + licensePlate + " was added to the queue.");
         
         // Auto-save bookings on change (FR-23)
         FileManager.saveBookings(bookingList);
     }
 
-    // TÍNH NĂNG 3: Đưa xe vào rửa (Lấy ra khỏi đầu hàng - dequeue)
+    // Feature 3: Start processing the booking at the front of the queue.
     public void processNextBooking() {
         if (bookingQueue.isEmpty()) {
-            System.out.println("=> Khong co xe nao dang cho de xu ly.");
+            System.out.println("=> There is no waiting booking to process.");
             return;
         }
         Booking nextToWash = bookingQueue.dequeue();
@@ -74,7 +74,7 @@ public class BookingService {
             }
         }
         
-        System.out.println("=> DANG XU LY: " + nextToWash.toString());
+        System.out.println("=> NOW SERVING: " + nextToWash.toString());
         
         // Auto-save bookings on change (FR-23)
         FileManager.saveBookings(bookingList);
@@ -106,7 +106,7 @@ public class BookingService {
     public Booking completeBooking(String bookingID){
         Booking b = null;
         if (bookingList.isEmpty()) {
-            System.out.println("=> Khong co xe nao dang cho de xu ly.");
+            System.out.println("=> There are no bookings in the system.");
         }else{
             int size = bookingList.size();
             for (int i = 0; i < size; i++) {
@@ -116,13 +116,13 @@ public class BookingService {
                             && b.getPaymentStatus().equalsIgnoreCase("paid")) {
                         bookingStack.clear();
                         bookingStack.push(b);
-                        b.setStatus("Completed");
+                        b.setStatus("COMPLETED");
                         FileManager.saveBookings(bookingList);
                         break;
                     } else if (!b.getBookingStatus().equalsIgnoreCase("serving")) {
-                        System.out.println("Xe chua duoc xu ly");
+                        System.out.println("The booking has not been processed yet.");
                     } else {
-                        System.out.println("Chua tra phi");
+                        System.out.println("The booking has not been paid.");
                     }
                 }
             }
@@ -132,17 +132,17 @@ public class BookingService {
     
     public void cancelBooking(String bookingID){
         if(bookingList.isEmpty() && bookingQueue.isEmpty()){
-            System.out.println("=> Khong co xe nao dang cho de xu ly.");
+            System.out.println("=> There are no bookings in the system.");
         }else{
             int size = bookingList.size();
             for(int i=0; i<size; i++){
                 Booking b = bookingList.get(i);
                 if (b.getBookingId().equals(bookingID)) {
                     if (!b.getBookingStatus().equalsIgnoreCase("completed")) {
-                        b.setStatus("Cancelled");
+                        b.setStatus("CANCELLED");
                         break;
                     } else {
-                        System.out.println("Luot dat nay da duoc hoan thanh");
+                        System.out.println("This booking has already been completed.");
                     }
                 }
             }
@@ -154,7 +154,7 @@ public class BookingService {
     
     public Booking undoCompletion(){
         if(bookingStack.isEmpty()){
-            System.out.println("Khong co gi de undo");
+            System.out.println("There is no completed booking to undo.");
             return null;
         }else{
             Booking b = bookingStack.pop();
@@ -162,12 +162,12 @@ public class BookingService {
             for(int i=0; i<size; i++){
                 Booking currentServ = bookingList.get(i);
                 if(currentServ.getBookingStatus().equalsIgnoreCase("Serving")){
-                    currentServ.setBookingStatus("Waiting");
+                    currentServ.setBookingStatus("WAITING");
                     bookingQueue.enqueueFront(currentServ);
                     break;
                 }
             }
-            b.setBookingStatus("Serving");
+            b.setBookingStatus("SERVING");
             FileManager.saveBookings(bookingList);
             return b;
         }
