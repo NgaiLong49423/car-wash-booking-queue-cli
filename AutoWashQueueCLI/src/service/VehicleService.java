@@ -110,6 +110,34 @@ public class VehicleService {
         return null;
     }
 
+    public Vehicle findVehicleById(String vehicleId) {
+        if (vehicleId == null || vehicleId.trim().isEmpty()) {
+            return null;
+        }
+
+        for (int i = 0; i < vehicleList.size(); i++) {
+            Vehicle v = vehicleList.get(i);
+            if (v.getId().equalsIgnoreCase(vehicleId.trim())) {
+                return v;
+            }
+        }
+
+        return null;
+    }
+
+    public Vehicle findVehicleByIdOrLicense(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return null;
+        }
+
+        Vehicle byId = findVehicleById(input);
+        if (byId != null) {
+            return byId;
+        }
+
+        return findVehicleByLicense(input);
+    }
+
     public void updateVehicle(String licensePlate, String newCustomerId, CustomerService customerService) {
         Vehicle v = findVehicleByLicense(licensePlate);
         if (v == null) {
@@ -143,7 +171,9 @@ public class VehicleService {
         MyLinkedList<Booking> bookings = bookingService.getBookingList();
         for (int i = 0; i < bookings.size(); i++) {
             String bVehId = bookings.get(i).getVehicleId();
-            if (bVehId != null && bVehId.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
+            boolean sameVehicleId = bVehId != null && bVehId.equalsIgnoreCase(v.getId());
+            boolean samePlate = bVehId != null && bVehId.replace(" ", "").equalsIgnoreCase(cleanPlate);
+            if (sameVehicleId || samePlate) {
                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated booking(s)!");
                 return;
             }

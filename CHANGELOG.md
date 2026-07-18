@@ -5,7 +5,33 @@
 * Implemented Global and Customer History Reports (Issue #13). Total Revenue calculation is included in the Global Report.
 * Added Customer Portal in Main Menu to allow customers to log in using their ID and view their personal wash history (Issue #13, UC-06).
 
+## [0.5.0] - 2026-07-18
+
+### Author
+
+* Prepared by Ngô Gia Long (SE190732) and Agent.
+
+### Added
+
+* Added read-only queue monitoring for the active service period, including a FIFO view of the Main Queue and a priority-ordered view of the Waitlist.
+* Added non-destructive queue snapshots so monitoring can display Main Queue and Max-Heap Waitlist contents without removing or reordering live bookings.
+* Added formatted booking tables showing booking ID, license plate, wash service, membership tier, booking status, and used-versus-total slot capacity.
+* Added views for future bookings by date and period, plus customer-specific active bookings filtered to `WAITING` and `SERVING` states.
+* Added booking completion for `SERVING` and `PAID` bookings, including status transition to `COMPLETED`, wash-history creation, and persistent data updates.
+* Added loyalty recalculation from all completed bookings, covering visit count, total spending, loyalty points, and highest eligible membership tier.
+* Added Waitlist promotion after completion when the highest-priority booking fits within the remaining service-period time.
+* Added customer cancellation for the customer's own `WAITING` bookings and administrator cancellation for `WAITING` or `SERVING` bookings.
+* Added cancellation-aware queue coordination: removal from Main Queue or Waitlist, release of the current service position, and promotion of the highest-priority Waitlist booking when eligible.
+* Added preservation of an existing `PAID` payment status when a `SERVING` booking is cancelled, without creating completion history or loyalty credit.
+
+### Changed
+
+* Updated remaining-time calculations to include completed bookings, the currently serving booking, and waiting bookings that occupy Main Queue slots, while excluding Waitlist and future bookings.
+* Standardized newly added queue, completion, cancellation, and monitoring messages in English to follow the application's interface-language requirement.
+* Synchronized documentation work with the latest `main` branch after the queue monitoring, completion, loyalty, cancellation, and Waitlist coordination features were integrated.
+
 ## [0.4.0] - 2026-07-11
+
 ### Author
 
 * Prepared by Ngô Gia Long (SE190732) and Agent.

@@ -9,7 +9,7 @@ package datastructure;
  *
  * T extends Comparable<T> nghĩa là kiểu T phải biết tự so sánh với T khác.
  * Ví dụ:
- * Booking implements Comparable<Booking>
+ * WaitlistEntry implements Comparable<WaitlistEntry>
  */
 public class MyPriorityQueue<T extends Comparable<T>> {
 
@@ -141,6 +141,21 @@ public class MyPriorityQueue<T extends Comparable<T>> {
         }
 
         size = 0;
+    }
+
+    /**
+     * Returns a snapshot from highest to lowest priority and restores this heap
+     * before returning, so monitoring operations do not change queue state.
+     */
+    public MyLinkedList<T> snapshotInPriorityOrder() {
+        MyLinkedList<T> items = new MyLinkedList<>();
+        while (!isEmpty()) {
+            items.addLast(poll());
+        }
+        for (int i = 0; i < items.size(); i++) {
+            insert(items.get(i));
+        }
+        return items;
     }
 
     /**
