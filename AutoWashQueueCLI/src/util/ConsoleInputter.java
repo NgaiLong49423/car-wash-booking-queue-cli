@@ -12,21 +12,20 @@ public class ConsoleInputter {
     public static Scanner scanner = new Scanner(System.in);
 
     public static boolean getBoolean(String prompt) {
-        System.out.println(prompt + " Yes/No, True/False, 1/0");
-        String data = scanner.nextLine().trim().toLowerCase();
-        if (data.isEmpty()) {
-            return false; // Trả về false nếu không nhập gì
-        }
-        char c = data.charAt(0);
-        switch (c) {
-            case 'y':
-            case 't':
-            case '1':
-                return true;
-            default:
+        while (true) {
+            System.out.print(prompt + " [Y/N]: ");
+            if (!scanner.hasNextLine()) {
                 return false;
+            }
+            String data = scanner.nextLine().trim().toLowerCase();
+            if (data.equals("y") || data.equals("yes") || data.equals("true") || data.equals("1")) {
+                return true;
+            }
+            if (data.equals("n") || data.equals("no") || data.equals("false") || data.equals("0")) {
+                return false;
+            }
+            System.out.println("Error: Please enter Y or N.");
         }
-
     }
 
     public static int getInt(String prompt, int min, int max) {
@@ -46,6 +45,9 @@ public class ConsoleInputter {
                 System.out.println(prompt + " [ <" + min + "> ->  <" + max + "> ]");
 
                 // Sử dụng biến 'sc' (theo đúng tên khai báo trong ConsoleInputter của bạn)
+                if (!scanner.hasNextLine()) {
+                    return min;
+                }
                 String input = scanner.nextLine().trim();
                 result = Integer.parseInt(input);
 
@@ -53,11 +55,11 @@ public class ConsoleInputter {
                 if (result >= min && result <= max) {
                     isValid = true;
                 } else {
-                    System.err.println("Lỗi: Số phải nằm trong khoảng từ " + min + " đến " + max + "!");
+                    System.err.println("Error: Number must be between " + min + " and " + max + ".");
                 }
             } catch (NumberFormatException e) {
                 // 3. Bẫy lỗi nếu người dùng nhập chữ hoặc để trống (thay thế cho kiểm tra null)
-                System.err.println("Lỗi: Vui lòng chỉ nhập số thực hợp lệ!");
+                System.err.println("Error: Please enter a valid integer.");
             }
         } while (!isValid);
 
@@ -81,6 +83,9 @@ public class ConsoleInputter {
                 System.out.println(prompt + " [ <" + min + "> ->  <" + max + "> ]");
 
                 // Sử dụng biến 'sc' (theo đúng tên khai báo trong ConsoleInputter của bạn)
+                if (!scanner.hasNextLine()) {
+                    return min;
+                }
                 String input = scanner.nextLine().trim();
                 result = Double.parseDouble(input);
 
@@ -88,11 +93,11 @@ public class ConsoleInputter {
                 if (result >= min && result <= max) {
                     isValid = true;
                 } else {
-                    System.err.println("Lỗi: Số phải nằm trong khoảng từ " + min + " đến " + max + "!");
+                    System.err.println("Error: Number must be between " + min + " and " + max + ".");
                 }
             } catch (NumberFormatException e) {
                 // 3. Bẫy lỗi nếu người dùng nhập chữ hoặc để trống (thay thế cho kiểm tra null)
-                System.err.println("Lỗi: Vui lòng chỉ nhập số nguyên hợp lệ!");
+                System.err.println("Error: Please enter a valid number.");
             }
         } while (!isValid);
 
@@ -103,23 +108,31 @@ public class ConsoleInputter {
 // 1) In prompt. 2) Nếu không có dòng tiếp theo return rỗng. 
 // 3) Đọc data và trim. 4) Nếu rỗng thì đệ quy nhập lại, không thì return data.
     public static String getStr(String prompt) {
-        System.out.print(prompt + ": ");
-        if (!scanner.hasNextLine()) {
-            return ""; // Check stream tồn tại 
+        while (true) {
+            System.out.print(prompt + ": ");
+            if (!scanner.hasNextLine()) {
+                return "";
+            }
+            String data = scanner.nextLine().trim();
+            if (!data.isEmpty()) {
+                return data;
+            }
+            System.out.println("Error: Input cannot be empty.");
         }
-        String data = scanner.nextLine().trim();
-        return data.isEmpty() ? getStr(prompt) : data;
     }
 
     public static String getStr(String prompt, String pattern, String errorMsg) {
         String data;
         while (true) {
-            System.out.println(prompt + ": ");
+            System.out.print(prompt + ": ");
+            if (!scanner.hasNextLine()) {
+                return "";
+            }
             data = scanner.nextLine().trim();
 
             // Bước 1: chặn lỗi nhập lỗi trống hoặc toàn dấu cách
             if (data.isEmpty()) {
-                System.out.println("Lỗi: Dữ liệu không được để trống. Vui lòng nhập lại!");
+                System.out.println("Error: Input cannot be empty. Please try again.");
                 continue; // Quay lại vòng lặp để nhập lại
             }
 
@@ -146,11 +159,14 @@ public class ConsoleInputter {
         // Vòng lặp nhập ngày tháng
         while (true) {
             System.out.print(prompt + " (format: " + dataFormat + "): ");
+            if (!scanner.hasNextLine()) {
+                return null;
+            }
             String dateStr = scanner.nextLine().trim();
 
             // Bước 1: Chặn lỗi nhập rỗng
             if (dateStr.isEmpty()) {
-                System.out.println("Lỗi: Dữ liệu không được để trống. Vui lòng nhập lại!");
+                System.out.println("Error: Input cannot be empty. Please try again.");
                 continue; // Quay lại vòng lặp để nhập lại
             }
 
@@ -160,8 +176,7 @@ public class ConsoleInputter {
             } catch (ParseException e) {
                 // Bước 3: Báo lỗi nếu nhập sai định dạng hoặc ngày không tồn tại
                 System.out
-                        .println("Lỗi: Ngày không hợp lệ hoặc không đúng định dạng. Vui lòng nhập lại! Theo định dạng "
-                                + dataFormat);
+                        .println("Error: Enter a valid date using format " + dataFormat + ".");
             }
         }
     }
@@ -220,7 +235,7 @@ public class ConsoleInputter {
      */
     public static int intMenu(String title, Object... options) {
         if (options == null || options.length == 0) {
-            System.out.println("Lỗi: Menu không có lựa chọn nào!");
+            System.out.println("Error: This menu has no options.");
             return -1;
         }
 
@@ -255,7 +270,7 @@ public class ConsoleInputter {
     // nào"
     public static int intMenu(String title, List<?> options) {
         if (options == null || options.isEmpty()) {
-            System.out.println("Lỗi: Danh sách menu trống!");
+            System.out.println("Error: This menu has no options.");
             return -1;
         }
         // Chuyển List thành mảng Object và gọi hàm intMenu (phiên bản 2 tham số)
@@ -298,6 +313,9 @@ public class ConsoleInputter {
 
     public static String updateStr(String prompt, String oldVal) {
         System.out.printf("%s (Old: %s, Enter to skip): ", prompt, oldVal);
+        if (!scanner.hasNextLine()) {
+            return oldVal;
+        }
         String input = scanner.nextLine().trim();
         return input.isEmpty() ? oldVal : input;
     }
@@ -306,6 +324,9 @@ public class ConsoleInputter {
     public static int updateInt(String prompt, int oldVal) {
         while (true) {
             System.out.printf("%s (Old: %d, Enter to skip): ", prompt, oldVal);
+            if (!scanner.hasNextLine()) {
+                return oldVal;
+            }
             String input = scanner.nextLine().trim();
             if (input.isEmpty()) {
                 return oldVal;
@@ -315,15 +336,18 @@ public class ConsoleInputter {
                 if (val > 0) {
                     return val;
                 }
-                System.err.println("Lỗi: Số phải lớn hơn 0!");
+                System.err.println("Error: Number must be greater than 0.");
             } catch (NumberFormatException e) {
-                System.err.println("Lỗi: Vui lòng nhập số hợp lệ!");
+                System.err.println("Error: Please enter a valid integer.");
             }
         }
     }
 
     public static String getStrOptional(String prompt) {
         System.out.print(prompt + ": ");
+        if (!scanner.hasNextLine()) {
+            return "";
+        }
         return scanner.nextLine().trim(); // Trả về chuỗi rỗng nếu chỉ nhấn Enter
     }
 
@@ -331,6 +355,9 @@ public class ConsoleInputter {
         SimpleDateFormat sdf = new SimpleDateFormat(format);
         sdf.setLenient(false);
         System.out.printf("%s (Old: %s, Enter to skip): ", prompt, sdf.format(oldDate));
+        if (!scanner.hasNextLine()) {
+            return oldDate;
+        }
         String input = scanner.nextLine().trim();
         if (input.isEmpty()) {
             return oldDate;
@@ -338,8 +365,58 @@ public class ConsoleInputter {
         try {
             return sdf.parse(input);
         } catch (ParseException e) {
-            System.out.println("Lỗi: Định dạng không đúng. Giữ lại giá trị cũ.");
+            System.out.println("Error: Invalid date format. The previous value was kept.");
             return oldDate;
+        }
+    }
+
+    public static int intMenuWithZero(String title, String zeroOption, Object... options) {
+        if (options == null || options.length == 0) {
+            System.out.println("Error: This menu has no options.");
+            return 0;
+        }
+
+        int maxLen = Math.max(title.length(), zeroOption.length());
+        for (Object option : options) {
+            maxLen = Math.max(maxLen, option.toString().length());
+        }
+        int totalWidth = maxLen + 12;
+
+        System.out.println();
+        printLine('=', totalWidth);
+        printCenter(title.toUpperCase(), totalWidth);
+        printLine('=', totalWidth);
+        for (int i = 0; i < options.length; i++) {
+            System.out.printf("| %2d. %-" + (totalWidth - 8) + "s |%n", i + 1, options[i]);
+        }
+        System.out.printf("| %2d. %-" + (totalWidth - 8) + "s |%n", 0, zeroOption);
+        printLine('=', totalWidth);
+        return getInt("Your choice", 0, options.length);
+    }
+
+    public static String getIsoDate(String prompt) {
+        return dateStr(getDate(prompt, "yyyy-MM-dd"), "yyyy-MM-dd");
+    }
+
+    public static double updateDouble(String prompt, double oldVal) {
+        while (true) {
+            System.out.printf("%s (Old: %.0f, Enter to skip): ", prompt, oldVal);
+            if (!scanner.hasNextLine()) {
+                return oldVal;
+            }
+            String input = scanner.nextLine().trim();
+            if (input.isEmpty()) {
+                return oldVal;
+            }
+            try {
+                double value = Double.parseDouble(input);
+                if (value > 0) {
+                    return value;
+                }
+                System.err.println("Error: Number must be greater than 0.");
+            } catch (NumberFormatException e) {
+                System.err.println("Error: Please enter a valid number.");
+            }
         }
     }
 
