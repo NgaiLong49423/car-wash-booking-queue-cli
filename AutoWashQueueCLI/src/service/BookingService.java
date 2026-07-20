@@ -9,6 +9,7 @@ import model.Booking;
 import model.BookingActionResult;
 import model.CompletionRecord;
 import model.Customer;
+import model.History;
 import model.PeriodActivationResult;
 import model.Vehicle;
 import model.WaitlistEntry;
@@ -25,6 +26,7 @@ public class BookingService {
     private MyStack<CompletionRecord> completionStack;
     private MyPriorityQueue<WaitlistEntry> waitlist;
     private MyMap<String, Integer> bookingWindows;
+    private int highestHistoricalBookingId;
 
     public BookingService() {
         this.bookingQueue = new MyQueue<>();
@@ -32,6 +34,7 @@ public class BookingService {
         this.completionStack = new MyStack<>();
         this.waitlist = new MyPriorityQueue<>();
         this.bookingWindows = new MyMap<>();
+        this.highestHistoricalBookingId = 0;
         bookingWindows.put("MEMBER", 7);
         bookingWindows.put("SILVER", 10);
         bookingWindows.put("GOLD", 12);
@@ -416,22 +419,26 @@ public class BookingService {
     }
 
     private String generateNextBookingId() {
-        int maxId = 0;
+        int maxId = highestHistoricalBookingId;
         for (int i = 0; i < bookingList.size(); i++) {
             String id = bookingList.get(i).getBookingId();
-            if (id == null || id.length() < 2 || !id.toUpperCase().startsWith("B")) {
-                continue;
-            }
-            try {
-                int numericId = Integer.parseInt(id.substring(1));
-                if (numericId > maxId) {
-                    maxId = numericId;
-                }
-            } catch (NumberFormatException ignored) {
-                // Invalid legacy IDs are ignored when calculating the next valid ID.
+            int numericId = parseBookingId(id);
+            if (numericId > maxId) {
+                maxId = numericId;
             }
         }
         return String.format("B%03d", maxId + 1);
+    }
+
+    private int parseBookingId(String id) {
+        if (id == null || id.length() < 2 || !id.toUpperCase().startsWith("B")) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(id.substring(1));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
     }
 
     /** Starts the first WAITING booking in Main Queue while enforcing one SERVING booking. */
@@ -529,6 +536,20 @@ public class BookingService {
 
     public MyLinkedList<Booking> getBookingList() {
         return bookingList;
+    }
+
+    /** Keeps newly generated booking IDs unique across active bookings and history. */
+    public void synchronizeBookingSequence(MyLinkedList<History> historyList) {
+        highestHistoricalBookingId = 0;
+        if (historyList == null) {
+            return;
+        }
+        for (int i = 0; i < historyList.size(); i++) {
+            int numericId = parseBookingId(historyList.get(i).getBookingId());
+            if (numericId > highestHistoricalBookingId) {
+                highestHistoricalBookingId = numericId;
+            }
+        }
     }
 
     public MyPriorityQueue<WaitlistEntry> getWaitlist() {

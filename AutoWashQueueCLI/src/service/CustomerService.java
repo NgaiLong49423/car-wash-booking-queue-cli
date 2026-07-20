@@ -31,6 +31,12 @@ public class CustomerService {
             System.out.println("=> Error: Phone number cannot be empty!");
             return;
         }
+        if (!isValidPhone(phone)) {
+            System.out.println("=> Error: Phone number must contain exactly 10 digits and start with 0.");
+            return;
+        }
+
+        phone = phone.trim();
 
         int size = customerList.size();
         for (int i = 0; i < size; i++) {
@@ -107,6 +113,12 @@ public class CustomerService {
                 System.out.println("=> Error: Phone number cannot be empty!");
                 return;
             }
+            if (!isValidPhone(newPhone)) {
+                System.out.println("=> Error: Phone number must contain exactly 10 digits and start with 0.");
+                return;
+            }
+
+            newPhone = newPhone.trim();
 
             if (!c.getPhone().equals(newPhone)) {
                 int size = customerList.size();
@@ -179,5 +191,9 @@ public class CustomerService {
 
     public MyLinkedList<Customer> getCustomerList() {
         return customerList;
+    }
+
+    private boolean isValidPhone(String phone) {
+        return phone != null && phone.trim().matches("0\\d{9}");
     }
 }
