@@ -9,6 +9,7 @@ import service.WashServiceManager;
 import util.ConsoleInputter;
 import datastructure.MyLinkedList;
 import model.Period;
+import model.PeriodActivationResult;
 import model.History;
 import model.Customer;
 import model.Vehicle;
@@ -52,9 +53,8 @@ public class Main {
                 washService, vehicleService, historyList);
         CancellationService cancellationService = new CancellationService(bookingService, washService);
 
-        // Restore Main Queue and Waitlist for the active period.
-        bookingService.rebuildCurrentQueues(simulationService.getCurrentDateStr(),
-                simulationService.getCurrentPeriodStr(), customerService);
+        // Restore queues only when the persisted current period was activated.
+        syncCurrentQueues(bookingService, simulationService, customerService);
 
         // 3. Main Menu Loop
         while (true) {
@@ -305,6 +305,7 @@ public class Main {
                                 "View current simulation time",
                                 "Set current date",
                                 "Set current period",
+                                "Activate current service period",
                                 "Back to main menu");
                         switch (subChoice) {
                             case 1:
@@ -313,6 +314,7 @@ public class Main {
                             case 2:
                                 String newDate = ConsoleInputter.getStr("Enter new date (YYYY-MM-DD)");
                                 simulationService.setCurrentDate(newDate);
+                                syncCurrentQueues(bookingService, simulationService, customerService);
                                 break;
                             case 3:
                                 int periodChoice = ConsoleInputter.intMenu("SELECT PERIOD",
@@ -320,8 +322,14 @@ public class Main {
                                         "AFTERNOON",
                                         "EVENING");
                                 simulationService.setCurrentPeriod(periodChoice);
+                                syncCurrentQueues(bookingService, simulationService, customerService);
                                 break;
                             case 4:
+                                PeriodActivationResult activationResult = simulationService.activateCurrentPeriod(
+                                        bookingService, customerService);
+                                System.out.println("=> " + activationResult.getMessage());
+                                break;
+                            case 5:
                                 backToMainSim = true;
                                 break;
                         }
@@ -366,6 +374,16 @@ public class Main {
                 default:
                     System.out.println("Please select a valid option!");
             }
+        }
+    }
+
+    private static void syncCurrentQueues(BookingService bookingService,
+            SimulationService simulationService, CustomerService customerService) {
+        if (simulationService.isCurrentPeriodActivated()) {
+            bookingService.rebuildCurrentQueues(simulationService.getCurrentDateStr(),
+                    simulationService.getCurrentPeriodStr(), customerService);
+        } else {
+            bookingService.clearCurrentQueues();
         }
     }
 }
