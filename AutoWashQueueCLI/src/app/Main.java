@@ -22,6 +22,7 @@ import service.CancellationService;
 import model.CancellationResult;
 import service.UndoService;
 import model.UndoResult;
+import service.HistoryService;
 
 public class Main {
     public static void main(String[] args) {
@@ -57,6 +58,7 @@ public class Main {
         CancellationService cancellationService = new CancellationService(bookingService, washService);
         UndoService undoService = new UndoService(bookingService, completionService,
                 customerService, historyList);
+        HistoryService historyService = new HistoryService();
 
         // Restore queues only when the persisted current period was activated.
         syncCurrentQueues(bookingService, simulationService, customerService);
@@ -72,6 +74,7 @@ public class Main {
                     "Complete Booking",
                     "Cancel Booking",
                     "Undo Last Completed Booking",
+                    "History Reports",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -412,6 +415,29 @@ public class Main {
                     }
                     break;
                 case 9:
+                    boolean backToMainHistory = false;
+                    while (!backToMainHistory) {
+                        int historyChoice = ConsoleInputter.intMenu("HISTORY REPORTS",
+                                "Display global history",
+                                "Display history by customer ID",
+                                "Back to main menu");
+                        switch (historyChoice) {
+                            case 1:
+                                historyService.displayGlobalHistory(historyList);
+                                break;
+                            case 2:
+                                String historyCustomerId = ConsoleInputter.getStr("Enter customer ID");
+                                historyService.displayCustomerHistory(historyList, historyCustomerId);
+                                break;
+                            case 3:
+                                backToMainHistory = true;
+                                break;
+                            default:
+                                System.out.println("Please select a valid option!");
+                        }
+                    }
+                    break;
+                case 10:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 
