@@ -1,6 +1,7 @@
 package service;
 
 import datastructure.MyLinkedList;
+import model.PeriodActivationResult;
 import model.Period;
 import util.FileManager;
 
@@ -26,6 +27,7 @@ public class SimulationService {
         String period = getCurrentPeriodStr();
         System.out.println("Date   : " + (date != null ? date : "NOT SET"));
         System.out.println("Period : " + (period != null ? period : "NOT SET"));
+        System.out.println("Status : " + (isCurrentPeriodActivated() ? "ACTIVATED" : "NOT_ACTIVATED"));
         System.out.println("-------------------------------");
     }
 
@@ -38,14 +40,7 @@ public class SimulationService {
     }
 
     public String getCurrentPeriodStr() {
-        int size = periods.size();
-        for (int i = 0; i < size; i++) {
-            Period p = periods.get(i);
-            if ("ACTIVATED".equalsIgnoreCase(p.getStatus())) {
-                return p.getPeriodName();
-            }
-        }
-        return null;
+        return periods.isEmpty() ? null : periods.get(0).getPeriodName();
     }
 
     public void setCurrentDate(String dateStr) {
@@ -53,11 +48,12 @@ public class SimulationService {
             // Validate date format YYYY-MM-DD
             LocalDate.parse(dateStr);
             
-            // Apply to all periods
-            int size = periods.size();
-            for (int i = 0; i < size; i++) {
-                periods.get(i).setDate(dateStr);
+            String currentPeriod = getCurrentPeriodStr();
+            if (currentPeriod == null) {
+                currentPeriod = "MORNING";
             }
+            ensureDatePeriods(dateStr);
+            moveCurrentPeriodToFront(dateStr, currentPeriod);
             
             System.out.println("=> Successfully set current date to: " + dateStr);
             FileManager.savePeriods(periods); // Auto-save
@@ -77,24 +73,91 @@ public class SimulationService {
                 return;
         }
 
-        boolean found = false;
-        int size = periods.size();
-        for (int i = 0; i < size; i++) {
-            Period p = periods.get(i);
-            if (p.getPeriodName().equalsIgnoreCase(periodName)) {
-                p.setStatus("ACTIVATED");
-                found = true;
-            } else {
-                p.setStatus("NOT_ACTIVATED");
-            }
-        }
-
-        if (found) {
+        String currentDate = getCurrentDateStr();
+        if (currentDate != null) {
+            ensureDatePeriods(currentDate);
+            moveCurrentPeriodToFront(currentDate, periodName);
             System.out.println("=> Successfully set current period to: " + periodName);
             FileManager.savePeriods(periods); // Auto-save
         } else {
-            // If the list was somehow missing the periods, we can add them here, but we assume periods.txt is pre-populated
-            System.out.println("=> Error: Period data is missing or corrupted. Cannot set period.");
+            System.out.println("=> Error: Set the current simulation date before selecting a period.");
+        }
+    }
+
+    public boolean isCurrentPeriodActivated() {
+        return isPeriodActivated(getCurrentDateStr(), getCurrentPeriodStr());
+    }
+
+    public boolean isPeriodActivated(String date, String periodName) {
+        Period period = findPeriod(date, periodName);
+        return period != null && period.isActive();
+    }
+
+    public PeriodActivationResult activateCurrentPeriod(BookingService bookingService,
+            CustomerService customerService) {
+        String currentDate = getCurrentDateStr();
+        String currentPeriod = getCurrentPeriodStr();
+        if (currentDate == null || currentPeriod == null) {
+            return PeriodActivationResult.failure("Current simulation date and period must be configured first.");
+        }
+
+        Period period = findPeriod(currentDate, currentPeriod);
+        if (period == null) {
+            return PeriodActivationResult.failure("Current period data is missing or corrupted.");
+        }
+        if (period.isActive()) {
+            return PeriodActivationResult.failure(currentDate + " " + currentPeriod
+                    + " has already been activated.");
+        }
+
+        PeriodActivationResult result = bookingService.activatePeriod(currentDate, currentPeriod, customerService);
+        if (!result.isSuccessful()) {
+            return result;
+        }
+
+        period.setStatus("ACTIVATED");
+        FileManager.savePeriods(periods);
+        FileManager.saveBookings(bookingService.getBookingList());
+        return result;
+    }
+
+    private Period findPeriod(String date, String periodName) {
+        if (date == null || periodName == null) {
+            return null;
+        }
+        for (int i = 0; i < periods.size(); i++) {
+            Period period = periods.get(i);
+            if (date.equals(period.getDate()) && periodName.equalsIgnoreCase(period.getPeriodName())) {
+                return period;
+            }
+        }
+        return null;
+    }
+
+    private void ensureDatePeriods(String date) {
+        ensurePeriod(date, "MORNING");
+        ensurePeriod(date, "AFTERNOON");
+        ensurePeriod(date, "EVENING");
+    }
+
+    private void ensurePeriod(String date, String periodName) {
+        if (findPeriod(date, periodName) == null) {
+            periods.addLast(new Period(date, periodName, "NOT_ACTIVATED"));
+        }
+    }
+
+    /**
+     * The first record in periods.txt is the persisted simulation cursor. The
+     * status remains independent and records whether that date/period was activated.
+     */
+    private void moveCurrentPeriodToFront(String date, String periodName) {
+        for (int i = 0; i < periods.size(); i++) {
+            Period period = periods.get(i);
+            if (date.equals(period.getDate()) && periodName.equalsIgnoreCase(period.getPeriodName())) {
+                periods.remove(i);
+                periods.addFirst(period);
+                return;
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ import datastructure.MyStack;
 import model.Booking;
 import model.CompletionRecord;
 import model.Customer;
+import model.PeriodActivationResult;
 import model.Vehicle;
 import model.WaitlistEntry;
 import model.WashPackage;
@@ -166,17 +167,38 @@ public class BookingService {
      * priority-based Waitlist.
      */
     public void rebuildCurrentQueues(String date, String period, CustomerService customerService) {
+        allocatePeriod(date, period, customerService);
+    }
+
+    /** Allocates all WAITING bookings for one period by tier and creation time. */
+    public PeriodActivationResult activatePeriod(String date, String period,
+            CustomerService customerService) {
+        if (date == null || !isValidPeriod(period) || customerService == null) {
+            return PeriodActivationResult.failure("Current date, period, or customer data is invalid.");
+        }
+
+        PeriodActivationResult allocation = allocatePeriod(date, period, customerService);
+        String message = "Activated " + date + " " + period.toUpperCase()
+                + ": " + allocation.getMainQueueCount() + " booking(s) in Main Queue, "
+                + allocation.getWaitlistCount() + " booking(s) in Waitlist.";
+        if (allocation.getOverflowCount() > 0) {
+            message += " Warning: " + allocation.getOverflowCount()
+                    + " booking(s) exceeded capacity and were not allocated.";
+        }
+        return new PeriodActivationResult(true, message, allocation.getMainQueueCount(),
+                allocation.getWaitlistCount(), allocation.getOverflowCount());
+    }
+
+    private PeriodActivationResult allocatePeriod(String date, String period,
+            CustomerService customerService) {
         bookingQueue.clear();
         waitlist.clear();
         if (date == null || !isValidPeriod(period) || customerService == null) {
-            return;
+            return PeriodActivationResult.failure("Cannot allocate an invalid service period.");
         }
 
-        int availableMainSlots = getMainCapacity(period) - countServingBookings(date, period);
-        if (availableMainSlots < 0) {
-            availableMainSlots = 0;
-        }
-
+        MyPriorityQueue<WaitlistEntry> candidates = new MyPriorityQueue<>();
+        int overflowCount = 0;
         for (int i = 0; i < bookingList.size(); i++) {
             Booking booking = bookingList.get(i);
             if (!date.equals(booking.getDate())
@@ -184,20 +206,30 @@ public class BookingService {
                     || !"WAITING".equalsIgnoreCase(booking.getBookingStatus())) {
                 continue;
             }
-
-            if (bookingQueue.size() < availableMainSlots) {
-                bookingQueue.enqueue(booking);
+            Customer customer = customerService.findCustomerById(booking.getCustomerId());
+            if (customer == null) {
+                overflowCount++;
                 continue;
             }
-
-            Customer customer = customerService.findCustomerById(booking.getCustomerId());
-            if (waitlist.size() < getWaitlistCapacity(period) && customer != null) {
-                addToWaitlist(booking, customer);
-            } else {
-                System.out.println("=> Warning: Booking " + booking.getBookingId()
-                        + " exceeds the configured capacity for " + date + " " + period.toUpperCase() + ".");
-            }
+            candidates.insert(new WaitlistEntry(booking, getTierPriority(customer)));
         }
+
+        int availableMainSlots = getMainCapacity(period) - countServingBookings(date, period);
+        if (availableMainSlots < 0) {
+            availableMainSlots = 0;
+        }
+        while (!candidates.isEmpty() && bookingQueue.size() < availableMainSlots) {
+            bookingQueue.enqueue(candidates.poll().getBooking());
+        }
+        while (!candidates.isEmpty() && waitlist.size() < getWaitlistCapacity(period)) {
+            waitlist.insert(candidates.poll());
+        }
+        while (!candidates.isEmpty()) {
+            candidates.poll();
+            overflowCount++;
+        }
+
+        return new PeriodActivationResult(true, "", bookingQueue.size(), waitlist.size(), overflowCount);
     }
 
     /** Creates and places one booking according to FR-05 through FR-09. */
@@ -275,7 +307,8 @@ public class BookingService {
             return false;
         }
 
-        boolean activeCurrentPeriod = normalizedDate.equals(simulationService.getCurrentDateStr())
+        boolean activeCurrentPeriod = simulationService.isCurrentPeriodActivated()
+                && normalizedDate.equals(simulationService.getCurrentDateStr())
                 && currentPeriod != null && normalizedPeriod.equalsIgnoreCase(currentPeriod);
         int totalCapacity = getMainCapacity(normalizedPeriod) + getWaitlistCapacity(normalizedPeriod);
         if (countOpenBookings(normalizedDate, normalizedPeriod) >= totalCapacity) {
@@ -440,6 +473,11 @@ public class BookingService {
 
     public MyPriorityQueue<WaitlistEntry> getWaitlist() {
         return waitlist;
+    }
+
+    public void clearCurrentQueues() {
+        bookingQueue.clear();
+        waitlist.clear();
     }
 
     /** Registers a WAITING booking in the Max Heap waitlist. */
