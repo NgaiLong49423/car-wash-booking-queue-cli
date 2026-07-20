@@ -6,6 +6,7 @@ import datastructure.MyPriorityQueue;
 import datastructure.MyQueue;
 import datastructure.MyStack;
 import model.Booking;
+import model.BookingActionResult;
 import model.CompletionRecord;
 import model.Customer;
 import model.PeriodActivationResult;
@@ -433,29 +434,88 @@ public class BookingService {
         return String.format("B%03d", maxId + 1);
     }
 
-    // Feature 3: Start processing the booking at the front of the queue.
-    public void processNextBooking() {
-        if (bookingQueue.isEmpty()) {
-            System.out.println("=> There is no waiting booking to process.");
-            return;
+    /** Starts the first WAITING booking in Main Queue while enforcing one SERVING booking. */
+    public BookingActionResult processNextBooking() {
+        Booking currentServing = findServingBooking();
+        if (currentServing != null) {
+            return BookingActionResult.failure("Booking " + currentServing.getBookingId()
+                    + " is already being served. Complete or cancel it before processing another booking.");
         }
-        Booking nextToWash = bookingQueue.dequeue();
-        nextToWash.setStatus("SERVING");
+        if (bookingQueue.isEmpty()) {
+            return BookingActionResult.failure("There is no waiting booking in Main Queue to process.");
+        }
+        Booking nextToWash = bookingQueue.peek();
+        if (nextToWash == null || !"WAITING".equalsIgnoreCase(nextToWash.getBookingStatus())) {
+            return BookingActionResult.failure("Main Queue contains invalid booking state data.");
+        }
+        bookingQueue.dequeue();
+        nextToWash.setBookingStatus("SERVING");
+        FileManager.saveBookings(bookingList);
+        return new BookingActionResult(true, "Now serving booking " + nextToWash.getBookingId() + ".",
+                nextToWash, 0.0);
+    }
 
-        // Update status in the main bookingList
-        int size = bookingList.size();
-        for (int i = 0; i < size; i++) {
-            Booking b = bookingList.get(i);
-            if (b.getBookingId().equalsIgnoreCase(nextToWash.getBookingId())) {
-                b.setBookingStatus("SERVING");
-                break;
+    /** Confirms CASH or BANKING payment for the single SERVING booking. */
+    public BookingActionResult confirmPayment(String paymentMethod, WashServiceManager washService) {
+        if (!"CASH".equalsIgnoreCase(paymentMethod) && !"BANKING".equalsIgnoreCase(paymentMethod)) {
+            return BookingActionResult.failure("Payment method must be CASH or BANKING.");
+        }
+
+        Booking servingBooking = findServingBooking();
+        if (servingBooking == null) {
+            return BookingActionResult.failure("There is no SERVING booking to pay.");
+        }
+        if ("PAID".equalsIgnoreCase(servingBooking.getPaymentStatus())) {
+            return BookingActionResult.failure("Booking " + servingBooking.getBookingId()
+                    + " has already been paid.");
+        }
+
+        WashPackage washPackage = washService.findServiceById(servingBooking.getServiceId());
+        if (washPackage == null) {
+            return BookingActionResult.failure("The booking references a missing wash service.");
+        }
+
+        String normalizedMethod = paymentMethod.toUpperCase();
+        servingBooking.setPaymentStatus("PAID");
+        servingBooking.setPaymentMethod(normalizedMethod);
+        FileManager.saveBookings(bookingList);
+        return new BookingActionResult(true, "Payment confirmed for booking "
+                + servingBooking.getBookingId() + " via " + normalizedMethod + ".",
+                servingBooking, washPackage.getPrice());
+    }
+
+    public boolean displayServingPaymentDetails(CustomerService customerService,
+            VehicleService vehicleService, WashServiceManager washService) {
+        Booking booking = findServingBooking();
+        if (booking == null) {
+            System.out.println("=> There is no SERVING booking to pay.");
+            return false;
+        }
+        Customer customer = customerService.findCustomerById(booking.getCustomerId());
+        Vehicle vehicle = findVehicle(booking.getVehicleId(), vehicleService);
+        WashPackage washPackage = washService.findServiceById(booking.getServiceId());
+        if (customer == null || vehicle == null || washPackage == null) {
+            System.out.println("=> The SERVING booking references missing customer, vehicle, or service data.");
+            return false;
+        }
+
+        System.out.println("\n--- PAYMENT DETAILS ---");
+        System.out.println("Booking  : " + booking.getBookingId());
+        System.out.println("Customer : " + customer.getName() + " (" + customer.getId() + ")");
+        System.out.println("Vehicle  : " + vehicle.getLicensePlate());
+        System.out.println("Service  : " + washPackage.getName());
+        System.out.printf("Amount   : %.0f VND%n", washPackage.getPrice());
+        return true;
+    }
+
+    public Booking findServingBooking() {
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            if ("SERVING".equalsIgnoreCase(booking.getBookingStatus())) {
+                return booking;
             }
         }
-
-        System.out.println("=> NOW SERVING: " + nextToWash.toString());
-
-        // Auto-save bookings on change (FR-23)
-        FileManager.saveBookings(bookingList);
+        return null;
     }
 
     public MyQueue<Booking> getBookingQueue() {
