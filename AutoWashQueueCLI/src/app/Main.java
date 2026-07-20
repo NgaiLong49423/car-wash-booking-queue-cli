@@ -6,20 +6,23 @@ import service.BookingService;
 import service.CustomerService;
 import service.VehicleService;
 import service.WashServiceManager;
-import service.HistoryService;
 import util.ConsoleInputter;
 import datastructure.MyLinkedList;
 import model.Period;
+import model.PeriodActivationResult;
 import model.History;
-import model.Booking;
 import model.Customer;
 import model.Vehicle;
 import model.WashPackage;
 import service.SimulationService;
 import service.CompletionService;
 import model.CompletionResult;
+import model.BookingActionResult;
 import service.CancellationService;
 import model.CancellationResult;
+import service.UndoService;
+import model.UndoResult;
+import service.HistoryService;
 
 public class Main {
     public static void main(String[] args) {
@@ -28,7 +31,6 @@ public class Main {
         WashServiceManager washService = new WashServiceManager();
         VehicleService vehicleService = new VehicleService();
         BookingService bookingService = new BookingService();
-        HistoryService historyService = new HistoryService();
 
         // Temporary lists for Period and History
         MyLinkedList<Period> periodsList = new MyLinkedList<>();
@@ -54,17 +56,12 @@ public class Main {
         CompletionService completionService = new CompletionService(bookingService, customerService,
                 washService, vehicleService, historyList);
         CancellationService cancellationService = new CancellationService(bookingService, washService);
+        UndoService undoService = new UndoService(bookingService, completionService,
+                customerService, historyList);
+        HistoryService historyService = new HistoryService();
 
-        // Populate the current main queue from bookings of the active period.
-        MyLinkedList<Booking> list = bookingService.getBookingList();
-        for (int i = 0; i < list.size(); i++) {
-            Booking b = list.get(i);
-            if ("WAITING".equalsIgnoreCase(b.getBookingStatus())
-                    && b.getDate().equalsIgnoreCase(simulationService.getCurrentDateStr())
-                    && b.getPeriod().equalsIgnoreCase(simulationService.getCurrentPeriodStr())) {
-                bookingService.getBookingQueue().enqueue(b);
-            }
-        }
+        // Restore queues only when the persisted current period was activated.
+        syncCurrentQueues(bookingService, simulationService, customerService);
 
         // 3. Main Menu Loop
         while (true) {
@@ -76,8 +73,8 @@ public class Main {
                     "Simulation Time Settings",
                     "Complete Booking",
                     "Cancel Booking",
+                    "Undo Last Completed Booking",
                     "History Reports",
-                    "Customer Portal",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -269,6 +266,9 @@ public class Main {
                                 "Display waitlist",
                                 "Display future bookings",
                                 "Display customer active bookings",
+                                "Create booking",
+                                "Process next booking",
+                                "Confirm payment",
                                 "Back to main menu");
                         switch (bookingChoice) {
                             case 1:
@@ -292,6 +292,37 @@ public class Main {
                                         vehicleService, washService);
                                 break;
                             case 5:
+                                String bookingCustomerId = ConsoleInputter.getStr("Enter customer ID");
+                                String bookingVehicle = ConsoleInputter.getStr("Enter vehicle ID or license plate");
+                                String bookingServiceId = ConsoleInputter.getStr("Enter service ID");
+                                String bookingDate = ConsoleInputter.getStr("Enter booking date (YYYY-MM-DD)");
+                                String bookingPeriod = ConsoleInputter.getStr(
+                                        "Enter period (MORNING/AFTERNOON/EVENING)");
+                                bookingService.createBooking(bookingCustomerId, bookingVehicle, bookingServiceId,
+                                        bookingDate, bookingPeriod, customerService, vehicleService, washService,
+                                        simulationService);
+                                break;
+                            case 6:
+                                BookingActionResult processingResult = bookingService.processNextBooking();
+                                System.out.println("=> " + processingResult.getMessage());
+                                break;
+                            case 7:
+                                if (!bookingService.displayServingPaymentDetails(customerService,
+                                        vehicleService, washService)) {
+                                    break;
+                                }
+                                int paymentChoice = ConsoleInputter.intMenu("PAYMENT METHOD",
+                                        "CASH",
+                                        "BANKING");
+                                String paymentMethod = paymentChoice == 1 ? "CASH" : "BANKING";
+                                BookingActionResult paymentResult = bookingService.confirmPayment(
+                                        paymentMethod, washService);
+                                System.out.println("=> " + paymentResult.getMessage());
+                                if (paymentResult.isSuccessful()) {
+                                    System.out.printf("   Amount: %.0f VND%n", paymentResult.getAmount());
+                                }
+                                break;
+                            case 8:
                                 backToMainBooking = true;
                                 break;
                         }
@@ -305,6 +336,7 @@ public class Main {
                                 "View current simulation time",
                                 "Set current date",
                                 "Set current period",
+                                "Activate current service period",
                                 "Back to main menu");
                         switch (subChoice) {
                             case 1:
@@ -313,6 +345,7 @@ public class Main {
                             case 2:
                                 String newDate = ConsoleInputter.getStr("Enter new date (YYYY-MM-DD)");
                                 simulationService.setCurrentDate(newDate);
+                                syncCurrentQueues(bookingService, simulationService, customerService);
                                 break;
                             case 3:
                                 int periodChoice = ConsoleInputter.intMenu("SELECT PERIOD",
@@ -320,8 +353,14 @@ public class Main {
                                         "AFTERNOON",
                                         "EVENING");
                                 simulationService.setCurrentPeriod(periodChoice);
+                                syncCurrentQueues(bookingService, simulationService, customerService);
                                 break;
                             case 4:
+                                PeriodActivationResult activationResult = simulationService.activateCurrentPeriod(
+                                        bookingService, customerService);
+                                System.out.println("=> " + activationResult.getMessage());
+                                break;
+                            case 5:
                                 backToMainSim = true;
                                 break;
                         }
@@ -344,8 +383,23 @@ public class Main {
                     }
                     break;
                 case 7:
-                    String bID = ConsoleInputter.getStr("Enter booking ID to cancel");
-                    CancellationResult cancellationResult = cancellationService.cancelAsAdmin(bID);
+                    int cancellationActor = ConsoleInputter.intMenu("CANCEL BOOKING",
+                            "Customer cancellation",
+                            "Admin cancellation",
+                            "Back to main menu");
+                    CancellationResult cancellationResult = null;
+                    if (cancellationActor == 1) {
+                        String cancellationCustomerId = ConsoleInputter.getStr("Enter customer ID");
+                        String customerBookingId = ConsoleInputter.getStr("Enter booking ID to cancel");
+                        cancellationResult = cancellationService.cancelAsCustomer(
+                                cancellationCustomerId, customerBookingId);
+                    } else if (cancellationActor == 2) {
+                        String adminBookingId = ConsoleInputter.getStr("Enter booking ID to cancel");
+                        cancellationResult = cancellationService.cancelAsAdmin(adminBookingId);
+                    }
+                    if (cancellationResult == null) {
+                        break;
+                    }
                     System.out.println("=> " + cancellationResult.getMessage());
                     if (cancellationResult.isSuccessful() && cancellationResult.getPromotedBooking() != null) {
                         System.out.println("   Promoted from waitlist: "
@@ -353,50 +407,30 @@ public class Main {
                     }
                     break;
                 case 8:
-                    // History Reports Submenu
-                    boolean backToMainHist = false;
-                    while (!backToMainHist) {
-                        int subChoice = ConsoleInputter.intMenu("HISTORY REPORTS",
-                                "Global History Report",
-                                "Customer History Report",
+                    UndoResult undoResult = undoService.undoLastCompletion();
+                    System.out.println("=> " + undoResult.getMessage());
+                    if (undoResult.isSuccessful() && undoResult.getReturnedToWaitlist() != null) {
+                        System.out.println("   Returned to Waitlist: "
+                                + undoResult.getReturnedToWaitlist().getBookingId());
+                    }
+                    break;
+                case 9:
+                    boolean backToMainHistory = false;
+                    while (!backToMainHistory) {
+                        int historyChoice = ConsoleInputter.intMenu("HISTORY REPORTS",
+                                "Display global history",
+                                "Display history by customer ID",
                                 "Back to main menu");
-                        switch (subChoice) {
+                        switch (historyChoice) {
                             case 1:
                                 historyService.displayGlobalHistory(historyList);
                                 break;
                             case 2:
-                                String custId = ConsoleInputter.getStr("Enter customer ID");
-                                historyService.displayCustomerHistory(historyList, custId);
+                                String historyCustomerId = ConsoleInputter.getStr("Enter customer ID");
+                                historyService.displayCustomerHistory(historyList, historyCustomerId);
                                 break;
                             case 3:
-                                backToMainHist = true;
-                                break;
-                            default:
-                                System.out.println("Please select a valid option!");
-                        }
-                    }
-                    break;
-                case 9:
-                    // Customer Portal
-                    String loginId = ConsoleInputter.getStr("Enter your Customer ID to login");
-                    Customer currentCustomer = customerService.findCustomerById(loginId);
-                    if (currentCustomer == null) {
-                        System.out.println("=> Login failed. Customer not found.");
-                        break;
-                    }
-                    System.out.println("=> Welcome back, " + currentCustomer.getName() + "!");
-                    boolean backToMainCust = false;
-                    while (!backToMainCust) {
-                        int subChoice = ConsoleInputter.intMenu("CUSTOMER PORTAL",
-                                "View my wash history",
-                                "Logout");
-                        switch (subChoice) {
-                            case 1:
-                                historyService.displayCustomerHistory(historyList, currentCustomer.getId());
-                                break;
-                            case 2:
-                                backToMainCust = true;
-                                System.out.println("=> Logged out successfully.");
+                                backToMainHistory = true;
                                 break;
                             default:
                                 System.out.println("Please select a valid option!");
@@ -417,6 +451,16 @@ public class Main {
                 default:
                     System.out.println("Please select a valid option!");
             }
+        }
+    }
+
+    private static void syncCurrentQueues(BookingService bookingService,
+            SimulationService simulationService, CustomerService customerService) {
+        if (simulationService.isCurrentPeriodActivated()) {
+            bookingService.rebuildCurrentQueues(simulationService.getCurrentDateStr(),
+                    simulationService.getCurrentPeriodStr(), customerService);
+        } else {
+            bookingService.clearCurrentQueues();
         }
     }
 }

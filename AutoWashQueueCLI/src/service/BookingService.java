@@ -1,28 +1,41 @@
 package service;
 
 import datastructure.MyLinkedList;
+import datastructure.MyMap;
 import datastructure.MyPriorityQueue;
 import datastructure.MyQueue;
 import datastructure.MyStack;
 import model.Booking;
+import model.BookingActionResult;
 import model.CompletionRecord;
 import model.Customer;
+import model.PeriodActivationResult;
 import model.Vehicle;
 import model.WaitlistEntry;
 import model.WashPackage;
 import util.FileManager;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 
 public class BookingService {
     private MyQueue<Booking> bookingQueue;
     private MyLinkedList<Booking> bookingList;
     private MyStack<CompletionRecord> completionStack;
     private MyPriorityQueue<WaitlistEntry> waitlist;
+    private MyMap<String, Integer> bookingWindows;
 
     public BookingService() {
         this.bookingQueue = new MyQueue<>();
         this.bookingList = new MyLinkedList<>();
         this.completionStack = new MyStack<>();
         this.waitlist = new MyPriorityQueue<>();
+        this.bookingWindows = new MyMap<>();
+        bookingWindows.put("MEMBER", 7);
+        bookingWindows.put("SILVER", 10);
+        bookingWindows.put("GOLD", 12);
+        bookingWindows.put("PLATINUM", 14);
     }
 
     // Feature 1: Display the current booking queue.
@@ -110,11 +123,9 @@ public class BookingService {
         if (!isValidPeriod(period)) {
             return;
         }
-        int mainCapacity = "EVENING".equalsIgnoreCase(period) ? 5 : 10;
-        int waitlistCapacity = "EVENING".equalsIgnoreCase(period) ? 2 : 3;
         int usedSlots = bookingQueue.size() + waitlist.size();
         System.out.println(period.toUpperCase() + ": " + usedSlots + "/"
-                + (mainCapacity + waitlistCapacity) + " slots");
+                + (getMainCapacity(period) + getWaitlistCapacity(period)) + " slots");
     }
 
     private void printBookingTable(MyLinkedList<Booking> bookings,
@@ -151,51 +162,360 @@ public class BookingService {
         return null;
     }
 
-    // Feature 2: Add a booking to the end of the queue.
-    public void addBooking(String bookingId, String licensePlate, String serviceId) {
-        Booking newBooking = new Booking(
-                bookingId,
-                "C000", // Default Customer ID for now (Issue 3 / 7 responsibility)
-                licensePlate, // Vehicle identifier (vehicle ID or license plate)
-                serviceId,
-                "2026-07-10", // Default Date (Issue 6 responsibility)
-                "MORNING", // Default Period (Issue 6 responsibility)
-                "WAITING",
-                "UNPAID",
-                "NONE",
-                System.currentTimeMillis()
-        );
-        bookingQueue.enqueue(newBooking);
-        bookingList.addLast(newBooking);
-        System.out.println("=> Booking created. Vehicle " + licensePlate + " was added to the queue.");
-
-        // Auto-save bookings on change (FR-23)
-        FileManager.saveBookings(bookingList);
+    /**
+     * Rebuilds the active period queues from persisted WAITING bookings.
+     * Main Queue keeps file/creation order while overflow is restored into the
+     * priority-based Waitlist.
+     */
+    public void rebuildCurrentQueues(String date, String period, CustomerService customerService) {
+        allocatePeriod(date, period, customerService);
     }
 
-    // Feature 3: Start processing the booking at the front of the queue.
-    public void processNextBooking() {
-        if (bookingQueue.isEmpty()) {
-            System.out.println("=> There is no waiting booking to process.");
-            return;
+    /** Allocates all WAITING bookings for one period by tier and creation time. */
+    public PeriodActivationResult activatePeriod(String date, String period,
+            CustomerService customerService) {
+        if (date == null || !isValidPeriod(period) || customerService == null) {
+            return PeriodActivationResult.failure("Current date, period, or customer data is invalid.");
         }
-        Booking nextToWash = bookingQueue.dequeue();
-        nextToWash.setStatus("SERVING");
 
-        // Update status in the main bookingList
-        int size = bookingList.size();
-        for (int i = 0; i < size; i++) {
-            Booking b = bookingList.get(i);
-            if (b.getBookingId().equalsIgnoreCase(nextToWash.getBookingId())) {
-                b.setBookingStatus("SERVING");
-                break;
+        PeriodActivationResult allocation = allocatePeriod(date, period, customerService);
+        String message = "Activated " + date + " " + period.toUpperCase()
+                + ": " + allocation.getMainQueueCount() + " booking(s) in Main Queue, "
+                + allocation.getWaitlistCount() + " booking(s) in Waitlist.";
+        if (allocation.getOverflowCount() > 0) {
+            message += " Warning: " + allocation.getOverflowCount()
+                    + " booking(s) exceeded capacity and were not allocated.";
+        }
+        return new PeriodActivationResult(true, message, allocation.getMainQueueCount(),
+                allocation.getWaitlistCount(), allocation.getOverflowCount());
+    }
+
+    private PeriodActivationResult allocatePeriod(String date, String period,
+            CustomerService customerService) {
+        bookingQueue.clear();
+        waitlist.clear();
+        if (date == null || !isValidPeriod(period) || customerService == null) {
+            return PeriodActivationResult.failure("Cannot allocate an invalid service period.");
+        }
+
+        MyPriorityQueue<WaitlistEntry> candidates = new MyPriorityQueue<>();
+        int overflowCount = 0;
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            if (!date.equals(booking.getDate())
+                    || !period.equalsIgnoreCase(booking.getPeriod())
+                    || !"WAITING".equalsIgnoreCase(booking.getBookingStatus())) {
+                continue;
+            }
+            Customer customer = customerService.findCustomerById(booking.getCustomerId());
+            if (customer == null) {
+                overflowCount++;
+                continue;
+            }
+            candidates.insert(new WaitlistEntry(booking, getTierPriority(customer)));
+        }
+
+        int availableMainSlots = getMainCapacity(period) - countServingBookings(date, period);
+        if (availableMainSlots < 0) {
+            availableMainSlots = 0;
+        }
+        while (!candidates.isEmpty() && bookingQueue.size() < availableMainSlots) {
+            bookingQueue.enqueue(candidates.poll().getBooking());
+        }
+        while (!candidates.isEmpty() && waitlist.size() < getWaitlistCapacity(period)) {
+            waitlist.insert(candidates.poll());
+        }
+        while (!candidates.isEmpty()) {
+            candidates.poll();
+            overflowCount++;
+        }
+
+        return new PeriodActivationResult(true, "", bookingQueue.size(), waitlist.size(), overflowCount);
+    }
+
+    /** Creates and places one booking according to FR-05 through FR-09. */
+    public boolean createBooking(String customerId, String vehicleInput, String serviceId,
+            String date, String period, CustomerService customerService,
+            VehicleService vehicleService, WashServiceManager washService,
+            SimulationService simulationService) {
+        if (isBlank(customerId) || isBlank(vehicleInput) || isBlank(serviceId) || isBlank(date)) {
+            System.out.println("=> Error: Customer, vehicle, service, and booking date are required.");
+            return false;
+        }
+        if (!isValidPeriod(period)) {
+            System.out.println("=> Error: Period must be MORNING, AFTERNOON, or EVENING.");
+            return false;
+        }
+
+        String normalizedCustomerId = customerId.trim().toUpperCase();
+        String normalizedServiceId = serviceId.trim().toUpperCase();
+        String normalizedDate = date.trim();
+        String normalizedPeriod = period.trim().toUpperCase();
+
+        Customer customer = customerService.findCustomerById(normalizedCustomerId);
+        if (customer == null) {
+            System.out.println("=> Error: Customer not found with ID: " + normalizedCustomerId);
+            return false;
+        }
+
+        Vehicle vehicle = vehicleService.findVehicleByIdOrLicense(vehicleInput.trim());
+        if (vehicle == null) {
+            System.out.println("=> Error: Vehicle not found: " + vehicleInput.trim());
+            return false;
+        }
+        if (!normalizedCustomerId.equalsIgnoreCase(vehicle.getCustomerId())) {
+            System.out.println("=> Error: Vehicle " + vehicle.getLicensePlate()
+                    + " does not belong to customer " + normalizedCustomerId + ".");
+            return false;
+        }
+
+        WashPackage washPackage = washService.findServiceById(normalizedServiceId);
+        if (washPackage == null) {
+            System.out.println("=> Error: Service not found with ID: " + normalizedServiceId);
+            return false;
+        }
+        if (!washService.isServiceActive(normalizedServiceId)) {
+            System.out.println("=> Error: Service " + normalizedServiceId + " is not active.");
+            return false;
+        }
+
+        LocalDate bookingDate = parseDate(normalizedDate);
+        LocalDate currentDate = parseDate(simulationService.getCurrentDateStr());
+        if (bookingDate == null) {
+            System.out.println("=> Error: Booking date must be a valid date in YYYY-MM-DD format.");
+            return false;
+        }
+        if (currentDate == null) {
+            System.out.println("=> Error: Current simulation date is not configured correctly.");
+            return false;
+        }
+        if (bookingDate.isBefore(currentDate)) {
+            System.out.println("=> Error: Booking date cannot be before the current simulation date.");
+            return false;
+        }
+
+        long daysAhead = ChronoUnit.DAYS.between(currentDate, bookingDate);
+        int allowedDays = getBookingWindowDays(customer.getMembershipLevel());
+        if (daysAhead > allowedDays) {
+            System.out.println("=> Error: " + customer.getMembershipLevel() + " customers can book up to "
+                    + allowedDays + " days in advance.");
+            return false;
+        }
+
+        String currentPeriod = simulationService.getCurrentPeriodStr();
+        if (bookingDate.equals(currentDate) && isEarlierPeriod(normalizedPeriod, currentPeriod)) {
+            System.out.println("=> Error: The selected period has already passed for the current date.");
+            return false;
+        }
+
+        boolean activeCurrentPeriod = simulationService.isCurrentPeriodActivated()
+                && normalizedDate.equals(simulationService.getCurrentDateStr())
+                && currentPeriod != null && normalizedPeriod.equalsIgnoreCase(currentPeriod);
+        int totalCapacity = getMainCapacity(normalizedPeriod) + getWaitlistCapacity(normalizedPeriod);
+        if (countOpenBookings(normalizedDate, normalizedPeriod) >= totalCapacity) {
+            System.out.println("=> Error: " + normalizedPeriod + " on " + normalizedDate
+                    + " is full, including its waitlist.");
+            return false;
+        }
+
+        if (activeCurrentPeriod) {
+            rebuildCurrentQueues(normalizedDate, normalizedPeriod, customerService);
+        }
+
+        Booking booking = new Booking(generateNextBookingId(), normalizedCustomerId, vehicle.getId(),
+                normalizedServiceId, normalizedDate, normalizedPeriod, "WAITING", "UNPAID", "NONE",
+                System.currentTimeMillis());
+
+        String location;
+        if (activeCurrentPeriod) {
+            int occupiedMainSlots = bookingQueue.size() + countServingBookings(normalizedDate, normalizedPeriod);
+            if (occupiedMainSlots < getMainCapacity(normalizedPeriod)) {
+                bookingQueue.enqueue(booking);
+                location = "Main Queue of the active period";
+            } else if (waitlist.size() < getWaitlistCapacity(normalizedPeriod)) {
+                addToWaitlist(booking, customer);
+                location = "Waitlist of the active period";
+            } else {
+                System.out.println("=> Error: " + normalizedPeriod + " on " + normalizedDate
+                        + " is full, including its waitlist.");
+                return false;
+            }
+        } else {
+            location = "Future Booking list, awaiting period activation";
+        }
+
+        bookingList.addLast(booking);
+        FileManager.saveBookings(bookingList);
+        System.out.println("=> Booking created successfully. ID: " + booking.getBookingId()
+                + ", Status: WAITING, Location: " + location + ".");
+        return true;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private LocalDate parseDate(String date) {
+        if (isBlank(date)) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(date.trim());
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    private int getBookingWindowDays(String membershipLevel) {
+        Integer days = membershipLevel == null ? null : bookingWindows.get(membershipLevel.trim().toUpperCase());
+        return days == null ? 7 : days;
+    }
+
+    private int getMainCapacity(String period) {
+        return "EVENING".equalsIgnoreCase(period) ? 5 : 10;
+    }
+
+    private int getWaitlistCapacity(String period) {
+        return "EVENING".equalsIgnoreCase(period) ? 2 : 3;
+    }
+
+    private int countOpenBookings(String date, String period) {
+        int count = 0;
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            String status = booking.getBookingStatus();
+            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
+                    && ("WAITING".equalsIgnoreCase(status) || "SERVING".equalsIgnoreCase(status))) {
+                count++;
             }
         }
+        return count;
+    }
 
-        System.out.println("=> NOW SERVING: " + nextToWash.toString());
+    private int countServingBookings(String date, String period) {
+        int count = 0;
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
+                    && "SERVING".equalsIgnoreCase(booking.getBookingStatus())) {
+                count++;
+            }
+        }
+        return count;
+    }
 
-        // Auto-save bookings on change (FR-23)
+    private boolean isEarlierPeriod(String requestedPeriod, String currentPeriod) {
+        return currentPeriod != null && periodOrder(requestedPeriod) < periodOrder(currentPeriod);
+    }
+
+    private int periodOrder(String period) {
+        if ("MORNING".equalsIgnoreCase(period)) return 1;
+        if ("AFTERNOON".equalsIgnoreCase(period)) return 2;
+        if ("EVENING".equalsIgnoreCase(period)) return 3;
+        return Integer.MAX_VALUE;
+    }
+
+    private String generateNextBookingId() {
+        int maxId = 0;
+        for (int i = 0; i < bookingList.size(); i++) {
+            String id = bookingList.get(i).getBookingId();
+            if (id == null || id.length() < 2 || !id.toUpperCase().startsWith("B")) {
+                continue;
+            }
+            try {
+                int numericId = Integer.parseInt(id.substring(1));
+                if (numericId > maxId) {
+                    maxId = numericId;
+                }
+            } catch (NumberFormatException ignored) {
+                // Invalid legacy IDs are ignored when calculating the next valid ID.
+            }
+        }
+        return String.format("B%03d", maxId + 1);
+    }
+
+    /** Starts the first WAITING booking in Main Queue while enforcing one SERVING booking. */
+    public BookingActionResult processNextBooking() {
+        Booking currentServing = findServingBooking();
+        if (currentServing != null) {
+            return BookingActionResult.failure("Booking " + currentServing.getBookingId()
+                    + " is already being served. Complete or cancel it before processing another booking.");
+        }
+        if (bookingQueue.isEmpty()) {
+            return BookingActionResult.failure("There is no waiting booking in Main Queue to process.");
+        }
+        Booking nextToWash = bookingQueue.peek();
+        if (nextToWash == null || !"WAITING".equalsIgnoreCase(nextToWash.getBookingStatus())) {
+            return BookingActionResult.failure("Main Queue contains invalid booking state data.");
+        }
+        bookingQueue.dequeue();
+        nextToWash.setBookingStatus("SERVING");
         FileManager.saveBookings(bookingList);
+        return new BookingActionResult(true, "Now serving booking " + nextToWash.getBookingId() + ".",
+                nextToWash, 0.0);
+    }
+
+    /** Confirms CASH or BANKING payment for the single SERVING booking. */
+    public BookingActionResult confirmPayment(String paymentMethod, WashServiceManager washService) {
+        if (!"CASH".equalsIgnoreCase(paymentMethod) && !"BANKING".equalsIgnoreCase(paymentMethod)) {
+            return BookingActionResult.failure("Payment method must be CASH or BANKING.");
+        }
+
+        Booking servingBooking = findServingBooking();
+        if (servingBooking == null) {
+            return BookingActionResult.failure("There is no SERVING booking to pay.");
+        }
+        if ("PAID".equalsIgnoreCase(servingBooking.getPaymentStatus())) {
+            return BookingActionResult.failure("Booking " + servingBooking.getBookingId()
+                    + " has already been paid.");
+        }
+
+        WashPackage washPackage = washService.findServiceById(servingBooking.getServiceId());
+        if (washPackage == null) {
+            return BookingActionResult.failure("The booking references a missing wash service.");
+        }
+
+        String normalizedMethod = paymentMethod.toUpperCase();
+        servingBooking.setPaymentStatus("PAID");
+        servingBooking.setPaymentMethod(normalizedMethod);
+        FileManager.saveBookings(bookingList);
+        return new BookingActionResult(true, "Payment confirmed for booking "
+                + servingBooking.getBookingId() + " via " + normalizedMethod + ".",
+                servingBooking, washPackage.getPrice());
+    }
+
+    public boolean displayServingPaymentDetails(CustomerService customerService,
+            VehicleService vehicleService, WashServiceManager washService) {
+        Booking booking = findServingBooking();
+        if (booking == null) {
+            System.out.println("=> There is no SERVING booking to pay.");
+            return false;
+        }
+        Customer customer = customerService.findCustomerById(booking.getCustomerId());
+        Vehicle vehicle = findVehicle(booking.getVehicleId(), vehicleService);
+        WashPackage washPackage = washService.findServiceById(booking.getServiceId());
+        if (customer == null || vehicle == null || washPackage == null) {
+            System.out.println("=> The SERVING booking references missing customer, vehicle, or service data.");
+            return false;
+        }
+
+        System.out.println("\n--- PAYMENT DETAILS ---");
+        System.out.println("Booking  : " + booking.getBookingId());
+        System.out.println("Customer : " + customer.getName() + " (" + customer.getId() + ")");
+        System.out.println("Vehicle  : " + vehicle.getLicensePlate());
+        System.out.println("Service  : " + washPackage.getName());
+        System.out.printf("Amount   : %.0f VND%n", washPackage.getPrice());
+        return true;
+    }
+
+    public Booking findServingBooking() {
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            if ("SERVING".equalsIgnoreCase(booking.getBookingStatus())) {
+                return booking;
+            }
+        }
+        return null;
     }
 
     public MyQueue<Booking> getBookingQueue() {
@@ -215,6 +535,11 @@ public class BookingService {
         return waitlist;
     }
 
+    public void clearCurrentQueues() {
+        bookingQueue.clear();
+        waitlist.clear();
+    }
+
     /** Registers a WAITING booking in the Max Heap waitlist. */
     public void addToWaitlist(Booking booking, Customer customer) {
         if (booking != null && customer != null) {
@@ -224,6 +549,14 @@ public class BookingService {
 
     public void recordCompletion(Booking completedBooking, Booking promotedBooking) {
         completionStack.push(new CompletionRecord(completedBooking, promotedBooking));
+    }
+
+    public CompletionRecord peekLastCompletion() {
+        return completionStack.peek();
+    }
+
+    public CompletionRecord popLastCompletion() {
+        return completionStack.pop();
     }
 
     public WaitlistEntry peekHighestPriorityWaitlist(String date, String period) {
