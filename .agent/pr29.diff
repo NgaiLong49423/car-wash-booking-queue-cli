@@ -1,0 +1,208 @@
+﻿diff --git a/AutoWashQueueCLI/data/history.txt b/AutoWashQueueCLI/data/history.txt
+index 9ca6ba0..e69de29 100644
+--- a/AutoWashQueueCLI/data/history.txt
++++ b/AutoWashQueueCLI/data/history.txt
+@@ -1 +0,0 @@
+-B003|C003|Le Van C|51C-999.99|Wash + Polish|2026-07-09 10:00|250000.0|20
+diff --git a/AutoWashQueueCLI/nbproject/private/private.xml b/AutoWashQueueCLI/nbproject/private/private.xml
+index 66add78..4abbe21 100644
+--- a/AutoWashQueueCLI/nbproject/private/private.xml
++++ b/AutoWashQueueCLI/nbproject/private/private.xml
+@@ -3,14 +3,8 @@
+     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+         <group>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyPriorityQueue.java</file>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyLinkedList.java</file>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/WashPackage.java</file>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/Vehicle.java</file>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/service/BookingService.java</file>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/Booking.java</file>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/service/WashServiceManager.java</file>
+-            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/datastructure/MyQueue.java</file>
++            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/model/History.java</file>
++            <file>file:/C:/Project_CSD/car-wash-booking-queue-cli/AutoWashQueueCLI/src/service/HistoryService.java</file>
+         </group>
+     </open-files>
+ </project-private>
+diff --git a/AutoWashQueueCLI/src/app/Main.java b/AutoWashQueueCLI/src/app/Main.java
+index 508ac84..3ac3d09 100644
+--- a/AutoWashQueueCLI/src/app/Main.java
++++ b/AutoWashQueueCLI/src/app/Main.java
+@@ -6,6 +6,7 @@
+ import service.CustomerService;
+ import service.VehicleService;
+ import service.WashServiceManager;
++import service.HistoryService;
+ import util.ConsoleInputter;
+ import datastructure.MyLinkedList;
+ import model.Period;
+@@ -22,6 +23,7 @@ public static void main(String[] args) {
+         WashServiceManager washService = new WashServiceManager();
+         VehicleService vehicleService = new VehicleService();
+         BookingService bookingService = new BookingService();
++        HistoryService historyService = new HistoryService();
+ 
+         // Temporary lists for Period and History
+         MyLinkedList<Period> periodsList = new MyLinkedList<>();
+@@ -62,6 +64,8 @@ public static void main(String[] args) {
+                     "Vehicle Management",
+                     "Queue Management (Booking)",
+                     "Simulation Time Settings",
++                    "History Reports",
++                    "Customer Portal",
+                     "Exit & Save Data");
+ 
+             switch (choice) {
+@@ -279,6 +283,57 @@ public static void main(String[] args) {
+                     }
+                     break;
+                 case 6:
++                    // History Reports Submenu
++                    boolean backToMainHist = false;
++                    while (!backToMainHist) {
++                        int subChoice = ConsoleInputter.intMenu("HISTORY REPORTS",
++                                "Global History Report",
++                                "Customer History Report",
++                                "Back to main menu");
++                        switch (subChoice) {
++                            case 1:
++                                historyService.displayGlobalHistory(historyList);
++                                break;
++                            case 2:
++                                String custId = ConsoleInputter.getStr("Enter customer ID");
++                                historyService.displayCustomerHistory(historyList, custId);
++                                break;
++                            case 3:
++                                backToMainHist = true;
++                                break;
++                            default:
++                                System.out.println("Please select a valid option!");
++                        }
++                    }
++                    break;
++                case 7:
++                    // Customer Portal
++                    String loginId = ConsoleInputter.getStr("Enter your Customer ID to login");
++                    Customer currentCustomer = customerService.findCustomerById(loginId);
++                    if (currentCustomer == null) {
++                        System.out.println("=> Login failed. Customer not found.");
++                        break;
++                    }
++                    System.out.println("=> Welcome back, " + currentCustomer.getName() + "!");
++                    boolean backToMainCust = false;
++                    while (!backToMainCust) {
++                        int subChoice = ConsoleInputter.intMenu("CUSTOMER PORTAL",
++                                "View my wash history",
++                                "Logout");
++                        switch (subChoice) {
++                            case 1:
++                                historyService.displayCustomerHistory(historyList, currentCustomer.getId());
++                                break;
++                            case 2:
++                                backToMainCust = true;
++                                System.out.println("=> Logged out successfully.");
++                                break;
++                            default:
++                                System.out.println("Please select a valid option!");
++                        }
++                    }
++                    break;
++                case 8:
+                     // Auto-save data before exiting
+                     FileManager.saveData(
+                             customerService.getCustomerList(), 
+diff --git a/AutoWashQueueCLI/src/service/HistoryService.java b/AutoWashQueueCLI/src/service/HistoryService.java
+new file mode 100644
+index 0000000..11afbe6
+--- /dev/null
++++ b/AutoWashQueueCLI/src/service/HistoryService.java
+@@ -0,0 +1,71 @@
++package service;
++
++import datastructure.MyLinkedList;
++import model.History;
++
++public class HistoryService {
++
++    public void displayGlobalHistory(MyLinkedList<History> historyList) {
++        if (historyList.isEmpty()) {
++            System.out.println("No history records found.");
++            return;
++        }
++
++        System.out.println("\n=============================================== GLOBAL HISTORY REPORT ===============================================");
++        System.out.printf("%-15s | %-12s | %-20s | %-15s | %-25s | %-20s | %-12s | %-15s\n", 
++                "Booking ID", "Customer ID", "Customer Name", "License Plate", "Service Name", "Completed Time", "Amount Paid", "Loyalty Points");
++        System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
++
++        double totalRevenue = 0;
++        for (int i = 0; i < historyList.size(); i++) {
++            History h = historyList.get(i);
++            totalRevenue += h.getAmountPaid();
++            System.out.printf("%-15s | %-12s | %-20s | %-15s | %-25s | %-20s | %-12.0f | %-15d\n",
++                    h.getBookingId(),
++                    h.getCustomerId(),
++                    h.getCustomerName(),
++                    h.getPlateNumber(),
++                    h.getServiceName(),
++                    h.getCompletedTime(),
++                    h.getAmountPaid(),
++                    h.getLoyaltyPointsEarned());
++        }
++        System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
++        System.out.printf("Total Revenue: %.0f\n", totalRevenue);
++        System.out.println("=====================================================================================================================================================");
++    }
++
++    public void displayCustomerHistory(MyLinkedList<History> historyList, String customerId) {
++        if (historyList.isEmpty()) {
++            System.out.println("No history records found.");
++            return;
++        }
++
++        boolean found = false;
++        System.out.println("\n=========================================== CUSTOMER HISTORY REPORT: " + customerId.toUpperCase() + " ===========================================");
++        System.out.printf("%-15s | %-12s | %-20s | %-15s | %-25s | %-20s | %-12s | %-15s\n", 
++                "Booking ID", "Customer ID", "Customer Name", "License Plate", "Service Name", "Completed Time", "Amount Paid", "Loyalty Points");
++        System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------");
++
++        for (int i = 0; i < historyList.size(); i++) {
++            History h = historyList.get(i);
++            if (h.getCustomerId().equalsIgnoreCase(customerId)) {
++                found = true;
++                System.out.printf("%-15s | %-12s | %-20s | %-15s | %-25s | %-20s | %-12.0f | %-15d\n",
++                        h.getBookingId(),
++                        h.getCustomerId(),
++                        h.getCustomerName(),
++                        h.getPlateNumber(),
++                        h.getServiceName(),
++                        h.getCompletedTime(),
++                        h.getAmountPaid(),
++                        h.getLoyaltyPointsEarned());
++            }
++        }
++
++        if (!found) {
++            System.out.println("No history records found for Customer ID: " + customerId);
++        }
++        System.out.println("=====================================================================================================================================================");
++    }
++}
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 927a22a..9a9a7cc 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,11 @@
+-## [0.4.0] - 2026-07-11
++## [Unreleased]
++
++### Added
+ 
++* Implemented Global and Customer History Reports (Issue #13). Total Revenue calculation is included in the Global Report.
++* Added Customer Portal in Main Menu to allow customers to log in using their ID and view their personal wash history (Issue #13, UC-06).
++
++## [0.4.0] - 2026-07-11
+ ### Author
+ 
+ * Prepared by Ng├┤ Gia Long (SE190732) and Agent.

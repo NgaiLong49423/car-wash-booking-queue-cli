@@ -1,0 +1,229 @@
+﻿diff --git a/AutoWashQueueCLI/src/app/Main.java b/AutoWashQueueCLI/src/app/Main.java
+index 3ee1331..e61e279 100644
+--- a/AutoWashQueueCLI/src/app/Main.java
++++ b/AutoWashQueueCLI/src/app/Main.java
+@@ -655,6 +655,7 @@ private AppContext() {
+             }
+ 
+             FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
++            bookingService.synchronizeBookingSequence(historyList);
+             completionService = new CompletionService(bookingService, customerService,
+                     washService, vehicleService, historyList);
+             cancellationService = new CancellationService(bookingService, washService);
+diff --git a/AutoWashQueueCLI/src/service/BookingService.java b/AutoWashQueueCLI/src/service/BookingService.java
+index fdb72a0..c5d0cf6 100644
+--- a/AutoWashQueueCLI/src/service/BookingService.java
++++ b/AutoWashQueueCLI/src/service/BookingService.java
+@@ -9,6 +9,7 @@
+ import model.BookingActionResult;
+ import model.CompletionRecord;
+ import model.Customer;
++import model.History;
+ import model.PeriodActivationResult;
+ import model.Vehicle;
+ import model.WaitlistEntry;
+@@ -25,6 +26,7 @@ public class BookingService {
+     private MyStack<CompletionRecord> completionStack;
+     private MyPriorityQueue<WaitlistEntry> waitlist;
+     private MyMap<String, Integer> bookingWindows;
++    private int highestHistoricalBookingId;
+ 
+     public BookingService() {
+         this.bookingQueue = new MyQueue<>();
+@@ -32,6 +34,7 @@ public BookingService() {
+         this.completionStack = new MyStack<>();
+         this.waitlist = new MyPriorityQueue<>();
+         this.bookingWindows = new MyMap<>();
++        this.highestHistoricalBookingId = 0;
+         bookingWindows.put("MEMBER", 7);
+         bookingWindows.put("SILVER", 10);
+         bookingWindows.put("GOLD", 12);
+@@ -416,24 +419,28 @@ private int periodOrder(String period) {
+     }
+ 
+     private String generateNextBookingId() {
+-        int maxId = 0;
++        int maxId = highestHistoricalBookingId;
+         for (int i = 0; i < bookingList.size(); i++) {
+             String id = bookingList.get(i).getBookingId();
+-            if (id == null || id.length() < 2 || !id.toUpperCase().startsWith("B")) {
+-                continue;
+-            }
+-            try {
+-                int numericId = Integer.parseInt(id.substring(1));
+-                if (numericId > maxId) {
+-                    maxId = numericId;
+-                }
+-            } catch (NumberFormatException ignored) {
+-                // Invalid legacy IDs are ignored when calculating the next valid ID.
++            int numericId = parseBookingId(id);
++            if (numericId > maxId) {
++                maxId = numericId;
+             }
+         }
+         return String.format("B%03d", maxId + 1);
+     }
+ 
++    private int parseBookingId(String id) {
++        if (id == null || id.length() < 2 || !id.toUpperCase().startsWith("B")) {
++            return 0;
++        }
++        try {
++            return Integer.parseInt(id.substring(1));
++        } catch (NumberFormatException ignored) {
++            return 0;
++        }
++    }
++
+     /** Starts the first WAITING booking in Main Queue while enforcing one SERVING booking. */
+     public BookingActionResult processNextBooking() {
+         Booking currentServing = findServingBooking();
+@@ -531,6 +538,20 @@ public MyLinkedList<Booking> getBookingList() {
+         return bookingList;
+     }
+ 
++    /** Keeps newly generated booking IDs unique across active bookings and history. */
++    public void synchronizeBookingSequence(MyLinkedList<History> historyList) {
++        highestHistoricalBookingId = 0;
++        if (historyList == null) {
++            return;
++        }
++        for (int i = 0; i < historyList.size(); i++) {
++            int numericId = parseBookingId(historyList.get(i).getBookingId());
++            if (numericId > highestHistoricalBookingId) {
++                highestHistoricalBookingId = numericId;
++            }
++        }
++    }
++
+     public MyPriorityQueue<WaitlistEntry> getWaitlist() {
+         return waitlist;
+     }
+diff --git a/AutoWashQueueCLI/src/service/CustomerService.java b/AutoWashQueueCLI/src/service/CustomerService.java
+index aa27edc..389e726 100644
+--- a/AutoWashQueueCLI/src/service/CustomerService.java
++++ b/AutoWashQueueCLI/src/service/CustomerService.java
+@@ -31,6 +31,12 @@ public void addCustomer(String name, String phone, String level, int points) {
+             System.out.println("=> Error: Phone number cannot be empty!");
+             return;
+         }
++        if (!isValidPhone(phone)) {
++            System.out.println("=> Error: Phone number must contain exactly 10 digits and start with 0.");
++            return;
++        }
++
++        phone = phone.trim();
+ 
+         int size = customerList.size();
+         for (int i = 0; i < size; i++) {
+@@ -107,6 +113,12 @@ public void updateCustomer(String id, String newName, String newPhone, String ne
+                 System.out.println("=> Error: Phone number cannot be empty!");
+                 return;
+             }
++            if (!isValidPhone(newPhone)) {
++                System.out.println("=> Error: Phone number must contain exactly 10 digits and start with 0.");
++                return;
++            }
++
++            newPhone = newPhone.trim();
+ 
+             if (!c.getPhone().equals(newPhone)) {
+                 int size = customerList.size();
+@@ -180,4 +192,8 @@ public void deleteCustomer(String id, VehicleService vehicleService, BookingServ
+     public MyLinkedList<Customer> getCustomerList() {
+         return customerList;
+     }
++
++    private boolean isValidPhone(String phone) {
++        return phone != null && phone.trim().matches("0\\d{9}");
++    }
+ }
+diff --git a/AutoWashQueueCLI/src/service/VehicleService.java b/AutoWashQueueCLI/src/service/VehicleService.java
+index 64e4e20..677624c 100644
+--- a/AutoWashQueueCLI/src/service/VehicleService.java
++++ b/AutoWashQueueCLI/src/service/VehicleService.java
+@@ -55,6 +55,10 @@ public void addVehicle(String licensePlate, String customerId, CustomerService c
+             System.out.println("=> Error: License plate cannot be empty!");
+             return;
+         }
++        if (!isValidLicensePlate(licensePlate)) {
++            System.out.println("=> Error: License plate must use a format such as 59A-123.45 or 59A1-123.45.");
++            return;
++        }
+         if (customerId == null || customerId.trim().isEmpty()) {
+             System.out.println("=> Error: Customer ID cannot be empty!");
+             return;
+@@ -88,7 +92,8 @@ public void addVehicle(String licensePlate, String customerId, CustomerService c
+         }
+         String newId = String.format("V%03d", maxIdNum + 1);
+ 
+-        Vehicle newVehicle = new Vehicle(newId, licensePlate, customerId);
++        String normalizedPlate = licensePlate.trim().toUpperCase();
++        Vehicle newVehicle = new Vehicle(newId, normalizedPlate, customerId.trim().toUpperCase());
+         vehicleList.addLast(newVehicle);
+         System.out.println("=> Added vehicle successfully: " + licensePlate + " (Vehicle ID: " + newId + ")");
+         
+@@ -98,12 +103,12 @@ public void addVehicle(String licensePlate, String customerId, CustomerService c
+ 
+     public Vehicle findVehicleByLicense(String licensePlate) {
+         if (licensePlate == null) return null;
+-        String cleanInput = licensePlate.replace(" ", "");
++        String cleanInput = normalizeLicensePlate(licensePlate);
+         int size = vehicleList.size();
+         for (int i = 0; i < size; i++) {
+             Vehicle v = vehicleList.get(i);
+             if (v.getLicensePlate() != null && 
+-                v.getLicensePlate().replace(" ", "").equalsIgnoreCase(cleanInput)) {
++                normalizeLicensePlate(v.getLicensePlate()).equalsIgnoreCase(cleanInput)) {
+                 return v;
+             }
+         }
+@@ -165,14 +170,14 @@ public void deleteVehicle(String licensePlate, BookingService bookingService, My
+             return;
+         }
+ 
+-        String cleanPlate = licensePlate.replace(" ", "");
++        String cleanPlate = normalizeLicensePlate(licensePlate);
+ 
+         // 1. Kiß╗âm tra r├áng buß╗Öc li├¬n kß║┐t Booking
+         MyLinkedList<Booking> bookings = bookingService.getBookingList();
+         for (int i = 0; i < bookings.size(); i++) {
+             String bVehId = bookings.get(i).getVehicleId();
+             boolean sameVehicleId = bVehId != null && bVehId.equalsIgnoreCase(v.getId());
+-            boolean samePlate = bVehId != null && bVehId.replace(" ", "").equalsIgnoreCase(cleanPlate);
++            boolean samePlate = bVehId != null && normalizeLicensePlate(bVehId).equalsIgnoreCase(cleanPlate);
+             if (sameVehicleId || samePlate) {
+                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated booking(s)!");
+                 return;
+@@ -182,7 +187,7 @@ public void deleteVehicle(String licensePlate, BookingService bookingService, My
+         // 2. Kiß╗âm tra r├áng buß╗Öc li├¬n kß║┐t Lß╗ïch sß╗¡ rß╗¡a xe (History)
+         for (int i = 0; i < historyList.size(); i++) {
+             String hPlate = historyList.get(i).getPlateNumber();
+-            if (hPlate != null && hPlate.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
++            if (hPlate != null && normalizeLicensePlate(hPlate).equalsIgnoreCase(cleanPlate)) {
+                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated history records!");
+                 return;
+             }
+@@ -192,7 +197,7 @@ public void deleteVehicle(String licensePlate, BookingService bookingService, My
+         int size = vehicleList.size();
+         for (int i = 0; i < size; i++) {
+             String listPlate = vehicleList.get(i).getLicensePlate();
+-            if (listPlate != null && listPlate.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
++            if (listPlate != null && normalizeLicensePlate(listPlate).equalsIgnoreCase(cleanPlate)) {
+                 vehicleList.remove(i);
+                 System.out.println("=> Deleted vehicle successfully: " + licensePlate);
+                 
+@@ -206,4 +211,13 @@ public void deleteVehicle(String licensePlate, BookingService bookingService, My
+     public MyLinkedList<Vehicle> getVehicleList() {
+         return vehicleList;
+     }
++
++    private boolean isValidLicensePlate(String licensePlate) {
++        return licensePlate != null
++                && licensePlate.trim().matches("(?i)\\d{2}[A-Z]\\d?[- ]?\\d{3}[.]?\\d{2}");
++    }
++
++    private String normalizeLicensePlate(String licensePlate) {
++        return licensePlate == null ? "" : licensePlate.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
++    }
+ }

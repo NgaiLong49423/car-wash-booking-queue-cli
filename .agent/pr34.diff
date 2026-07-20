@@ -1,0 +1,458 @@
+﻿diff --git a/AutoWashQueueCLI/src/app/Main.java b/AutoWashQueueCLI/src/app/Main.java
+index 80c0dc5..1079b2c 100644
+--- a/AutoWashQueueCLI/src/app/Main.java
++++ b/AutoWashQueueCLI/src/app/Main.java
+@@ -53,11 +53,13 @@ public static void main(String[] args) {
+                 washService, vehicleService, historyList);
+         CancellationService cancellationService = new CancellationService(bookingService, washService);
+ 
+-        // Populate active bookingQueue from loaded bookingList for compatibility
++        // Populate the current main queue from bookings of the active period.
+         MyLinkedList<Booking> list = bookingService.getBookingList();
+         for (int i = 0; i < list.size(); i++) {
+             Booking b = list.get(i);
+-            if ("WAITING".equalsIgnoreCase(b.getBookingStatus()) || "Dang cho".equalsIgnoreCase(b.getBookingStatus()) || "SERVING".equalsIgnoreCase(b.getBookingStatus()) || "Dang rua".equalsIgnoreCase(b.getBookingStatus())) {
++            if ("WAITING".equalsIgnoreCase(b.getBookingStatus())
++                    && b.getDate().equalsIgnoreCase(simulationService.getCurrentDateStr())
++                    && b.getPeriod().equalsIgnoreCase(simulationService.getCurrentPeriodStr())) {
+                 bookingService.getBookingQueue().enqueue(b);
+             }
+         }
+@@ -256,7 +258,40 @@ public static void main(String[] args) {
+                     }
+                     break;
+                 case 4:
+-                    bookingService.displayQueue();
++                    boolean backToMainBooking = false;
++                    while (!backToMainBooking) {
++                        int bookingChoice = ConsoleInputter.intMenu("QUEUE MONITORING",
++                                "Display main queue",
++                                "Display waitlist",
++                                "Display future bookings",
++                                "Display customer active bookings",
++                                "Back to main menu");
++                        switch (bookingChoice) {
++                            case 1:
++                                bookingService.displayMainQueue(simulationService.getCurrentPeriodStr(),
++                                        customerService, vehicleService, washService);
++                                break;
++                            case 2:
++                                bookingService.displayWaitlist(simulationService.getCurrentPeriodStr(),
++                                        customerService, vehicleService, washService);
++                                break;
++                            case 3:
++                                String futureDate = ConsoleInputter.getStr("Enter booking date (YYYY-MM-DD)");
++                                String futurePeriod = ConsoleInputter.getStr("Enter period (MORNING/AFTERNOON/EVENING)");
++                                bookingService.displayFutureBookings(futureDate, futurePeriod, customerService,
++                                        vehicleService, washService, simulationService.getCurrentDateStr(),
++                                        simulationService.getCurrentPeriodStr());
++                                break;
++                            case 4:
++                                String customerBookingId = ConsoleInputter.getStr("Enter customer ID");
++                                bookingService.displayCustomerActiveBookings(customerBookingId, customerService,
++                                        vehicleService, washService);
++                                break;
++                            case 5:
++                                backToMainBooking = true;
++                                break;
++                        }
++                    }
+                     break;
+                 case 5:
+                     // Simulation Time Settings Submenu
+diff --git a/AutoWashQueueCLI/src/datastructure/MyPriorityQueue.java b/AutoWashQueueCLI/src/datastructure/MyPriorityQueue.java
+index 47c44ef..fdfd0e7 100644
+--- a/AutoWashQueueCLI/src/datastructure/MyPriorityQueue.java
++++ b/AutoWashQueueCLI/src/datastructure/MyPriorityQueue.java
+@@ -143,6 +143,21 @@ public void clear() {
+         size = 0;
+     }
+ 
++    /**
++     * Returns a snapshot from highest to lowest priority and restores this heap
++     * before returning, so monitoring operations do not change queue state.
++     */
++    public MyLinkedList<T> snapshotInPriorityOrder() {
++        MyLinkedList<T> items = new MyLinkedList<>();
++        while (!isEmpty()) {
++            items.addLast(poll());
++        }
++        for (int i = 0; i < items.size(); i++) {
++            insert(items.get(i));
++        }
++        return items;
++    }
++
+     /**
+      * Duyß╗çt v├á in to├án bß╗Ö phß║ºn tß╗¡ trong heap ra m├án h├¼nh.
+      *
+@@ -309,4 +324,4 @@ private void ensureCapacity() {
+     private T getElement(int index) {
+         return (T) heap[index];
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/AutoWashQueueCLI/src/datastructure/MyQueue.java b/AutoWashQueueCLI/src/datastructure/MyQueue.java
+index 48f28dc..49ff25b 100644
+--- a/AutoWashQueueCLI/src/datastructure/MyQueue.java
++++ b/AutoWashQueueCLI/src/datastructure/MyQueue.java
+@@ -84,6 +84,17 @@ public void clear() {
+         size = 0;
+     }
+ 
++    /** Returns a read-only snapshot in FIFO order without changing this queue. */
++    public MyLinkedList<T> snapshot() {
++        MyLinkedList<T> items = new MyLinkedList<>();
++        Node<T> current = front;
++        while (current != null) {
++            items.addLast(current.data);
++            current = current.next;
++        }
++        return items;
++    }
++
+     /**
+      * In to├án bß╗Ö queue.
+      */
+diff --git a/AutoWashQueueCLI/src/model/Booking.java b/AutoWashQueueCLI/src/model/Booking.java
+index c2dc3dc..a7a2b87 100644
+--- a/AutoWashQueueCLI/src/model/Booking.java
++++ b/AutoWashQueueCLI/src/model/Booking.java
+@@ -1,6 +1,6 @@
+ package model;
+ 
+-public class Booking {
++public class Booking implements Comparable<Booking> {
+     private String bookingId;
+     private String customerId;
+     private String vehicleId;
+@@ -11,6 +11,7 @@ public class Booking {
+     private String paymentStatus;
+     private String paymentMethod;
+     private long createdTime;
++    private int priorityRank;
+ 
+     public Booking(String bookingId, String customerId, String vehicleId, String serviceId, String date, String period,
+                    String bookingStatus, String paymentStatus, String paymentMethod, long createdTime) {
+@@ -24,6 +25,7 @@ public Booking(String bookingId, String customerId, String vehicleId, String ser
+         this.paymentStatus = paymentStatus;
+         this.paymentMethod = paymentMethod;
+         this.createdTime = createdTime;
++        this.priorityRank = 1;
+     }
+ 
+     // Deprecated/Legacy constructor for compatibility with existing BookingService if needed, but we will update BookingService too.
+@@ -62,15 +64,35 @@ public Booking(String bookingId, String vehicleId, String serviceId, String book
+     public long getCreatedTime() { return createdTime; }
+     public void setCreatedTime(long createdTime) { this.createdTime = createdTime; }
+ 
++    public int getPriorityRank() { return priorityRank; }
++    public void setPriorityRank(int priorityRank) { this.priorityRank = priorityRank; }
++
+     // Legacy getter used in existing code
+     public String getLicensePlate() { return vehicleId; }
+     public void setLicensePlate(String licensePlate) { this.vehicleId = licensePlate; }
+     public String getStatus() { return bookingStatus; }
+     public void setStatus(String status) { this.bookingStatus = status; }
+ 
++    @Override
++    public int compareTo(Booking other) {
++        if (this.priorityRank != other.priorityRank) {
++            return this.priorityRank - other.priorityRank;
++        }
++
++        if (this.createdTime < other.createdTime) {
++            return 1;
++        }
++
++        if (this.createdTime > other.createdTime) {
++            return -1;
++        }
++
++        return 0;
++    }
++
+     @Override
+     public String toString() {
+         return bookingId + "|" + customerId + "|" + vehicleId + "|" + serviceId + "|" + date + "|" + period + "|" + 
+                bookingStatus + "|" + paymentStatus + "|" + paymentMethod + "|" + createdTime;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/AutoWashQueueCLI/src/service/BookingService.java b/AutoWashQueueCLI/src/service/BookingService.java
+index bebf9be..f870d9d 100644
+--- a/AutoWashQueueCLI/src/service/BookingService.java
++++ b/AutoWashQueueCLI/src/service/BookingService.java
+@@ -7,7 +7,9 @@
+ import model.Booking;
+ import model.CompletionRecord;
+ import model.Customer;
++import model.Vehicle;
+ import model.WaitlistEntry;
++import model.WashPackage;
+ import util.FileManager;
+ 
+ public class BookingService {
+@@ -25,33 +27,148 @@ public BookingService() {
+ 
+     // Feature 1: Display the current booking queue.
+     public void displayQueue() {
+-        System.out.println("\n--- BOOKING QUEUE ---");
+-        if (bookingQueue.isEmpty()) {
+-            System.out.println("There are no bookings waiting to be served.");
++        displayMainQueue(null, null, null, null);
++    }
++
++    /** Displays the main queue in FIFO order. */
++    public void displayMainQueue(String period, CustomerService customerService,
++            VehicleService vehicleService, WashServiceManager washService) {
++        System.out.println("\n--- MAIN QUEUE (FIFO) ---");
++        printCapacity(period);
++        printBookingTable(bookingQueue.snapshot(), customerService, vehicleService, washService);
++    }
++
++    /** Displays the waitlist from highest to lowest priority without changing it. */
++    public void displayWaitlist(String period, CustomerService customerService,
++            VehicleService vehicleService, WashServiceManager washService) {
++        System.out.println("\n--- WAITLIST (PRIORITY ORDER) ---");
++        printCapacity(period);
++        MyLinkedList<WaitlistEntry> entries = waitlist.snapshotInPriorityOrder();
++        MyLinkedList<Booking> bookings = new MyLinkedList<>();
++        for (int i = 0; i < entries.size(); i++) {
++            bookings.addLast(entries.get(i).getBooking());
++        }
++        printBookingTable(bookings, customerService, vehicleService, washService);
++    }
++
++    /** Displays WAITING bookings for an inactive or future period. */
++    public void displayFutureBookings(String date, String period,
++            CustomerService customerService, VehicleService vehicleService,
++            WashServiceManager washService, String currentDate, String currentPeriod) {
++        if (date == null || date.trim().isEmpty() || !isValidPeriod(period)) {
++            System.out.println("=> Error: Enter a valid date and period.");
++            return;
++        }
++        if (date.equalsIgnoreCase(currentDate) && period.equalsIgnoreCase(currentPeriod)) {
++            System.out.println("=> This is the current period. Use the queue monitoring options instead.");
++            return;
++        }
++
++        MyLinkedList<Booking> futureBookings = new MyLinkedList<>();
++        for (int i = 0; i < bookingList.size(); i++) {
++            Booking booking = bookingList.get(i);
++            if (date.equalsIgnoreCase(booking.getDate())
++                    && period.equalsIgnoreCase(booking.getPeriod())
++                    && "WAITING".equalsIgnoreCase(booking.getBookingStatus())) {
++                futureBookings.addLast(booking);
++            }
++        }
++        System.out.println("\n--- FUTURE BOOKINGS: " + date + " " + period.toUpperCase() + " ---");
++        printBookingTable(futureBookings, customerService, vehicleService, washService);
++    }
++
++    /** Displays only WAITING and SERVING bookings that belong to one customer. */
++    public void displayCustomerActiveBookings(String customerId,
++            CustomerService customerService, VehicleService vehicleService,
++            WashServiceManager washService) {
++        Customer customer = customerService.findCustomerById(customerId);
++        if (customer == null) {
++            System.out.println("=> Error: Customer not found with ID: " + customerId);
++            return;
++        }
++
++        MyLinkedList<Booking> customerBookings = new MyLinkedList<>();
++        for (int i = 0; i < bookingList.size(); i++) {
++            Booking booking = bookingList.get(i);
++            boolean unfinished = "WAITING".equalsIgnoreCase(booking.getBookingStatus())
++                    || "SERVING".equalsIgnoreCase(booking.getBookingStatus());
++            if (customer.getId().equalsIgnoreCase(booking.getCustomerId()) && unfinished) {
++                customerBookings.addLast(booking);
++            }
++        }
++        System.out.println("\n--- ACTIVE BOOKINGS: " + customer.getName() + " ---");
++        printBookingTable(customerBookings, customerService, vehicleService, washService);
++    }
++
++    private boolean isValidPeriod(String period) {
++        return period != null && ("MORNING".equalsIgnoreCase(period)
++                || "AFTERNOON".equalsIgnoreCase(period)
++                || "EVENING".equalsIgnoreCase(period));
++    }
++
++    private void printCapacity(String period) {
++        if (!isValidPeriod(period)) {
++            return;
++        }
++        int mainCapacity = "EVENING".equalsIgnoreCase(period) ? 5 : 10;
++        int waitlistCapacity = "EVENING".equalsIgnoreCase(period) ? 2 : 3;
++        int usedSlots = bookingQueue.size() + waitlist.size();
++        System.out.println(period.toUpperCase() + ": " + usedSlots + "/"
++                + (mainCapacity + waitlistCapacity) + " slots");
++    }
++
++    private void printBookingTable(MyLinkedList<Booking> bookings,
++            CustomerService customerService, VehicleService vehicleService,
++            WashServiceManager washService) {
++        if (bookings.isEmpty()) {
++            System.out.println("No bookings found.");
+             return;
+         }
+-        bookingQueue.display();
+-        System.out.println("-----------------------");
++        System.out.printf("%-10s %-15s %-20s %-12s %-12s%n",
++                "BOOKING ID", "LICENSE PLATE", "SERVICE", "TIER", "STATUS");
++        System.out.println("-----------------------------------------------------------------------");
++        for (int i = 0; i < bookings.size(); i++) {
++            Booking booking = bookings.get(i);
++            Vehicle vehicle = findVehicle(booking.getVehicleId(), vehicleService);
++            WashPackage washPackage = washService.findServiceById(booking.getServiceId());
++            Customer customer = customerService.findCustomerById(booking.getCustomerId());
++            String licensePlate = vehicle == null ? booking.getVehicleId() : vehicle.getLicensePlate();
++            String serviceName = washPackage == null ? booking.getServiceId() : washPackage.getName();
++            String tier = customer == null ? "UNKNOWN" : customer.getMembershipLevel();
++            System.out.printf("%-10s %-15s %-20s %-12s %-12s%n", booking.getBookingId(),
++                    licensePlate, serviceName, tier, booking.getBookingStatus());
++        }
++    }
++
++    private Vehicle findVehicle(String vehicleId, VehicleService vehicleService) {
++        for (int i = 0; i < vehicleService.getVehicleList().size(); i++) {
++            Vehicle vehicle = vehicleService.getVehicleList().get(i);
++            if (vehicleId.equalsIgnoreCase(vehicle.getId())
++                    || vehicleId.equalsIgnoreCase(vehicle.getLicensePlate())) {
++                return vehicle;
++            }
++        }
++        return null;
+     }
+ 
+     // Feature 2: Add a booking to the end of the queue.
+     public void addBooking(String bookingId, String licensePlate, String serviceId) {
+         Booking newBooking = new Booking(
+-                bookingId, 
++                bookingId,
+                 "C000", // Default Customer ID for now (Issue 3 / 7 responsibility)
+                 licensePlate, // Vehicle identifier (vehicle ID or license plate)
+-                serviceId, 
++                serviceId,
+                 "2026-07-10", // Default Date (Issue 6 responsibility)
+                 "MORNING", // Default Period (Issue 6 responsibility)
+-                "WAITING", 
+-                "UNPAID", 
+-                "NONE", 
++                "WAITING",
++                "UNPAID",
++                "NONE",
+                 System.currentTimeMillis()
+         );
+         bookingQueue.enqueue(newBooking);
+         bookingList.addLast(newBooking);
+         System.out.println("=> Booking created. Vehicle " + licensePlate + " was added to the queue.");
+-        
++
+         // Auto-save bookings on change (FR-23)
+         FileManager.saveBookings(bookingList);
+     }
+@@ -74,13 +191,13 @@ public void processNextBooking() {
+                 break;
+             }
+         }
+-        
++
+         System.out.println("=> NOW SERVING: " + nextToWash.toString());
+-        
++
+         // Auto-save bookings on change (FR-23)
+         FileManager.saveBookings(bookingList);
+     }
+-    
++
+     public MyQueue<Booking> getBookingQueue() {
+         return bookingQueue;
+     }
+diff --git a/AutoWashQueueCLI/src/service/VehicleService.java b/AutoWashQueueCLI/src/service/VehicleService.java
+index a1031c3..64e4e20 100644
+--- a/AutoWashQueueCLI/src/service/VehicleService.java
++++ b/AutoWashQueueCLI/src/service/VehicleService.java
+@@ -110,6 +110,34 @@ public Vehicle findVehicleByLicense(String licensePlate) {
+         return null;
+     }
+ 
++    public Vehicle findVehicleById(String vehicleId) {
++        if (vehicleId == null || vehicleId.trim().isEmpty()) {
++            return null;
++        }
++
++        for (int i = 0; i < vehicleList.size(); i++) {
++            Vehicle v = vehicleList.get(i);
++            if (v.getId().equalsIgnoreCase(vehicleId.trim())) {
++                return v;
++            }
++        }
++
++        return null;
++    }
++
++    public Vehicle findVehicleByIdOrLicense(String input) {
++        if (input == null || input.trim().isEmpty()) {
++            return null;
++        }
++
++        Vehicle byId = findVehicleById(input);
++        if (byId != null) {
++            return byId;
++        }
++
++        return findVehicleByLicense(input);
++    }
++
+     public void updateVehicle(String licensePlate, String newCustomerId, CustomerService customerService) {
+         Vehicle v = findVehicleByLicense(licensePlate);
+         if (v == null) {
+@@ -143,7 +171,9 @@ public void deleteVehicle(String licensePlate, BookingService bookingService, My
+         MyLinkedList<Booking> bookings = bookingService.getBookingList();
+         for (int i = 0; i < bookings.size(); i++) {
+             String bVehId = bookings.get(i).getVehicleId();
+-            if (bVehId != null && bVehId.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
++            boolean sameVehicleId = bVehId != null && bVehId.equalsIgnoreCase(v.getId());
++            boolean samePlate = bVehId != null && bVehId.replace(" ", "").equalsIgnoreCase(cleanPlate);
++            if (sameVehicleId || samePlate) {
+                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated booking(s)!");
+                 return;
+             }
+@@ -176,4 +206,4 @@ public void deleteVehicle(String licensePlate, BookingService bookingService, My
+     public MyLinkedList<Vehicle> getVehicleList() {
+         return vehicleList;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/AutoWashQueueCLI/src/service/WashServiceManager.java b/AutoWashQueueCLI/src/service/WashServiceManager.java
+index 4d49587..a94d509 100644
+--- a/AutoWashQueueCLI/src/service/WashServiceManager.java
++++ b/AutoWashQueueCLI/src/service/WashServiceManager.java
+@@ -82,6 +82,15 @@ public WashPackage findServiceById(String id) {
+         return null;
+     }
+ 
++    public boolean isServiceActive(String serviceId) {
++        WashPackage ws = findServiceById(serviceId);
++        if (ws == null) {
++            return false;
++        }
++
++        return "ACTIVE".equalsIgnoreCase(ws.getStatus());
++    }
++
+     public void searchServices(String query) {
+         System.out.println("\n--- SEARCH RESULTS ---");
+         if (query == null || query.trim().isEmpty()) {
+@@ -253,4 +262,4 @@ public void sortServicesByDuration(boolean ascending) {
+     public MyLinkedList<WashPackage> getServiceList() {
+         return serviceList;
+     }
+-}
+\ No newline at end of file
++}

@@ -1,0 +1,328 @@
+﻿diff --git a/AutoWashQueueCLI/src/app/Main.java b/AutoWashQueueCLI/src/app/Main.java
+index 67ddac6..80c0dc5 100644
+--- a/AutoWashQueueCLI/src/app/Main.java
++++ b/AutoWashQueueCLI/src/app/Main.java
+@@ -17,6 +17,8 @@
+ import service.SimulationService;
+ import service.CompletionService;
+ import model.CompletionResult;
++import service.CancellationService;
++import model.CancellationResult;
+ 
+ public class Main {
+     public static void main(String[] args) {
+@@ -49,6 +51,7 @@ public static void main(String[] args) {
+         FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
+         CompletionService completionService = new CompletionService(bookingService, customerService,
+                 washService, vehicleService, historyList);
++        CancellationService cancellationService = new CancellationService(bookingService, washService);
+ 
+         // Populate active bookingQueue from loaded bookingList for compatibility
+         MyLinkedList<Booking> list = bookingService.getBookingList();
+@@ -68,6 +71,7 @@ public static void main(String[] args) {
+                     "Queue Management (Booking)",
+                     "Simulation Time Settings",
+                     "Complete Booking",
++                    "Cancel Booking",
+                     "Exit & Save Data");
+ 
+             switch (choice) {
+@@ -301,6 +305,15 @@ public static void main(String[] args) {
+                     }
+                     break;
+                 case 7:
++                    String bID = ConsoleInputter.getStr("Enter booking ID to cancel");
++                    CancellationResult cancellationResult = cancellationService.cancelAsAdmin(bID);
++                    System.out.println("=> " + cancellationResult.getMessage());
++                    if (cancellationResult.isSuccessful() && cancellationResult.getPromotedBooking() != null) {
++                        System.out.println("   Promoted from waitlist: "
++                                + cancellationResult.getPromotedBooking().getBookingId());
++                    }
++                    break;
++                case 8:
+                     // Auto-save data before exiting
+                     FileManager.saveData(
+                             customerService.getCustomerList(), 
+diff --git a/AutoWashQueueCLI/src/datastructure/MyQueue.java b/AutoWashQueueCLI/src/datastructure/MyQueue.java
+index 004e95e..48f28dc 100644
+--- a/AutoWashQueueCLI/src/datastructure/MyQueue.java
++++ b/AutoWashQueueCLI/src/datastructure/MyQueue.java
+@@ -1,5 +1,7 @@
+ package datastructure;
+ 
++import model.Booking;
++
+ public class MyQueue<T> {
+ 
+     private Node<T> front;
+@@ -93,4 +95,50 @@ public void display() {
+             current = current.next;
+         }
+     }
++
++    /** Removes a booking by ID and returns whether a queue entry was removed. */
++    public boolean removeBookingById(String id) {
++        Node<T> current = front;
++        Node<T> previous = null;
++
++        while (current != null) {
++            Booking b = (Booking) current.data;
++            if (b.getBookingId().equalsIgnoreCase(id)) {
++                if (current == front) {
++                    front = front.next;
++                } else {
++                    previous.next = current.next;
++                }
++                if (current == rear) rear = previous;
++                size--;
++                if (size == 0) rear = null;
++                return true;
++            }
++            previous = current;
++            current=current.next;
++        }
++        return false;
++    }
++
++    /** Returns whether this queue contains a booking with the supplied ID. */
++    public boolean containsBookingById(String id) {
++        if (id == null) {
++            return false;
++        }
++
++        Node<T> current = front;
++        while (current != null) {
++            Booking booking = (Booking) current.data;
++            if (id.equalsIgnoreCase(booking.getBookingId())) {
++                return true;
++            }
++            current = current.next;
++        }
++        return false;
++    }
++
++    /** Legacy compatibility wrapper. */
++    public void dequeueNodeByID(String id){
++        removeBookingById(id);
++    }
+ }
+diff --git a/AutoWashQueueCLI/src/model/CancellationResult.java b/AutoWashQueueCLI/src/model/CancellationResult.java
+new file mode 100644
+index 0000000..c1ce2fb
+--- /dev/null
++++ b/AutoWashQueueCLI/src/model/CancellationResult.java
+@@ -0,0 +1,22 @@
++package model;
++
++/** Result returned after attempting to cancel a booking. */
++public class CancellationResult {
++    private final boolean successful;
++    private final String message;
++    private final Booking cancelledBooking;
++    private final Booking promotedBooking;
++
++    public CancellationResult(boolean successful, String message,
++            Booking cancelledBooking, Booking promotedBooking) {
++        this.successful = successful;
++        this.message = message;
++        this.cancelledBooking = cancelledBooking;
++        this.promotedBooking = promotedBooking;
++    }
++
++    public boolean isSuccessful() { return successful; }
++    public String getMessage() { return message; }
++    public Booking getCancelledBooking() { return cancelledBooking; }
++    public Booking getPromotedBooking() { return promotedBooking; }
++}
+diff --git a/AutoWashQueueCLI/src/service/BookingService.java b/AutoWashQueueCLI/src/service/BookingService.java
+index 2f7f6b8..bebf9be 100644
+--- a/AutoWashQueueCLI/src/service/BookingService.java
++++ b/AutoWashQueueCLI/src/service/BookingService.java
+@@ -85,6 +85,11 @@ public MyQueue<Booking> getBookingQueue() {
+         return bookingQueue;
+     }
+ 
++    /** Checks whether a WAITING booking occupies a main-queue position. */
++    public boolean isInMainQueue(String bookingId) {
++        return bookingQueue.containsBookingById(bookingId);
++    }
++
+     public MyLinkedList<Booking> getBookingList() {
+         return bookingList;
+     }
+@@ -126,6 +131,21 @@ public Booking pollHighestPriorityWaitlist(String date, String period) {
+         return selected == null ? null : selected.getBooking();
+     }
+ 
++    /** Removes a specific booking from the waitlist, if it is present. */
++    public boolean removeFromWaitlist(String bookingId) {
++        MyLinkedList<WaitlistEntry> entries = drainWaitlist();
++        boolean removed = false;
++        for (int i = 0; i < entries.size(); i++) {
++            if (bookingId.equalsIgnoreCase(entries.get(i).getBooking().getBookingId())) {
++                entries.remove(i);
++                removed = true;
++                break;
++            }
++        }
++        restoreWaitlist(entries);
++        return removed;
++    }
++
+     private WaitlistEntry selectHighestPriority(MyLinkedList<WaitlistEntry> entries, String date, String period) {
+         WaitlistEntry selected = null;
+         for (int i = 0; i < entries.size(); i++) {
+diff --git a/AutoWashQueueCLI/src/service/CancellationService.java b/AutoWashQueueCLI/src/service/CancellationService.java
+new file mode 100644
+index 0000000..724e206
+--- /dev/null
++++ b/AutoWashQueueCLI/src/service/CancellationService.java
+@@ -0,0 +1,121 @@
++package service;
++
++import model.Booking;
++import model.CancellationResult;
++import model.WaitlistEntry;
++import model.WashPackage;
++import util.FileManager;
++
++/** Implements FR-18: booking cancellation and waitlist promotion. */
++public class CancellationService {
++    private final BookingService bookingService;
++    private final WashServiceManager washServiceManager;
++
++    public CancellationService(BookingService bookingService, WashServiceManager washServiceManager) {
++        this.bookingService = bookingService;
++        this.washServiceManager = washServiceManager;
++    }
++
++    public CancellationResult cancelAsCustomer(String customerId, String bookingId) {
++        Booking booking = findBooking(bookingId);
++        if (booking == null) return failed("Booking not found.");
++        if (!booking.getCustomerId().equalsIgnoreCase(customerId)) {
++            return failed("Customers can only cancel their own bookings.");
++        }
++        if (!"WAITING".equalsIgnoreCase(booking.getBookingStatus())) {
++            return failed("Customers can only cancel bookings with WAITING status.");
++        }
++        return cancel(booking, false);
++    }
++
++    public CancellationResult cancelAsAdmin(String bookingId) {
++        Booking booking = findBooking(bookingId);
++        if (booking == null) return failed("Booking not found.");
++        if (!"WAITING".equalsIgnoreCase(booking.getBookingStatus())
++                && !"SERVING".equalsIgnoreCase(booking.getBookingStatus())) {
++            return failed("Only WAITING or SERVING bookings can be cancelled.");
++        }
++        return cancel(booking, true);
++    }
++
++    private CancellationResult cancel(Booking booking, boolean isAdmin) {
++        boolean wasServing = "SERVING".equalsIgnoreCase(booking.getBookingStatus());
++        boolean wasInMainQueue = bookingService.getBookingQueue().removeBookingById(booking.getBookingId());
++        boolean wasInWaitlist = bookingService.removeFromWaitlist(booking.getBookingId());
++
++        booking.setBookingStatus("CANCELLED");
++        Booking promotedBooking = null;
++        if (wasServing && isAdmin) {
++            promotedBooking = promoteTopWaitlistBooking(booking.getDate(), booking.getPeriod(), true);
++        } else if (wasInMainQueue) {
++            promotedBooking = promoteTopWaitlistBooking(booking.getDate(), booking.getPeriod(), false);
++        }
++
++        FileManager.saveBookings(bookingService.getBookingList());
++        String location = wasServing ? "service position"
++                : (wasInWaitlist ? "waitlist" : (wasInMainQueue ? "main queue" : "future booking list"));
++        String message = "Booking " + booking.getBookingId() + " was cancelled from the " + location + ".";
++        if (wasServing) {
++            message += " The service position was released.";
++        }
++        return new CancellationResult(true, message, booking, promotedBooking);
++    }
++
++    private Booking promoteTopWaitlistBooking(String date, String period, boolean checkRemainingTime) {
++        WaitlistEntry topEntry = bookingService.peekHighestPriorityWaitlist(date, period);
++        Booking topBooking = topEntry == null ? null : topEntry.getBooking();
++        if (topBooking == null) return null;
++        if (checkRemainingTime && getRemainingMinutes(date, period) < getDuration(topBooking)) {
++            return null;
++        }
++        Booking promotedBooking = bookingService.pollHighestPriorityWaitlist(date, period);
++        bookingService.getBookingQueue().enqueue(promotedBooking);
++        return promotedBooking;
++    }
++
++    private int getRemainingMinutes(String date, String period) {
++        int usedMinutes = 0;
++        datastructure.MyLinkedList<Booking> bookings = bookingService.getBookingList();
++        for (int i = 0; i < bookings.size(); i++) {
++            Booking booking = bookings.get(i);
++            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
++                    && occupiesServiceTime(booking)) {
++                usedMinutes += getDuration(booking);
++            }
++        }
++        return getPeriodDuration(period) - usedMinutes;
++    }
++
++    private boolean occupiesServiceTime(Booking booking) {
++        String status = booking.getBookingStatus();
++        return "COMPLETED".equalsIgnoreCase(status)
++                || "SERVING".equalsIgnoreCase(status)
++                || ("WAITING".equalsIgnoreCase(status)
++                && bookingService.isInMainQueue(booking.getBookingId()));
++    }
++
++    private int getDuration(Booking booking) {
++        WashPackage washPackage = washServiceManager.findServiceById(booking.getServiceId());
++        return washPackage == null ? 0 : washPackage.getDuration();
++    }
++
++    private int getPeriodDuration(String period) {
++        if ("MORNING".equalsIgnoreCase(period)) return 300;
++        if ("AFTERNOON".equalsIgnoreCase(period)) return 240;
++        if ("EVENING".equalsIgnoreCase(period)) return 180;
++        return 0;
++    }
++
++    private Booking findBooking(String bookingId) {
++        if (bookingId == null) return null;
++        datastructure.MyLinkedList<Booking> bookings = bookingService.getBookingList();
++        for (int i = 0; i < bookings.size(); i++) {
++            if (bookingId.equalsIgnoreCase(bookings.get(i).getBookingId())) return bookings.get(i);
++        }
++        return null;
++    }
++
++    private CancellationResult failed(String message) {
++        return new CancellationResult(false, message, null, null);
++    }
++}
+diff --git a/AutoWashQueueCLI/src/service/CompletionService.java b/AutoWashQueueCLI/src/service/CompletionService.java
+index 1cf99b5..fdf0fb7 100644
+--- a/AutoWashQueueCLI/src/service/CompletionService.java
++++ b/AutoWashQueueCLI/src/service/CompletionService.java
+@@ -104,13 +104,21 @@ private int getRemainingMinutes(String date, String period) {
+         for (int i = 0; i < bookings.size(); i++) {
+             Booking booking = bookings.get(i);
+             if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
+-                    && "COMPLETED".equalsIgnoreCase(booking.getBookingStatus())) {
++                    && occupiesServiceTime(booking)) {
+                 usedMinutes += getDuration(booking);
+             }
+         }
+         return getPeriodDuration(period) - usedMinutes;
+     }
+ 
++    private boolean occupiesServiceTime(Booking booking) {
++        String status = booking.getBookingStatus();
++        return "COMPLETED".equalsIgnoreCase(status)
++                || "SERVING".equalsIgnoreCase(status)
++                || ("WAITING".equalsIgnoreCase(status)
++                && bookingService.isInMainQueue(booking.getBookingId()));
++    }
++
+     private int getDuration(Booking booking) {
+         WashPackage washPackage = washServiceManager.findServiceById(booking.getServiceId());
+         return washPackage == null ? 0 : washPackage.getDuration();
