@@ -20,6 +20,8 @@ import model.CompletionResult;
 import model.BookingActionResult;
 import service.CancellationService;
 import model.CancellationResult;
+import service.UndoService;
+import model.UndoResult;
 
 public class Main {
     public static void main(String[] args) {
@@ -53,6 +55,8 @@ public class Main {
         CompletionService completionService = new CompletionService(bookingService, customerService,
                 washService, vehicleService, historyList);
         CancellationService cancellationService = new CancellationService(bookingService, washService);
+        UndoService undoService = new UndoService(bookingService, completionService,
+                customerService, historyList);
 
         // Restore queues only when the persisted current period was activated.
         syncCurrentQueues(bookingService, simulationService, customerService);
@@ -67,6 +71,7 @@ public class Main {
                     "Simulation Time Settings",
                     "Complete Booking",
                     "Cancel Booking",
+                    "Undo Last Completed Booking",
                     "Exit & Save Data");
 
             switch (choice) {
@@ -399,6 +404,14 @@ public class Main {
                     }
                     break;
                 case 8:
+                    UndoResult undoResult = undoService.undoLastCompletion();
+                    System.out.println("=> " + undoResult.getMessage());
+                    if (undoResult.isSuccessful() && undoResult.getReturnedToWaitlist() != null) {
+                        System.out.println("   Returned to Waitlist: "
+                                + undoResult.getReturnedToWaitlist().getBookingId());
+                    }
+                    break;
+                case 9:
                     // Auto-save data before exiting
                     FileManager.saveData(
                             customerService.getCustomerList(), 

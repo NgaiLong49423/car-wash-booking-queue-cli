@@ -551,6 +551,14 @@ public class BookingService {
         completionStack.push(new CompletionRecord(completedBooking, promotedBooking));
     }
 
+    public CompletionRecord peekLastCompletion() {
+        return completionStack.peek();
+    }
+
+    public CompletionRecord popLastCompletion() {
+        return completionStack.pop();
+    }
+
     public WaitlistEntry peekHighestPriorityWaitlist(String date, String period) {
         MyLinkedList<WaitlistEntry> entries = drainWaitlist();
         WaitlistEntry selected = selectHighestPriority(entries, date, period);
