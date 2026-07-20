@@ -55,6 +55,10 @@ public class VehicleService {
             System.out.println("=> Error: License plate cannot be empty!");
             return;
         }
+        if (!isValidLicensePlate(licensePlate)) {
+            System.out.println("=> Error: License plate must use a format such as 59A-123.45 or 59A1-123.45.");
+            return;
+        }
         if (customerId == null || customerId.trim().isEmpty()) {
             System.out.println("=> Error: Customer ID cannot be empty!");
             return;
@@ -88,7 +92,8 @@ public class VehicleService {
         }
         String newId = String.format("V%03d", maxIdNum + 1);
 
-        Vehicle newVehicle = new Vehicle(newId, licensePlate, customerId);
+        String normalizedPlate = licensePlate.trim().toUpperCase();
+        Vehicle newVehicle = new Vehicle(newId, normalizedPlate, customerId.trim().toUpperCase());
         vehicleList.addLast(newVehicle);
         System.out.println("=> Added vehicle successfully: " + licensePlate + " (Vehicle ID: " + newId + ")");
         
@@ -98,12 +103,12 @@ public class VehicleService {
 
     public Vehicle findVehicleByLicense(String licensePlate) {
         if (licensePlate == null) return null;
-        String cleanInput = licensePlate.replace(" ", "");
+        String cleanInput = normalizeLicensePlate(licensePlate);
         int size = vehicleList.size();
         for (int i = 0; i < size; i++) {
             Vehicle v = vehicleList.get(i);
             if (v.getLicensePlate() != null && 
-                v.getLicensePlate().replace(" ", "").equalsIgnoreCase(cleanInput)) {
+                normalizeLicensePlate(v.getLicensePlate()).equalsIgnoreCase(cleanInput)) {
                 return v;
             }
         }
@@ -165,14 +170,14 @@ public class VehicleService {
             return;
         }
 
-        String cleanPlate = licensePlate.replace(" ", "");
+        String cleanPlate = normalizeLicensePlate(licensePlate);
 
         // 1. Kiểm tra ràng buộc liên kết Booking
         MyLinkedList<Booking> bookings = bookingService.getBookingList();
         for (int i = 0; i < bookings.size(); i++) {
             String bVehId = bookings.get(i).getVehicleId();
             boolean sameVehicleId = bVehId != null && bVehId.equalsIgnoreCase(v.getId());
-            boolean samePlate = bVehId != null && bVehId.replace(" ", "").equalsIgnoreCase(cleanPlate);
+            boolean samePlate = bVehId != null && normalizeLicensePlate(bVehId).equalsIgnoreCase(cleanPlate);
             if (sameVehicleId || samePlate) {
                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated booking(s)!");
                 return;
@@ -182,7 +187,7 @@ public class VehicleService {
         // 2. Kiểm tra ràng buộc liên kết Lịch sử rửa xe (History)
         for (int i = 0; i < historyList.size(); i++) {
             String hPlate = historyList.get(i).getPlateNumber();
-            if (hPlate != null && hPlate.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
+            if (hPlate != null && normalizeLicensePlate(hPlate).equalsIgnoreCase(cleanPlate)) {
                 System.out.println("=> Error: Cannot delete vehicle " + licensePlate + " because it has associated history records!");
                 return;
             }
@@ -192,7 +197,7 @@ public class VehicleService {
         int size = vehicleList.size();
         for (int i = 0; i < size; i++) {
             String listPlate = vehicleList.get(i).getLicensePlate();
-            if (listPlate != null && listPlate.replace(" ", "").equalsIgnoreCase(cleanPlate)) {
+            if (listPlate != null && normalizeLicensePlate(listPlate).equalsIgnoreCase(cleanPlate)) {
                 vehicleList.remove(i);
                 System.out.println("=> Deleted vehicle successfully: " + licensePlate);
                 
@@ -205,5 +210,14 @@ public class VehicleService {
 
     public MyLinkedList<Vehicle> getVehicleList() {
         return vehicleList;
+    }
+
+    private boolean isValidLicensePlate(String licensePlate) {
+        return licensePlate != null
+                && licensePlate.trim().matches("(?i)\\d{2}[A-Z]\\d?[- ]?\\d{3}[.]?\\d{2}");
+    }
+
+    private String normalizeLicensePlate(String licensePlate) {
+        return licensePlate == null ? "" : licensePlate.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
     }
 }

@@ -655,6 +655,7 @@ public class Main {
             }
 
             FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
+            bookingService.synchronizeBookingSequence(historyList);
             completionService = new CompletionService(bookingService, customerService,
                     washService, vehicleService, historyList);
             cancellationService = new CancellationService(bookingService, washService);
