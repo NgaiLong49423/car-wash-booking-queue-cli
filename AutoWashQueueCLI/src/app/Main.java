@@ -375,8 +375,23 @@ public class Main {
                     }
                     break;
                 case 7:
-                    String bID = ConsoleInputter.getStr("Enter booking ID to cancel");
-                    CancellationResult cancellationResult = cancellationService.cancelAsAdmin(bID);
+                    int cancellationActor = ConsoleInputter.intMenu("CANCEL BOOKING",
+                            "Customer cancellation",
+                            "Admin cancellation",
+                            "Back to main menu");
+                    CancellationResult cancellationResult = null;
+                    if (cancellationActor == 1) {
+                        String cancellationCustomerId = ConsoleInputter.getStr("Enter customer ID");
+                        String customerBookingId = ConsoleInputter.getStr("Enter booking ID to cancel");
+                        cancellationResult = cancellationService.cancelAsCustomer(
+                                cancellationCustomerId, customerBookingId);
+                    } else if (cancellationActor == 2) {
+                        String adminBookingId = ConsoleInputter.getStr("Enter booking ID to cancel");
+                        cancellationResult = cancellationService.cancelAsAdmin(adminBookingId);
+                    }
+                    if (cancellationResult == null) {
+                        break;
+                    }
                     System.out.println("=> " + cancellationResult.getMessage());
                     if (cancellationResult.isSuccessful() && cancellationResult.getPromotedBooking() != null) {
                         System.out.println("   Promoted from waitlist: "
