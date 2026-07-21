@@ -1,8 +1,8 @@
 > **Document:** Software Requirements Specification (SRS)
 > **File:** `docs/requirements/SRS.md`
-> **Version:** v3.0.4
+> **Version:** v4.0.0
 > **Created:** 2026-06-26
-> **Last Updated:** 2026-07-17
+> **Last Updated:** 2026-07-21
 > **Status:** Active
 
 # Software Requirements Specification (SRS)
@@ -17,6 +17,7 @@
 | v3.0.2 | 2026-06-26 | Rà soát và đồng bộ SRS | Đồng bộ các quy tắc nghiệp vụ, FR và UC; sửa mâu thuẫn về loyalty, Undo, Activate, Waitlist và khôi phục hàng chờ |
 | v3.0.3 | 2026-07-02 | Yêu cầu người dùng | Cập nhật yêu cầu ngôn ngữ ứng dụng hiển thị 100% tiếng Anh |
 | v3.0.4 | 2026-07-17 | Agent Review | Fix lỗi logic toán học thiếu sót các trạng thái chiếm dụng thời gian trong công thức tính thời gian còn lại (Mục 3.9.2) |
+| v4.0.0 | 2026-07-21 | Yêu cầu người dùng | Nâng cấp logic kiểm tra quỹ thời gian khi xếp Main Queue, duyệt trọn vẹn Waitlist để tối ưu thời gian, và giới hạn tính Loyalty trong vòng 365 ngày |
 
 ## 1. Giới thiệu
 
@@ -157,8 +158,8 @@ Bảng tổng hợp quyền theo vai trò (Actor Matrix):
 - Thanh toán trực tuyến thực tế (online payment gateway).
 - Nhận diện biển số xe tự động (LPR - License Plate Recognition).
 - Gửi email, SMS hoặc thông báo tự động.
-- Quản lý chương trình khuyến mãi nâng cao, đổi điểm lấy quà, hạ hạng định kỳ theo thời gian hoặc hết hạn điểm.
-- Hệ thống không có chức năng tự động hạ hạng thành viên theo chu kỳ ngày/tháng/năm. Tuy nhiên, hạng thành viên có thể thay đổi khi hệ thống thực hiện tính toán lại loyalty từ dữ liệu booking đã hoàn tất. Việc thay đổi này không được xem là hạ hạng định kỳ, mà là kết quả của quá trình đồng bộ lại dữ liệu tích lũy.
+- Quản lý chương trình khuyến mãi nâng cao, đổi điểm lấy quà, hoặc chạy batch tự động hạ hạng theo lịch.
+- Hệ thống không chạy tiến trình (batch) tự động hạ hạng định kỳ mỗi ngày. Tuy nhiên, hạng thành viên có thể thay đổi (tăng hoặc giảm) khi hệ thống tính toán lại loyalty từ dữ liệu booking `COMPLETED` trong **365 ngày gần nhất**.
 
 ---
 
@@ -173,7 +174,7 @@ Một ngày phục vụ được chia thành 3 buổi cố định với giới 
 | **Chiều (AFTERNOON)** | 13:00 - 17:00 | 10 | 3 |
 | **Tối (EVENING)** | 18:00 - 21:00 | 5 | 2 |
 
-Số slot này là giới hạn cứng của tiệm nhằm đảm bảo chất lượng dịch vụ.
+Số slot này là giới hạn cứng về mặt vật lý. Tuy nhiên, khi phân bổ xe vào slot chính, hệ thống còn phải kiểm tra tổng thời lượng phục vụ để đảm bảo không vượt quá quỹ thời gian của buổi đó.
 
 ### 3.2 Quy tắc slot chính và hàng chờ phụ
 - **Slot chính (Main slot)**: Dành cho các khách hàng chắc chắn được phục vụ trong buổi. Thứ tự phục vụ trong slot chính tuân theo nguyên tắc "ai vào trước rửa trước" (FIFO).
@@ -210,7 +211,7 @@ Booking hiện tại là booking được tạo cho đúng ngày hiện tại (`
 
 ### 3.6 Quy tắc booking tương lai
 Booking tương lai là booking được đặt cho một ngày sau ngày hiện tại, hoặc đặt cho buổi sau của ngày hiện tại (khi buổi đó chưa diễn ra và chưa được kích hoạt).
-- Khi tạo booking tương lai, hệ thống kiểm tra tổng sức chứa (Slot chính + Slot chờ phụ) của buổi đó. Nếu còn chỗ, hệ thống ghi nhận booking. Nếu sức chứa đã đầy, hệ thống hiển thị rõ trạng thái đã đầy của ngày/buổi đó và không cho tạo booking.
+- Khi tạo booking tương lai, hệ thống kiểm tra tổng sức chứa (Slot chính + Slot chờ phụ) VÀ tổng quỹ thời gian của buổi đó. Nếu còn chỗ và thời lượng không vượt quá giới hạn, hệ thống ghi nhận booking. Nếu sức chứa hoặc thời gian đã đầy, hệ thống từ chối tạo booking.
 - Các booking tương lai chưa được xếp vào hàng chờ phục vụ ngay mà được lưu tạm. Khi buổi đó được kích hoạt, hệ thống mới tiến hành sắp xếp chúng theo mức độ ưu tiên để phân bổ vào slot chính và hàng chờ phụ.
 
 ### 3.7 Quy tắc kích hoạt buổi (Activate period)
@@ -220,7 +221,7 @@ Booking tương lai là booking được đặt cho một ngày sau ngày hiện
 - Khi kích hoạt, hệ thống lấy toàn bộ booking tương lai đã đặt trước của buổi đó, sắp xếp theo thứ tự ưu tiên:
   1. Hạng thành viên cao hơn được ưu tiên trước (Platinum > Gold > Silver > Member).
   2. Nếu cùng hạng thành viên, booking nào được tạo trước (thời gian đặt sớm hơn) được ưu tiên trước.
-- Sắp xếp xong, hệ thống đổ lần lượt các booking ưu tiên cao vào slot chính (tối đa bằng giới hạn slot chính của buổi). Số còn lại (nếu có) được đổ vào hàng chờ phụ (tối đa bằng giới hạn slot chờ phụ). Trong điều kiện dữ liệu hợp lệ, hệ thống không phát sinh booking dư thừa vì tổng sức chứa đã được kiểm tra khi tạo booking. Trường hợp phát hiện dữ liệu vượt sức chứa do lỗi file hoặc dữ liệu thủ công, hệ thống không phân bổ phần dư và hiển thị lỗi dữ liệu.
+- Sắp xếp xong, hệ thống đổ lần lượt các booking ưu tiên cao vào slot chính (tối đa bằng giới hạn slot chính VÀ tổng thời gian dịch vụ không vượt quá quỹ thời gian của buổi). Số còn lại (nếu có) được đổ vào hàng chờ phụ (tối đa bằng giới hạn slot chờ phụ). Trong điều kiện dữ liệu hợp lệ, hệ thống không phát sinh booking dư thừa vì tổng sức chứa đã được kiểm tra khi tạo. Trường hợp phát hiện dữ liệu vượt sức chứa do lỗi file hoặc dữ liệu thủ công, hệ thống không phân bổ phần dư và hiển thị lỗi dữ liệu.
 
 ### 3.8 Quy tắc xử lý hàng chờ phụ
 Khi slot chính của buổi hiện tại xuất hiện chỗ trống (do hủy booking hoặc do hệ thống thực hiện nghiệp vụ kéo thêm xe):
@@ -263,7 +264,7 @@ usedMinutes = tổng serviceDuration của các booking thỏa mãn:
 remainingMinutes = periodTotalMinutes - usedMinutes
 ```
 
-Khi kiểm tra Waitlist, hệ thống chỉ xét booking có độ ưu tiên cao nhất trong Waitlist. Nếu `remainingMinutes >= serviceDuration` của booking đó, hệ thống kéo booking từ Waitlist lên cuối Main Queue. Nếu không đủ thời gian, hệ thống không kéo thêm booking nào và không bỏ qua booking ưu tiên cao nhất để xét các booking phía sau.
+Khi kiểm tra Waitlist, hệ thống sẽ **duyệt qua từng booking trong Waitlist** theo thứ tự ưu tiên (từ cao xuống thấp). Nếu `remainingMinutes >= serviceDuration` của một booking, hệ thống kéo booking đó từ Waitlist lên cuối Main Queue, đồng thời cập nhật lại `remainingMinutes` và tiếp tục xét các booking phía sau nếu còn thời gian. Những booking có thời gian dịch vụ quá dài không vừa với quỹ thời gian còn lại sẽ bị bỏ qua tạm thời và vẫn giữ nguyên vị trí ưu tiên của chúng trong Waitlist.
 
 ### 3.10 Quy tắc hủy booking (Cancel booking)
 - Booking ở trạng thái chờ (`WAITING`) hoặc đang phục vụ (`SERVING`) có thể được hủy bởi Admin hoặc chính khách hàng (chỉ WAITING). Booking đã hoàn tất (`COMPLETED`) không được hủy.
@@ -287,21 +288,20 @@ Khi kiểm tra Waitlist, hệ thống chỉ xét booking có độ ưu tiên cao
   - Platinum: Ưu tiên mức 4.
 - Sau khi booking được chuyển sang trạng thái `COMPLETED` thành công, hệ thống tính toán lại loyalty cho khách hàng liên quan để cập nhật điểm, tổng chi tiêu, số lần rửa xe và hạng thành viên.
 
-Hệ thống không xem điểm loyalty, số lần rửa xe, tổng chi tiêu và hạng thành viên là dữ liệu được chỉnh sửa thủ công độc lập. Các giá trị này phải được tính toán dựa trên dữ liệu booking đã hoàn tất (`COMPLETED`).
+Hệ thống không xem điểm loyalty, số lần rửa xe, tổng chi tiêu và hạng thành viên là dữ liệu được chỉnh sửa thủ công độc lập. Các giá trị này phải được tính toán tự động từ lịch sử. Để phản ánh đúng thực tế kinh doanh, hệ thống **chỉ xét các booking `COMPLETED` trong vòng 365 ngày gần nhất** (tính từ `currentDate`).
 
-Mỗi khi có thao tác làm thay đổi dữ liệu ảnh hưởng đến loyalty, hệ thống sẽ thực hiện tính toán lại loyalty cho khách hàng liên quan. Các thao tác có thể kích hoạt việc tính toán lại bao gồm:
+Các thao tác kích hoạt việc tính toán lại bao gồm:
 - Hoàn tất booking.
 - Hoàn tác booking đã hoàn tất.
-- Hủy hoặc thay đổi trạng thái booking trong trường hợp booking đó từng ảnh hưởng đến lịch sử hoàn tất.
-- Chỉnh sửa dữ liệu liên quan đến giá dịch vụ của booking đã hoàn tất nếu hệ thống cho phép chỉnh sửa dữ liệu này.
+- Khi bước qua một ngày mới (thay đổi `currentDate` trên hệ thống).
 
 Công thức tính lại:
-- `visitCount` = tổng số booking `COMPLETED` của khách hàng.
-- `totalSpent` = tổng giá trị dịch vụ của các booking `COMPLETED` của khách hàng.
+- `visitCount` = tổng số booking `COMPLETED` của khách hàng trong 365 ngày qua.
+- `totalSpent` = tổng giá trị dịch vụ của các booking `COMPLETED` của khách hàng trong 365 ngày qua.
 - `loyaltyPoints` = `totalSpent / 1000`.
 - `tier` = hạng thành viên cao nhất mà khách hàng đạt được dựa trên `visitCount` hoặc `totalSpent`.
 
-Việc tính toán lại loyalty nhằm đảm bảo dữ liệu khách hàng luôn nhất quán với lịch sử booking thực tế. Hệ thống không thực hiện hạ hạng định kỳ theo thời gian; mọi thay đổi hạng chỉ là kết quả của việc tính toán lại dữ liệu sau một thao tác nghiệp vụ hợp lệ.
+Việc tính toán lại loyalty đảm bảo dữ liệu luôn nhất quán. Vì chỉ xét trong vòng 365 ngày, hạng thành viên có thể bị "hạ" tự nhiên nếu khách hàng không duy trì chi tiêu hoặc số lần rửa xe đủ mốc khi một giao dịch cũ trôi qua mốc 1 năm.
 
 ### 3.12 Quy tắc lịch sử
 - Lịch sử rửa xe chỉ ghi nhận các booking đã chuyển sang trạng thái `COMPLETED` thành công.
@@ -424,9 +424,9 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
   1. Nhập mã khách hàng, mã xe, mã dịch vụ, ngày muốn đặt và buổi muốn đặt.
   2. Hệ thống kiểm tra sự tồn tại của khách, xe, dịch vụ và kiểm tra xe có thuộc khách hàng đó không.
   3. Kiểm tra ràng buộc Booking window theo hạng của khách hàng. Admin không được phép override điều này.
-  4. Xác định booking thuộc buổi hiện tại (đang diễn ra) hay buổi tương lai để kiểm tra sức chứa tương ứng. Admin không được phép override sức chứa.
+  4. Xác định booking thuộc buổi hiện tại (đang diễn ra) hay buổi tương lai để kiểm tra sức chứa (số slot và quỹ thời gian). Admin không được phép override.
   5. Nếu hợp lệ, sinh mã booking tự động (`B001, B002...`), gán trạng thái mặc định là `WAITING` và lưu trữ.
-- **Điều kiện/ràng buộc**: Khách hàng, xe, dịch vụ phải tồn tại và liên kết đúng. Ngày đặt phải nằm trong booking window. Sức chứa của buổi phải còn chỗ (slot chính hoặc waitlist).
+- **Điều kiện/ràng buộc**: Khách hàng, xe, dịch vụ phải tồn tại và liên kết đúng. Ngày đặt phải nằm trong booking window. Buổi đặt phải còn đủ sức chứa và quỹ thời gian.
 - **Kết quả mong đợi**: Booking được tạo thành công, ghi vào file `bookings.txt`.
 
 #### FR-06 — Kiểm tra booking window theo hạng thành viên
@@ -454,9 +454,9 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
 - **Luồng xử lý chính**:
   1. Kiểm tra xem buổi hiện tại của ngày hiện tại đã được kích hoạt hay chưa.
   2. Nếu đã kích hoạt:
-     - Nếu slot chính của buổi hiện tại còn chỗ trống: đưa booking vào cuối hàng chờ chính (FIFO Queue).
-     - Nếu slot chính đã đầy nhưng hàng chờ phụ còn chỗ trống: đưa booking vào hàng chờ phụ (Priority Queue).
-     - Nếu cả hai đều đầy: từ chối booking.
+     - Nếu slot chính còn chỗ trống VÀ tổng thời gian dịch vụ không vượt quá quỹ thời gian: đưa booking vào cuối hàng chờ chính (FIFO Queue).
+     - Nếu slot chính đã đầy (hoặc không đủ thời gian) nhưng hàng chờ phụ còn chỗ trống: đưa booking vào hàng chờ phụ (Priority Queue).
+     - Nếu cả hai đều đầy (hoặc quá tải thời gian): từ chối booking.
   3. Nếu buổi chưa kích hoạt: lưu booking vào danh sách chờ kích hoạt (như booking tương lai).
 - **Điều kiện/ràng buộc**: Phải tuân thủ giới hạn sức chứa của buổi hiện tại.
 - **Kết quả mong đợi**: Khách đặt ngay được xếp trực tiếp vào Queue chính hoặc Priority Queue của buổi đang hoạt động.
@@ -466,7 +466,7 @@ Mỗi booking trong hệ thống phải thuộc một trong các trạng thái s
 - **Lý do cần có**: Khách hàng đặt trước chưa được đưa vào hàng chờ phục vụ thực tế ngay mà phải chờ đến thời điểm kích hoạt buổi để phân loại độ ưu tiên.
 - **Luồng xử lý chính**:
   1. Xác định booking thuộc ngày/buổi tương lai.
-  2. Kiểm tra tổng sức chứa của buổi tương lai đó (tổng slot chính + phụ).
+  2. Kiểm tra tổng sức chứa (số slot) và dự tính tổng quỹ thời gian của buổi tương lai.
   3. Nếu còn chỗ, ghi nhận booking vào danh sách booking tương lai và lưu file.
 - **Điều kiện/ràng buộc**: Chỉ kiểm tra tổng sức chứa của buổi đó tại thời điểm tạo, chưa phân bổ vào hàng chờ chính/phụ cụ thể.
 - **Kết quả mong đợi**: Booking tương lai được tiếp nhận và lưu trữ ổn định.

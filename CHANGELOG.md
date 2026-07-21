@@ -1,3 +1,36 @@
+## [0.7.0] - 2026-07-21
+
+### Author
+
+* Prepared by Ngô Gia Long (SE190732) and Agent.
+
+### Changed
+
+* **Business Logic (SRS & PRD):** Upgraded queue capacity logic to check not only slot limits but also total service duration (`periodTotalMinutes`) to prevent time overflow during the active period.
+* **Waitlist Processing:** Upgraded the Waitlist promotion algorithm to iterate through the entire Priority Queue, ensuring available time slots are utilized even if the highest-priority booking is too long.
+* **Loyalty Calculation:** Updated loyalty rules to only count `COMPLETED` bookings within the last 365 days, simulating a more realistic tier-reset business mechanism.
+* Synchronized `PRD.md` (v2.0.0) and `README.md` to align with the new v4.0.0 business rules defined in `SRS.md`.
+
+## [0.6.0] - 2026-07-20
+
+### Author
+
+* Prepared by Ngô Gia Long (SE190732) and Agent.
+
+### Added
+
+* **Feature 006 (Simulation Time):** Added functionality to set the simulated current date and service period (`MORNING`, `AFTERNOON`, `EVENING`) for testing time-dependent logic.
+* **Feature 007 (Booking Creation):** Implemented booking creation with robust validation for customer limits (Booking Window based on Tier) and capacity checks.
+* **Feature 008 (Period Activation):** Implemented service period activation to automatically allocate future bookings into the Main Queue and Waitlist (Max-Heap) based on priority.
+* **Feature 010 (Service Processing):** Added the ability to process the next vehicle in the Main Queue and simulate payment confirmation.
+* **Feature 013 (History Reports):** Added comprehensive UI reports for viewing global wash history and specific customer history.
+* **Feature 014 (Undo):** Implemented an Undo feature using a custom Stack (`MyStack`) to revert the last completed booking and restore waitlist states.
+* **Feature 015 (CLI Integration):** Integrated all subsystems into a unified CLI menu with hardened user input validation (regex for phone numbers and license plates).
+
+### Fixed
+
+* **Fix 027 (Menu Routing):** Corrected Main Menu routing to properly separate Customer and Admin roles and maintain correct authentication states.
+
 ## [0.5.0] - 2026-07-18
 
 ### Author
