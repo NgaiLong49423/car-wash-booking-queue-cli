@@ -1,8 +1,8 @@
 > **Document:** Product Requirements Document (PRD)
 > **File:** `docs/requirements/PRD.md`
-> **Version:** v1.0.1
+> **Version:** v2.0.0
 > **Created:** 2026-06-26
-> **Last Updated:** 2026-07-17
+> **Last Updated:** 2026-07-21
 > **Status:** Active
 
 # Product Requirements Document (PRD)
@@ -84,7 +84,7 @@ Các nội dung ngoài phạm vi:
 - Gửi email, SMS hoặc thông báo tự động.
 - Quản lý chương trình khuyến mãi nâng cao.
 - Đổi điểm lấy quà.
-- Hạ hạng định kỳ theo thời gian hoặc hết hạn điểm.
+- Chạy batch tự động hạ hạng định kỳ mỗi ngày (hạng được tính lại tự động dựa trên 365 ngày gần nhất).
 - Hoàn tiền hoặc đối soát thanh toán thực tế.
 - Audit log (**nhật ký hoạt động chi tiết**) như ghi nhận tài khoản nào thay đổi dữ liệu nào.
 - Nhiều vị trí rửa xe hoạt động song song; hệ thống chỉ mô phỏng đúng 1 vị trí rửa xe.
@@ -139,8 +139,8 @@ Admin/Nhân viên có thể:
 | FR-05 | Tạo booking rửa xe | Customer hoặc Admin tạo lịch đặt rửa xe cho khách hàng, xe, dịch vụ, ngày và buổi cụ thể. |
 | FR-06 | Kiểm tra booking window | Hệ thống kiểm tra ngày đặt có vượt giới hạn theo tier hay không. |
 | FR-07 | Xác định buổi rửa xe | Hệ thống phân loại booking vào `MORNING`, `AFTERNOON` hoặc `EVENING`. |
-| FR-08 | Xử lý booking trong buổi hiện tại | Booking của buổi hiện tại được đưa vào slot chính hoặc Waitlist nếu buổi đã kích hoạt; nếu chưa kích hoạt thì lưu như booking tương lai. |
-| FR-09 | Xử lý booking cho buổi tương lai | Booking tương lai được lưu tạm sau khi kiểm tra tổng sức chứa buổi. |
+| FR-08 | Xử lý booking trong buổi hiện tại | Booking được đưa vào slot chính (nếu đủ số slot và quỹ thời gian) hoặc Waitlist; nếu chưa kích hoạt thì lưu như booking tương lai. |
+| FR-09 | Xử lý booking cho buổi tương lai | Booking tương lai được lưu tạm sau khi kiểm tra tổng sức chứa và quỹ thời gian buổi. |
 | FR-10 | Kích hoạt buổi rửa xe | Admin kích hoạt buổi hiện tại để phân bổ booking tương lai vào Main Queue và Waitlist theo ưu tiên. |
 | FR-11 | Ngăn kích hoạt trùng buổi | Mỗi ngày + buổi chỉ được kích hoạt một lần và trạng thái được lưu vào `periods.txt`. |
 | FR-12 | Xem hàng chờ chính | Admin xem Main Queue của buổi hiện tại theo FIFO. |
@@ -201,7 +201,7 @@ Admin không được override booking window.
 - Booking hiện tại là booking cho đúng `currentDate` và `currentPeriod`.
 - Nếu buổi hiện tại đã kích hoạt, booking được đưa vào Main Queue nếu slot chính còn chỗ, hoặc Waitlist nếu slot chính đầy nhưng Waitlist còn chỗ.
 - Nếu buổi hiện tại chưa kích hoạt, booking được lưu như booking tương lai.
-- Booking tương lai chỉ kiểm tra tổng sức chứa của buổi; khi kích hoạt mới phân bổ vào Main Queue và Waitlist.
+- Booking tương lai chỉ kiểm tra tổng sức chứa và quỹ thời gian của buổi; khi kích hoạt mới phân bổ vào Main Queue và Waitlist.
 
 ### 7.6 Activate Period
 
@@ -239,7 +239,7 @@ usedMinutes = tổng serviceDuration của các booking cùng ngày, cùng perio
 remainingMinutes = periodTotalMinutes - usedMinutes
 ```
 
-Khi kiểm tra Waitlist, hệ thống chỉ xét booking ưu tiên cao nhất. Nếu booking đó không đủ thời gian phục vụ, hệ thống không bỏ qua để xét booking phía sau.
+Khi kiểm tra Waitlist, hệ thống sẽ duyệt qua từng booking theo thứ tự ưu tiên. Nếu booking ưu tiên cao không đủ thời gian phục vụ, hệ thống bỏ qua tạm thời để tiếp tục xét các booking phía sau xem có vừa quỹ thời gian hay không.
 
 ### 7.10 Cancel Booking
 
@@ -258,7 +258,7 @@ Khi kiểm tra Waitlist, hệ thống chỉ xét booking ưu tiên cao nhất. N
 - `loyaltyPoints` = `totalSpent / 1000`.
 - `tier` = hạng cao nhất đạt được dựa trên `visitCount` hoặc `totalSpent`.
 - Loyalty không được chỉnh sửa thủ công độc lập.
-- Loyalty được tính lại sau thao tác ảnh hưởng đến booking `COMPLETED`.
+- Loyalty được tính tự động từ các booking `COMPLETED` trong 365 ngày gần nhất tính từ ngày hiện tại.
 
 ### 7.12 Undo
 
