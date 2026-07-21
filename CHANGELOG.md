@@ -1,3 +1,16 @@
+## [1.0.0] - 2026-07-21
+
+### Author
+
+* Prepared by Ngô Gia Long (SE190732) and Agent.
+
+### Added
+
+* **Project Milestone:** Official v1.0.0 Release.
+* **Code Complete:** Successfully integrated all core GitHub Issues (Foundation, File Storage, Customer, Vehicle, Service, Queue Time Simulation, Waitlist Algorithm, Billing, Cancellation, History, Undo, CLI Menu).
+* **Business Logic Finalized:** Implemented full rules for time-based queue capacity, waitlist loop promotion, and 365-day rolling loyalty calculation from `SRS v4.0.0` and `PRD v2.0.0`.
+* **Stability:** Fully stable Java CLI application satisfying the requirements of CSD201 using pure custom data structures without external databases.
+
 ## [0.7.0] - 2026-07-21
 
 ### Author
