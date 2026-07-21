@@ -172,7 +172,7 @@ public class Main {
                     break;
                 case 6:
                     PeriodActivationResult activationResult = context.simulationService.activateCurrentPeriod(
-                            context.bookingService, context.customerService);
+                            context.bookingService, context.customerService, context.washService);
                     System.out.println("=> " + activationResult.getMessage());
                     break;
                 case 7:
@@ -198,9 +198,11 @@ public class Main {
                 case 13:
                     UndoResult undoResult = context.undoService.undoLastCompletion();
                     System.out.println("=> " + undoResult.getMessage());
-                    if (undoResult.isSuccessful() && undoResult.getReturnedToWaitlist() != null) {
-                        System.out.println("   Returned to Waitlist: "
-                                + undoResult.getReturnedToWaitlist().getBookingId());
+                    if (undoResult.isSuccessful()) {
+                        for (int i = 0; i < undoResult.getReturnedBookingsToWaitlist().size(); i++) {
+                            System.out.println("   Returned to Waitlist: "
+                                    + undoResult.getReturnedBookingsToWaitlist().get(i).getBookingId());
+                        }
                     }
                     break;
                 case 0:
@@ -415,12 +417,16 @@ public class Main {
                     String date = ConsoleInputter.getIsoDate("Enter current date");
                     if (date != null && !date.isEmpty()) {
                         context.simulationService.setCurrentDate(date);
-                        syncCurrentQueues(context.bookingService, context.simulationService, context.customerService);
+                        context.completionService.recalculateAllLoyalty();
+                        FileManager.saveCustomers(context.customerService.getCustomerList());
+                        syncCurrentQueues(context.bookingService, context.simulationService,
+                                context.customerService, context.washService);
                     }
                     break;
                 case 3:
                     context.simulationService.setCurrentPeriod(selectPeriodChoice());
-                    syncCurrentQueues(context.bookingService, context.simulationService, context.customerService);
+                    syncCurrentQueues(context.bookingService, context.simulationService,
+                            context.customerService, context.washService);
                     break;
                 case 0:
                     active = false;
@@ -550,9 +556,9 @@ public class Main {
         System.out.println("   Loyalty points: " + result.getPreviousPoints() + " -> " + customer.getPoints());
         System.out.println("   Membership tier: " + result.getPreviousTier()
                 + " -> " + customer.getMembershipLevel());
-        if (result.getPromotedBooking() != null) {
+        for (int i = 0; i < result.getPromotedBookings().size(); i++) {
             System.out.println("   Promoted from Waitlist: "
-                    + result.getPromotedBooking().getBookingId());
+                    + result.getPromotedBookings().get(i).getBookingId());
         }
     }
 
@@ -581,8 +587,11 @@ public class Main {
 
     private static void printCancellationResult(CancellationResult result) {
         System.out.println("=> " + result.getMessage());
-        if (result.isSuccessful() && result.getPromotedBooking() != null) {
-            System.out.println("   Promoted from Waitlist: " + result.getPromotedBooking().getBookingId());
+        if (result.isSuccessful()) {
+            for (int i = 0; i < result.getPromotedBookings().size(); i++) {
+                System.out.println("   Promoted from Waitlist: "
+                        + result.getPromotedBookings().get(i).getBookingId());
+            }
         }
     }
 
@@ -623,10 +632,11 @@ public class Main {
     }
 
     private static void syncCurrentQueues(BookingService bookingService,
-            SimulationService simulationService, CustomerService customerService) {
+            SimulationService simulationService, CustomerService customerService,
+            WashServiceManager washService) {
         if (simulationService.isCurrentPeriodActivated()) {
             bookingService.rebuildCurrentQueues(simulationService.getCurrentDateStr(),
-                    simulationService.getCurrentPeriodStr(), customerService);
+                    simulationService.getCurrentPeriodStr(), customerService, washService);
         } else {
             bookingService.clearCurrentQueues();
         }
@@ -657,10 +667,11 @@ public class Main {
             FileManager.loadExtraData(bookingService.getBookingList(), periodsList, historyList);
             bookingService.synchronizeBookingSequence(historyList);
             completionService = new CompletionService(bookingService, customerService,
-                    washService, vehicleService, historyList);
+                    washService, vehicleService, historyList, simulationService);
             cancellationService = new CancellationService(bookingService, washService);
             undoService = new UndoService(bookingService, completionService, customerService, historyList);
-            syncCurrentQueues(bookingService, simulationService, customerService);
+            completionService.recalculateAllLoyalty();
+            syncCurrentQueues(bookingService, simulationService, customerService, washService);
         }
 
         private void saveAll() {

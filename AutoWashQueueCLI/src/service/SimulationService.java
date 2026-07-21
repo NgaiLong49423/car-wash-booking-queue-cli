@@ -94,7 +94,7 @@ public class SimulationService {
     }
 
     public PeriodActivationResult activateCurrentPeriod(BookingService bookingService,
-            CustomerService customerService) {
+            CustomerService customerService, WashServiceManager washService) {
         String currentDate = getCurrentDateStr();
         String currentPeriod = getCurrentPeriodStr();
         if (currentDate == null || currentPeriod == null) {
@@ -110,7 +110,8 @@ public class SimulationService {
                     + " has already been activated.");
         }
 
-        PeriodActivationResult result = bookingService.activatePeriod(currentDate, currentPeriod, customerService);
+        PeriodActivationResult result = bookingService.activatePeriod(
+                currentDate, currentPeriod, customerService, washService);
         if (!result.isSuccessful()) {
             return result;
         }
