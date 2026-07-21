@@ -39,10 +39,10 @@ public class UndoService {
             return UndoResult.failure("The latest completion is missing customer or history data.");
         }
 
-        Booking promotedBooking = record.getPromotedBooking();
-        Customer promotedCustomer = null;
-        if (promotedBooking != null) {
-            promotedCustomer = customerService.findCustomerById(promotedBooking.getCustomerId());
+        MyLinkedList<Booking> promotedBookings = record.getPromotedBookings();
+        for (int i = 0; i < promotedBookings.size(); i++) {
+            Booking promotedBooking = promotedBookings.get(i);
+            Customer promotedCustomer = customerService.findCustomerById(promotedBooking.getCustomerId());
             if (promotedCustomer == null
                     || !"WAITING".equalsIgnoreCase(promotedBooking.getBookingStatus())
                     || !bookingService.isInMainQueue(promotedBooking.getBookingId())) {
@@ -54,9 +54,13 @@ public class UndoService {
         completedBooking.setBookingStatus("SERVING");
         historyList.remove(historyIndex);
 
-        if (promotedBooking != null) {
+        MyLinkedList<Booking> returnedBookings = new MyLinkedList<Booking>();
+        for (int i = 0; i < promotedBookings.size(); i++) {
+            Booking promotedBooking = promotedBookings.get(i);
+            Customer promotedCustomer = customerService.findCustomerById(promotedBooking.getCustomerId());
             bookingService.getBookingQueue().removeBookingById(promotedBooking.getBookingId());
             bookingService.addToWaitlist(promotedBooking, promotedCustomer);
+            returnedBookings.addLast(promotedBooking);
         }
 
         completionService.recalculateLoyalty(completedCustomer);
@@ -66,7 +70,7 @@ public class UndoService {
 
         String message = "Restored booking " + completedBooking.getBookingId()
                 + " to SERVING with payment status " + completedBooking.getPaymentStatus() + ".";
-        return new UndoResult(true, message, completedBooking, promotedBooking);
+        return new UndoResult(true, message, completedBooking, returnedBookings);
     }
 
     private int findHistoryIndex(String bookingId) {

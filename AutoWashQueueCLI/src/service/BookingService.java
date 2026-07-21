@@ -170,18 +170,19 @@ public class BookingService {
      * Main Queue keeps file/creation order while overflow is restored into the
      * priority-based Waitlist.
      */
-    public void rebuildCurrentQueues(String date, String period, CustomerService customerService) {
-        allocatePeriod(date, period, customerService);
+    public void rebuildCurrentQueues(String date, String period, CustomerService customerService,
+            WashServiceManager washService) {
+        allocatePeriod(date, period, customerService, washService);
     }
 
     /** Allocates all WAITING bookings for one period by tier and creation time. */
     public PeriodActivationResult activatePeriod(String date, String period,
-            CustomerService customerService) {
-        if (date == null || !isValidPeriod(period) || customerService == null) {
-            return PeriodActivationResult.failure("Current date, period, or customer data is invalid.");
+            CustomerService customerService, WashServiceManager washService) {
+        if (date == null || !isValidPeriod(period) || customerService == null || washService == null) {
+            return PeriodActivationResult.failure("Current date, period, customer, or service data is invalid.");
         }
 
-        PeriodActivationResult allocation = allocatePeriod(date, period, customerService);
+        PeriodActivationResult allocation = allocatePeriod(date, period, customerService, washService);
         String message = "Activated " + date + " " + period.toUpperCase()
                 + ": " + allocation.getMainQueueCount() + " booking(s) in Main Queue, "
                 + allocation.getWaitlistCount() + " booking(s) in Waitlist.";
@@ -194,10 +195,10 @@ public class BookingService {
     }
 
     private PeriodActivationResult allocatePeriod(String date, String period,
-            CustomerService customerService) {
+            CustomerService customerService, WashServiceManager washService) {
         bookingQueue.clear();
         waitlist.clear();
-        if (date == null || !isValidPeriod(period) || customerService == null) {
+        if (date == null || !isValidPeriod(period) || customerService == null || washService == null) {
             return PeriodActivationResult.failure("Cannot allocate an invalid service period.");
         }
 
@@ -222,15 +223,22 @@ public class BookingService {
         if (availableMainSlots < 0) {
             availableMainSlots = 0;
         }
-        while (!candidates.isEmpty() && bookingQueue.size() < availableMainSlots) {
-            bookingQueue.enqueue(candidates.poll().getBooking());
-        }
-        while (!candidates.isEmpty() && waitlist.size() < getWaitlistCapacity(period)) {
-            waitlist.insert(candidates.poll());
-        }
+        int usedMinutes = getOccupiedServiceMinutes(date, period, washService);
+        int periodTotalMinutes = getPeriodTotalMinutes(period);
         while (!candidates.isEmpty()) {
-            candidates.poll();
-            overflowCount++;
+            WaitlistEntry candidate = candidates.poll();
+            Booking booking = candidate.getBooking();
+            int duration = getServiceDuration(booking, washService);
+            boolean fitsMainQueue = bookingQueue.size() < availableMainSlots
+                    && duration > 0 && usedMinutes + duration <= periodTotalMinutes;
+            if (fitsMainQueue) {
+                bookingQueue.enqueue(booking);
+                usedMinutes += duration;
+            } else if (waitlist.size() < getWaitlistCapacity(period)) {
+                waitlist.insert(candidate);
+            } else {
+                overflowCount++;
+            }
         }
 
         return new PeriodActivationResult(true, "", bookingQueue.size(), waitlist.size(), overflowCount);
@@ -320,9 +328,15 @@ public class BookingService {
                     + " is full, including its waitlist.");
             return false;
         }
+        int reservedMinutes = getReservedPeriodMinutes(normalizedDate, normalizedPeriod, washService);
+        if (reservedMinutes + washPackage.getDuration() > getPeriodTotalMinutes(normalizedPeriod)) {
+            System.out.println("=> Error: " + normalizedPeriod + " on " + normalizedDate
+                    + " does not have enough service time for this booking.");
+            return false;
+        }
 
         if (activeCurrentPeriod) {
-            rebuildCurrentQueues(normalizedDate, normalizedPeriod, customerService);
+            rebuildCurrentQueues(normalizedDate, normalizedPeriod, customerService, washService);
         }
 
         Booking booking = new Booking(generateNextBookingId(), normalizedCustomerId, vehicle.getId(),
@@ -332,7 +346,9 @@ public class BookingService {
         String location;
         if (activeCurrentPeriod) {
             int occupiedMainSlots = bookingQueue.size() + countServingBookings(normalizedDate, normalizedPeriod);
-            if (occupiedMainSlots < getMainCapacity(normalizedPeriod)) {
+            int remainingMinutes = getRemainingServiceMinutes(normalizedDate, normalizedPeriod, washService);
+            if (occupiedMainSlots < getMainCapacity(normalizedPeriod)
+                    && washPackage.getDuration() <= remainingMinutes) {
                 bookingQueue.enqueue(booking);
                 location = "Main Queue of the active period";
             } else if (waitlist.size() < getWaitlistCapacity(normalizedPeriod)) {
@@ -380,6 +396,65 @@ public class BookingService {
 
     private int getWaitlistCapacity(String period) {
         return "EVENING".equalsIgnoreCase(period) ? 2 : 3;
+    }
+
+    public int getPeriodTotalMinutes(String period) {
+        if ("MORNING".equalsIgnoreCase(period)) return 300;
+        if ("AFTERNOON".equalsIgnoreCase(period)) return 240;
+        if ("EVENING".equalsIgnoreCase(period)) return 180;
+        return 0;
+    }
+
+    /** Returns remaining minutes after COMPLETED, SERVING, and Main Queue bookings. */
+    public int getRemainingServiceMinutes(String date, String period,
+            WashServiceManager washService) {
+        int remaining = getPeriodTotalMinutes(period)
+                - getOccupiedServiceMinutes(date, period, washService);
+        return Math.max(remaining, 0);
+    }
+
+    private int getOccupiedServiceMinutes(String date, String period,
+            WashServiceManager washService) {
+        int usedMinutes = 0;
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
+                    && occupiesServiceTime(booking)) {
+                usedMinutes += getServiceDuration(booking, washService);
+            }
+        }
+        return usedMinutes;
+    }
+
+    private int getReservedPeriodMinutes(String date, String period,
+            WashServiceManager washService) {
+        int reservedMinutes = 0;
+        for (int i = 0; i < bookingList.size(); i++) {
+            Booking booking = bookingList.get(i);
+            String status = booking.getBookingStatus();
+            boolean reservesTime = "WAITING".equalsIgnoreCase(status)
+                    || "SERVING".equalsIgnoreCase(status)
+                    || "COMPLETED".equalsIgnoreCase(status);
+            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
+                    && reservesTime) {
+                reservedMinutes += getServiceDuration(booking, washService);
+            }
+        }
+        return reservedMinutes;
+    }
+
+    private boolean occupiesServiceTime(Booking booking) {
+        String status = booking.getBookingStatus();
+        return "COMPLETED".equalsIgnoreCase(status)
+                || "SERVING".equalsIgnoreCase(status)
+                || ("WAITING".equalsIgnoreCase(status)
+                && isInMainQueue(booking.getBookingId()));
+    }
+
+    private int getServiceDuration(Booking booking, WashServiceManager washService) {
+        if (booking == null || washService == null) return 0;
+        WashPackage washPackage = washService.findServiceById(booking.getServiceId());
+        return washPackage == null ? 0 : washPackage.getDuration();
     }
 
     private int countOpenBookings(String date, String period) {
@@ -570,6 +645,43 @@ public class BookingService {
 
     public void recordCompletion(Booking completedBooking, Booking promotedBooking) {
         completionStack.push(new CompletionRecord(completedBooking, promotedBooking));
+    }
+
+    public void recordCompletion(Booking completedBooking, MyLinkedList<Booking> promotedBookings) {
+        completionStack.push(new CompletionRecord(completedBooking, promotedBookings));
+    }
+
+    /**
+     * Promotes every waitlist booking that fits the remaining time and physical
+     * Main Queue slots. Entries that do not fit are restored with their priority.
+     */
+    public MyLinkedList<Booking> promoteFittingWaitlistBookings(String date, String period,
+            WashServiceManager washService) {
+        MyLinkedList<Booking> promotedBookings = new MyLinkedList<>();
+        MyLinkedList<WaitlistEntry> entries = drainWaitlist();
+        MyLinkedList<WaitlistEntry> retainedEntries = new MyLinkedList<>();
+        int remainingMinutes = getRemainingServiceMinutes(date, period, washService);
+        int availableSlots = getMainCapacity(period)
+                - countServingBookings(date, period) - bookingQueue.size();
+
+        for (int i = 0; i < entries.size(); i++) {
+            WaitlistEntry entry = entries.get(i);
+            Booking booking = entry.getBooking();
+            int duration = getServiceDuration(booking, washService);
+            boolean matchesPeriod = date.equals(booking.getDate())
+                    && period.equalsIgnoreCase(booking.getPeriod());
+            if (matchesPeriod && availableSlots > 0 && duration > 0
+                    && duration <= remainingMinutes) {
+                bookingQueue.enqueue(booking);
+                promotedBookings.addLast(booking);
+                remainingMinutes -= duration;
+                availableSlots--;
+            } else {
+                retainedEntries.addLast(entry);
+            }
+        }
+        restoreWaitlist(retainedEntries);
+        return promotedBookings;
     }
 
     public CompletionRecord peekLastCompletion() {

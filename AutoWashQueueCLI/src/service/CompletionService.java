@@ -6,11 +6,13 @@ import model.CompletionResult;
 import model.Customer;
 import model.History;
 import model.Vehicle;
-import model.WaitlistEntry;
 import model.WashPackage;
 import util.FileManager;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 
 /** Implements FR-17 and FR-19 as one atomic business operation. */
 public class CompletionService {
@@ -19,15 +21,17 @@ public class CompletionService {
     private final WashServiceManager washServiceManager;
     private final VehicleService vehicleService;
     private final MyLinkedList<History> historyList;
+    private final SimulationService simulationService;
 
     public CompletionService(BookingService bookingService, CustomerService customerService,
             WashServiceManager washServiceManager, VehicleService vehicleService,
-            MyLinkedList<History> historyList) {
+            MyLinkedList<History> historyList, SimulationService simulationService) {
         this.bookingService = bookingService;
         this.customerService = customerService;
         this.washServiceManager = washServiceManager;
         this.vehicleService = vehicleService;
         this.historyList = historyList;
+        this.simulationService = simulationService;
     }
 
     public CompletionResult completeBooking(String bookingId) {
@@ -55,30 +59,32 @@ public class CompletionService {
         booking.setBookingStatus("COMPLETED");
         addHistoryIfMissing(booking, customer, vehicle, packageToComplete);
         recalculateLoyalty(customer);
-        Booking promotedBooking = promoteTopWaitlistBooking(booking.getDate(), booking.getPeriod());
-        bookingService.recordCompletion(booking, promotedBooking);
+        MyLinkedList<Booking> promotedBookings = bookingService.promoteFittingWaitlistBookings(
+                booking.getDate(), booking.getPeriod(), washServiceManager);
+        bookingService.recordCompletion(booking, promotedBookings);
 
         FileManager.saveBookings(bookingService.getBookingList());
         FileManager.saveHistories(historyList);
         FileManager.saveCustomers(customerService.getCustomerList());
 
         return new CompletionResult(true, "Booking completed successfully.", booking,
-                promotedBooking, customer, previousPoints, previousTier);
+                promotedBookings, customer, previousPoints, previousTier);
     }
 
     public void recalculateLoyalty(Customer customer) {
+        LocalDate currentDate = parseDate(simulationService.getCurrentDateStr());
+        if (customer == null || currentDate == null) {
+            return;
+        }
         int visitCount = 0;
         double totalSpent = 0.0;
-        MyLinkedList<Booking> bookings = bookingService.getBookingList();
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking booking = bookings.get(i);
-            if (customer.getId().equalsIgnoreCase(booking.getCustomerId())
-                    && "COMPLETED".equalsIgnoreCase(booking.getBookingStatus())) {
-                WashPackage washPackage = washServiceManager.findServiceById(booking.getServiceId());
-                if (washPackage != null) {
-                    visitCount++;
-                    totalSpent += washPackage.getPrice();
-                }
+        for (int i = 0; i < historyList.size(); i++) {
+            History history = historyList.get(i);
+            LocalDate completedDate = parseHistoryDate(history.getCompletedTime());
+            if (customer.getId().equalsIgnoreCase(history.getCustomerId())
+                    && isWithinLoyaltyWindow(completedDate, currentDate)) {
+                visitCount++;
+                totalSpent += history.getAmountPaid();
             }
         }
         customer.setVisitCount(visitCount);
@@ -87,48 +93,17 @@ public class CompletionService {
         customer.setMembershipLevel(determineTier(visitCount, totalSpent));
     }
 
-    private Booking promoteTopWaitlistBooking(String date, String period) {
-        WaitlistEntry topEntry = bookingService.peekHighestPriorityWaitlist(date, period);
-        Booking topBooking = topEntry == null ? null : topEntry.getBooking();
-        if (topBooking == null || getRemainingMinutes(date, period) < getDuration(topBooking)) {
-            return null;
+    public void recalculateAllLoyalty() {
+        for (int i = 0; i < customerService.getCustomerList().size(); i++) {
+            recalculateLoyalty(customerService.getCustomerList().get(i));
         }
-        Booking promotedBooking = bookingService.pollHighestPriorityWaitlist(date, period);
-        bookingService.getBookingQueue().enqueue(promotedBooking);
-        return promotedBooking;
     }
 
-    private int getRemainingMinutes(String date, String period) {
-        int usedMinutes = 0;
-        MyLinkedList<Booking> bookings = bookingService.getBookingList();
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking booking = bookings.get(i);
-            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
-                    && occupiesServiceTime(booking)) {
-                usedMinutes += getDuration(booking);
-            }
+    private boolean isWithinLoyaltyWindow(LocalDate completedDate, LocalDate currentDate) {
+        if (completedDate == null || currentDate == null || completedDate.isAfter(currentDate)) {
+            return false;
         }
-        return getPeriodDuration(period) - usedMinutes;
-    }
-
-    private boolean occupiesServiceTime(Booking booking) {
-        String status = booking.getBookingStatus();
-        return "COMPLETED".equalsIgnoreCase(status)
-                || "SERVING".equalsIgnoreCase(status)
-                || ("WAITING".equalsIgnoreCase(status)
-                && bookingService.isInMainQueue(booking.getBookingId()));
-    }
-
-    private int getDuration(Booking booking) {
-        WashPackage washPackage = washServiceManager.findServiceById(booking.getServiceId());
-        return washPackage == null ? 0 : washPackage.getDuration();
-    }
-
-    private int getPeriodDuration(String period) {
-        if ("MORNING".equalsIgnoreCase(period)) return 300;
-        if ("AFTERNOON".equalsIgnoreCase(period)) return 240;
-        if ("EVENING".equalsIgnoreCase(period)) return 180;
-        return 0;
+        return ChronoUnit.DAYS.between(completedDate, currentDate) <= 365;
     }
 
     private String determineTier(int visitCount, double totalSpent) {
@@ -142,7 +117,8 @@ public class CompletionService {
         for (int i = 0; i < historyList.size(); i++) {
             if (booking.getBookingId().equalsIgnoreCase(historyList.get(i).getBookingId())) return;
         }
-        String completedTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String completedTime = simulationService.getCurrentDateStr() + " "
+                + LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
         historyList.addLast(new History(booking.getBookingId(), customer.getId(), customer.getName(),
                 vehicle.getLicensePlate(), washPackage.getName(), completedTime, washPackage.getPrice(),
                 (int) (washPackage.getPrice() / 1000)));
@@ -166,7 +142,21 @@ public class CompletionService {
         return null;
     }
 
+    private LocalDate parseHistoryDate(String completedTime) {
+        if (completedTime == null || completedTime.trim().length() < 10) return null;
+        return parseDate(completedTime.trim().substring(0, 10));
+    }
+
+    private LocalDate parseDate(String date) {
+        if (date == null || date.trim().isEmpty()) return null;
+        try {
+            return LocalDate.parse(date.trim());
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
     private CompletionResult failed(String message) {
-        return new CompletionResult(false, message, null, null, null, 0, null);
+        return new CompletionResult(false, message, null, new MyLinkedList<Booking>(), null, 0, null);
     }
 }

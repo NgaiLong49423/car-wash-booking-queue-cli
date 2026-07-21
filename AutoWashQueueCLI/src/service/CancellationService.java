@@ -1,9 +1,8 @@
 package service;
 
+import datastructure.MyLinkedList;
 import model.Booking;
 import model.CancellationResult;
-import model.WaitlistEntry;
-import model.WashPackage;
 import util.FileManager;
 
 /** Implements FR-18: booking cancellation and waitlist promotion. */
@@ -44,11 +43,13 @@ public class CancellationService {
         boolean wasInWaitlist = bookingService.removeFromWaitlist(booking.getBookingId());
 
         booking.setBookingStatus("CANCELLED");
-        Booking promotedBooking = null;
+        MyLinkedList<Booking> promotedBookings = new MyLinkedList<Booking>();
         if (wasServing && isAdmin) {
-            promotedBooking = promoteTopWaitlistBooking(booking.getDate(), booking.getPeriod(), true);
+            promotedBookings = bookingService.promoteFittingWaitlistBookings(
+                    booking.getDate(), booking.getPeriod(), washServiceManager);
         } else if (wasInMainQueue) {
-            promotedBooking = promoteTopWaitlistBooking(booking.getDate(), booking.getPeriod(), false);
+            promotedBookings = bookingService.promoteFittingWaitlistBookings(
+                    booking.getDate(), booking.getPeriod(), washServiceManager);
         }
 
         FileManager.saveBookings(bookingService.getBookingList());
@@ -58,52 +59,7 @@ public class CancellationService {
         if (wasServing) {
             message += " The service position was released.";
         }
-        return new CancellationResult(true, message, booking, promotedBooking);
-    }
-
-    private Booking promoteTopWaitlistBooking(String date, String period, boolean checkRemainingTime) {
-        WaitlistEntry topEntry = bookingService.peekHighestPriorityWaitlist(date, period);
-        Booking topBooking = topEntry == null ? null : topEntry.getBooking();
-        if (topBooking == null) return null;
-        if (checkRemainingTime && getRemainingMinutes(date, period) < getDuration(topBooking)) {
-            return null;
-        }
-        Booking promotedBooking = bookingService.pollHighestPriorityWaitlist(date, period);
-        bookingService.getBookingQueue().enqueue(promotedBooking);
-        return promotedBooking;
-    }
-
-    private int getRemainingMinutes(String date, String period) {
-        int usedMinutes = 0;
-        datastructure.MyLinkedList<Booking> bookings = bookingService.getBookingList();
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking booking = bookings.get(i);
-            if (date.equals(booking.getDate()) && period.equalsIgnoreCase(booking.getPeriod())
-                    && occupiesServiceTime(booking)) {
-                usedMinutes += getDuration(booking);
-            }
-        }
-        return getPeriodDuration(period) - usedMinutes;
-    }
-
-    private boolean occupiesServiceTime(Booking booking) {
-        String status = booking.getBookingStatus();
-        return "COMPLETED".equalsIgnoreCase(status)
-                || "SERVING".equalsIgnoreCase(status)
-                || ("WAITING".equalsIgnoreCase(status)
-                && bookingService.isInMainQueue(booking.getBookingId()));
-    }
-
-    private int getDuration(Booking booking) {
-        WashPackage washPackage = washServiceManager.findServiceById(booking.getServiceId());
-        return washPackage == null ? 0 : washPackage.getDuration();
-    }
-
-    private int getPeriodDuration(String period) {
-        if ("MORNING".equalsIgnoreCase(period)) return 300;
-        if ("AFTERNOON".equalsIgnoreCase(period)) return 240;
-        if ("EVENING".equalsIgnoreCase(period)) return 180;
-        return 0;
+        return new CancellationResult(true, message, booking, promotedBookings);
     }
 
     private Booking findBooking(String bookingId) {
@@ -116,6 +72,6 @@ public class CancellationService {
     }
 
     private CancellationResult failed(String message) {
-        return new CancellationResult(false, message, null, null);
+        return new CancellationResult(false, message, null, new MyLinkedList<Booking>());
     }
 }
