@@ -54,6 +54,7 @@ public class CompletionService {
         }
 
         int previousPoints = customer.getPoints();
+        int previousVisitCount = customer.getVisitCount();
         String previousTier = customer.getMembershipLevel();
 
         booking.setBookingStatus("COMPLETED");
@@ -68,7 +69,7 @@ public class CompletionService {
         FileManager.saveCustomers(customerService.getCustomerList());
 
         return new CompletionResult(true, "Booking completed successfully.", booking,
-                promotedBookings, customer, previousPoints, previousTier);
+                promotedBookings, customer, previousPoints, previousVisitCount, previousTier);
     }
 
     public void recalculateLoyalty(Customer customer) {
@@ -157,6 +158,6 @@ public class CompletionService {
     }
 
     private CompletionResult failed(String message) {
-        return new CompletionResult(false, message, null, new MyLinkedList<Booking>(), null, 0, null);
+        return new CompletionResult(false, message, null, new MyLinkedList<Booking>(), null, 0, 0, null);
     }
 }

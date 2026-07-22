@@ -3,6 +3,7 @@ package service;
 import datastructure.MyLinkedList;
 import model.*;
 import util.FileManager;
+import util.TablePrinter;
 
 public class CustomerService {
     private MyLinkedList<Customer> customerList;
@@ -12,13 +13,11 @@ public class CustomerService {
     }
 
     public void displayAllCustomers() {
-        System.out.println("\n--- CUSTOMER LIST ---");
         if (customerList.isEmpty()) {
             System.out.println("No customers found in the system!");
             return;
         }
-        customerList.display();
-        System.out.println("---------------------");
+        printCustomers("Customer List", customerList);
     }
 
     public void addCustomer(String name, String phone, String level, int points) {
@@ -80,26 +79,24 @@ public class CustomerService {
     }
 
     public void searchCustomers(String query) {
-        System.out.println("\n--- SEARCH RESULTS ---");
         if (query == null || query.trim().isEmpty()) {
             System.out.println("Search query cannot be empty!");
             return;
         }
-        int size = customerList.size();
-        boolean found = false;
-        for (int i = 0; i < size; i++) {
+        MyLinkedList<Customer> matches = new MyLinkedList<>();
+        for (int i = 0; i < customerList.size(); i++) {
             Customer c = customerList.get(i);
             if (c.getId().equalsIgnoreCase(query) || 
                 c.getName().toLowerCase().contains(query.toLowerCase()) || 
                 c.getPhone().equals(query)) {
-                System.out.println(c.toString());
-                found = true;
+                matches.addLast(c);
             }
         }
-        if (!found) {
+        if (matches.isEmpty()) {
             System.out.println("No matching customers found!");
+            return;
         }
-        System.out.println("----------------------");
+        printCustomers("Customer Search Results", matches);
     }
 
     public void updateCustomer(String id, String newName, String newPhone, String newLevel, int newPoints) {
@@ -195,5 +192,17 @@ public class CustomerService {
 
     private boolean isValidPhone(String phone) {
         return phone != null && phone.trim().matches("0\\d{9}");
+    }
+
+    private void printCustomers(String title, MyLinkedList<Customer> customers) {
+        TablePrinter.printTable(title, customers,
+                new TablePrinter.Column<Customer>("ID", 6, Customer::getId),
+                new TablePrinter.Column<Customer>("NAME", 22, Customer::getName),
+                new TablePrinter.Column<Customer>("PHONE", 12, Customer::getPhone),
+                new TablePrinter.Column<Customer>("TIER", 10, Customer::getMembershipLevel),
+                new TablePrinter.Column<Customer>("POINTS", 8,
+                        customer -> String.valueOf(customer.getPoints())),
+                new TablePrinter.Column<Customer>("TOTAL SPENT", 14,
+                        customer -> String.format("%.0f", customer.getTotalSpent())));
     }
 }

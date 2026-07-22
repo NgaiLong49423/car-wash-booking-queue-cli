@@ -1,3 +1,30 @@
 S001|Standard Wash|50000.0|30|ACTIVE
 S002|Premium Wash + Vacuum|100000.0|45|ACTIVE
 S003|Wash + Polish|250000.0|60|ACTIVE
+S004|Exterior Express Wash|40000.0|20|ACTIVE
+S005|Interior Deep Clean|180000.0|75|ACTIVE
+S006|Engine Bay Cleaning|120000.0|45|ACTIVE
+S007|Ceramic Wax Protection|300000.0|90|ACTIVE
+S008|Tire Shine Package|60000.0|25|ACTIVE
+S009|Headlight Restoration|220000.0|60|ACTIVE
+S010|Leather Seat Care|150000.0|50|ACTIVE
+S011|Odor Removal|130000.0|45|ACTIVE
+S012|Rain Repellent Treatment|80000.0|30|ACTIVE
+S013|Full Detailing|500000.0|150|ACTIVE
+S014|Quick Vacuum|30000.0|15|ACTIVE
+S015|Undercarriage Wash|70000.0|35|ACTIVE
+S016|Glass Polish|90000.0|40|ACTIVE
+S017|Dashboard Detailing|110000.0|45|ACTIVE
+S018|Pet Hair Removal|160000.0|60|ACTIVE
+S019|Wheel Deep Clean|100000.0|40|ACTIVE
+S020|Seat Shampoo|200000.0|90|ACTIVE
+S021|Air Conditioner Sanitizing|140000.0|50|ACTIVE
+S022|Clay Bar Treatment|280000.0|100|ACTIVE
+S023|Paint Sealant|350000.0|120|ACTIVE
+S024|Motorcycle Wash|35000.0|25|ACTIVE
+S025|SUV Premium Wash|140000.0|60|ACTIVE
+S026|Pickup Truck Wash|130000.0|55|ACTIVE
+S027|Express Interior Clean|70000.0|30|INACTIVE
+S028|Convertible Roof Care|190000.0|70|INACTIVE
+S029|Tar Removal|120000.0|45|INACTIVE
+S030|Chrome Polish|95000.0|35|INACTIVE

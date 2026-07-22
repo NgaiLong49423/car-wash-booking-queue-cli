@@ -10,22 +10,26 @@ public class CompletionResult {
     private final MyLinkedList<Booking> promotedBookings;
     private final Customer customer;
     private final int previousPoints;
+    private final int previousVisitCount;
     private final String previousTier;
 
     public CompletionResult(boolean successful, String message, Booking completedBooking,
-            Booking promotedBooking, Customer customer, int previousPoints, String previousTier) {
+            Booking promotedBooking, Customer customer, int previousPoints, int previousVisitCount,
+            String previousTier) {
         this(successful, message, completedBooking, singleBookingList(promotedBooking),
-                customer, previousPoints, previousTier);
+                customer, previousPoints, previousVisitCount, previousTier);
     }
 
     public CompletionResult(boolean successful, String message, Booking completedBooking,
-            MyLinkedList<Booking> promotedBookings, Customer customer, int previousPoints, String previousTier) {
+            MyLinkedList<Booking> promotedBookings, Customer customer, int previousPoints,
+            int previousVisitCount, String previousTier) {
         this.successful = successful;
         this.message = message;
         this.completedBooking = completedBooking;
         this.promotedBookings = promotedBookings == null ? new MyLinkedList<Booking>() : promotedBookings;
         this.customer = customer;
         this.previousPoints = previousPoints;
+        this.previousVisitCount = previousVisitCount;
         this.previousTier = previousTier;
     }
 
@@ -38,6 +42,7 @@ public class CompletionResult {
     public MyLinkedList<Booking> getPromotedBookings() { return promotedBookings; }
     public Customer getCustomer() { return customer; }
     public int getPreviousPoints() { return previousPoints; }
+    public int getPreviousVisitCount() { return previousVisitCount; }
     public String getPreviousTier() { return previousTier; }
 
     private static MyLinkedList<Booking> singleBookingList(Booking booking) {

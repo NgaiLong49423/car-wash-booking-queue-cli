@@ -121,6 +121,24 @@ public class ConsoleInputter {
         }
     }
 
+    /** Reads a required value, with 0 reserved as a consistent cancel action. */
+    public static String getStrOrCancel(String prompt) {
+        while (true) {
+            System.out.print(prompt + " (0 to cancel): ");
+            if (!scanner.hasNextLine()) {
+                return null;
+            }
+            String data = scanner.nextLine().trim();
+            if ("0".equals(data)) {
+                return null;
+            }
+            if (!data.isEmpty()) {
+                return data;
+            }
+            System.out.println("Error: Input cannot be empty.");
+        }
+    }
+
     public static String getStr(String prompt, String pattern, String errorMsg) {
         String data;
         while (true) {
@@ -396,6 +414,27 @@ public class ConsoleInputter {
 
     public static String getIsoDate(String prompt) {
         return dateStr(getDate(prompt, "yyyy-MM-dd"), "yyyy-MM-dd");
+    }
+
+    /** Reads an ISO date and lets the user cancel with 0. */
+    public static String getIsoDateOrCancel(String prompt) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        sdf.setLenient(false);
+        while (true) {
+            System.out.print(prompt + " (YYYY-MM-DD, 0 to cancel): ");
+            if (!scanner.hasNextLine()) {
+                return null;
+            }
+            String input = scanner.nextLine().trim();
+            if ("0".equals(input)) {
+                return null;
+            }
+            try {
+                return sdf.format(sdf.parse(input));
+            } catch (ParseException e) {
+                System.out.println("Error: Enter a valid date using format yyyy-MM-dd, or 0 to cancel.");
+            }
+        }
     }
 
     public static double updateDouble(String prompt, double oldVal) {

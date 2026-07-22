@@ -14,6 +14,9 @@ import model.PeriodActivationResult;
 import model.Vehicle;
 import model.WaitlistEntry;
 import model.WashPackage;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import util.FileManager;
 
 import java.time.LocalDate;
@@ -21,6 +24,8 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
 public class BookingService {
+    private static final DateTimeFormatter CREATED_AT_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
     private MyQueue<Booking> bookingQueue;
     private MyLinkedList<Booking> bookingList;
     private MyStack<CompletionRecord> completionStack;
@@ -138,9 +143,10 @@ public class BookingService {
             System.out.println("No bookings found.");
             return;
         }
-        System.out.printf("%-10s %-15s %-20s %-12s %-12s%n",
-                "BOOKING ID", "LICENSE PLATE", "SERVICE", "TIER", "STATUS");
-        System.out.println("-----------------------------------------------------------------------");
+        System.out.printf("%-10s %-15s %-20s %-12s %-12s %-10s %-18s %-12s %-10s %-10s%n",
+                "BOOKING ID", "LICENSE PLATE", "SERVICE", "TIER", "BOOKING DATE",
+                "PERIOD", "REGISTERED AT", "LOCATION", "STATUS", "PAYMENT");
+        System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------------------------------");
         for (int i = 0; i < bookings.size(); i++) {
             Booking booking = bookings.get(i);
             Vehicle vehicle = findVehicle(booking.getVehicleId(), vehicleService);
@@ -149,9 +155,42 @@ public class BookingService {
             String licensePlate = vehicle == null ? booking.getVehicleId() : vehicle.getLicensePlate();
             String serviceName = washPackage == null ? booking.getServiceId() : washPackage.getName();
             String tier = customer == null ? "UNKNOWN" : customer.getMembershipLevel();
-            System.out.printf("%-10s %-15s %-20s %-12s %-12s%n", booking.getBookingId(),
-                    licensePlate, serviceName, tier, booking.getBookingStatus());
+            System.out.printf("%-10s %-15s %-20s %-12s %-12s %-10s %-18s %-12s %-10s %-10s%n",
+                    booking.getBookingId(), licensePlate, serviceName, tier, booking.getDate(),
+                    booking.getPeriod(), formatCreatedTime(booking.getCreatedTime()),
+                    getBookingLocation(booking), booking.getBookingStatus(), booking.getPaymentStatus());
         }
+    }
+
+    private String formatCreatedTime(long createdTime) {
+        return createdTime > 0 ? CREATED_AT_FORMAT.format(Instant.ofEpochMilli(createdTime)) : "UNKNOWN";
+    }
+
+    /** Returns the operational location that is meaningful to customers and staff. */
+    public String getBookingLocation(Booking booking) {
+        if (booking == null) {
+            return "UNKNOWN";
+        }
+        if ("SERVING".equalsIgnoreCase(booking.getBookingStatus())) {
+            return "SERVING";
+        }
+        if (isInMainQueue(booking.getBookingId())) {
+            return "MAIN QUEUE";
+        }
+        if (isInWaitlist(booking.getBookingId())) {
+            return "WAITLIST";
+        }
+        return "FUTURE";
+    }
+
+    private boolean isInWaitlist(String bookingId) {
+        MyLinkedList<WaitlistEntry> entries = waitlist.snapshotInPriorityOrder();
+        for (int i = 0; i < entries.size(); i++) {
+            if (bookingId.equalsIgnoreCase(entries.get(i).getBooking().getBookingId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Vehicle findVehicle(String vehicleId, VehicleService vehicleService) {
