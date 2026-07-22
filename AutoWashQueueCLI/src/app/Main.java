@@ -24,6 +24,8 @@ import service.WashServiceManager;
 import util.ConsoleInputter;
 import util.DataSeeder;
 import util.FileManager;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 public class Main {
     private static final String PHONE_PATTERN = "0\\d{9}";
@@ -64,6 +66,7 @@ public class Main {
         System.out.println("=> Welcome, " + currentCustomer.getName() + "!");
         boolean loggedIn = true;
         while (loggedIn) {
+            printSimulationStatus(context);
             int choice = ConsoleInputter.intMenuWithZero("CUSTOMER MENU", "Log out",
                     "View service list",
                     "View my profile",
@@ -88,7 +91,11 @@ public class Main {
                 case 5:
                     context.bookingService.displayCustomerActiveBookings(currentCustomer.getId(),
                             context.customerService, context.vehicleService, context.washService);
-                    String bookingId = ConsoleInputter.getStr("Enter booking ID to cancel");
+                    String bookingId = ConsoleInputter.getStrOrCancel("Enter booking ID to cancel");
+                    if (bookingId == null) {
+                        System.out.println("=> Cancellation cancelled.");
+                        break;
+                    }
                     printCancellationResult(context.cancellationService.cancelAsCustomer(
                             currentCustomer.getId(), bookingId));
                     break;
@@ -133,24 +140,70 @@ public class Main {
         System.out.printf("Total spent    : %.0f VND%n", customer.getTotalSpent());
         System.out.println("Visit count    : " + customer.getVisitCount());
         System.out.println("Booking window : " + bookingWindowDays(customer.getMembershipLevel()) + " day(s)");
+        displayNextTierProgress(customer);
         System.out.println("------------------");
+    }
+
+    private static void displayNextTierProgress(Customer customer) {
+        String currentTier = customer.getMembershipLevel() == null
+                ? "MEMBER" : customer.getMembershipLevel().toUpperCase();
+        String nextTier = getNextTier(currentTier);
+        if (nextTier == null) {
+            System.out.println("Next tier      : PLATINUM (highest tier)");
+            System.out.println("Privilege      : Book up to " + bookingWindowDays(currentTier)
+                    + " day(s) in advance");
+            return;
+        }
+
+        int requiredVisits = tierRequiredVisits(nextTier);
+        int requiredPoints = tierRequiredPoints(nextTier);
+        int remainingVisits = Math.max(0, requiredVisits - customer.getVisitCount());
+        int remainingPoints = Math.max(0, requiredPoints - customer.getPoints());
+        int nextWindow = bookingWindowDays(nextTier);
+        int currentWindow = bookingWindowDays(currentTier);
+
+        System.out.println("Next tier      : " + nextTier);
+        if (remainingVisits == 0 || remainingPoints == 0) {
+            System.out.println("Progress       : Eligible after loyalty recalculation");
+        } else {
+            System.out.println("To reach it    : " + remainingVisits + " more wash visit(s) OR "
+                    + remainingPoints + " more loyalty point(s)");
+        }
+        System.out.println("New privilege  : Book up to " + nextWindow + " day(s) in advance"
+                + " (" + formatSignedNumber(nextWindow - currentWindow) + " day(s))");
+    }
+
+    private static String getNextTier(String currentTier) {
+        if ("MEMBER".equalsIgnoreCase(currentTier)) return "SILVER";
+        if ("SILVER".equalsIgnoreCase(currentTier)) return "GOLD";
+        if ("GOLD".equalsIgnoreCase(currentTier)) return "PLATINUM";
+        return null;
+    }
+
+    private static int tierRequiredVisits(String tier) {
+        if ("PLATINUM".equalsIgnoreCase(tier)) return 30;
+        if ("GOLD".equalsIgnoreCase(tier)) return 15;
+        if ("SILVER".equalsIgnoreCase(tier)) return 5;
+        return 0;
+    }
+
+    private static int tierRequiredPoints(String tier) {
+        if ("PLATINUM".equalsIgnoreCase(tier)) return 15000;
+        if ("GOLD".equalsIgnoreCase(tier)) return 6000;
+        if ("SILVER".equalsIgnoreCase(tier)) return 2000;
+        return 0;
     }
 
     private static void runAdminMenu(AppContext context) {
         boolean inAdminMenu = true;
         while (inAdminMenu) {
+            printSimulationStatus(context);
             int choice = ConsoleInputter.intMenuWithZero("ADMIN MENU", "Back to Main Menu",
                     "Manage customers",
                     "Manage vehicles",
                     "Manage services",
+                    "Manage bookings",
                     "Set current date/period",
-                    "Create booking for customer",
-                    "Activate current service period",
-                    "View queues/bookings by period",
-                    "Process next booking",
-                    "Confirm payment",
-                    "Complete current booking",
-                    "Cancel booking",
                     "View history",
                     "Undo last completed booking");
             switch (choice) {
@@ -164,38 +217,15 @@ public class Main {
                     runServiceManagement(context);
                     break;
                 case 4:
-                    runSimulationSettings(context);
+                    runBookingManagement(context);
                     break;
                 case 5:
-                    String customerId = ConsoleInputter.getStr("Enter customer ID");
-                    createBookingForCustomer(context, customerId);
+                    runSimulationSettings(context);
                     break;
                 case 6:
-                    PeriodActivationResult activationResult = context.simulationService.activateCurrentPeriod(
-                            context.bookingService, context.customerService, context.washService);
-                    System.out.println("=> " + activationResult.getMessage());
-                    break;
-                case 7:
-                    runQueueMonitoring(context);
-                    break;
-                case 8:
-                    BookingActionResult processingResult = context.bookingService.processNextBooking();
-                    System.out.println("=> " + processingResult.getMessage());
-                    break;
-                case 9:
-                    confirmPayment(context);
-                    break;
-                case 10:
-                    completeCurrentBooking(context);
-                    break;
-                case 11:
-                    String bookingId = ConsoleInputter.getStr("Enter booking ID to cancel");
-                    printCancellationResult(context.cancellationService.cancelAsAdmin(bookingId));
-                    break;
-                case 12:
                     runHistoryReports(context);
                     break;
-                case 13:
+                case 7:
                     UndoResult undoResult = context.undoService.undoLastCompletion();
                     System.out.println("=> " + undoResult.getMessage());
                     if (undoResult.isSuccessful()) {
@@ -449,7 +479,11 @@ public class Main {
         }
 
         context.vehicleService.displayVehiclesByCustomer(customer.getId(), context.customerService);
-        String vehicleInput = ConsoleInputter.getStr("Enter vehicle ID or license plate");
+        String vehicleInput = ConsoleInputter.getStrOrCancel("Enter vehicle ID or license plate");
+        if (vehicleInput == null) {
+            System.out.println("=> Booking creation cancelled.");
+            return;
+        }
         Vehicle vehicle = context.vehicleService.findVehicleByIdOrLicense(vehicleInput);
         if (vehicle == null || !customer.getId().equalsIgnoreCase(vehicle.getCustomerId())) {
             System.out.println("=> Error: Select a vehicle owned by customer " + customer.getId() + ".");
@@ -457,7 +491,11 @@ public class Main {
         }
 
         context.washService.displayAllServices();
-        String serviceId = ConsoleInputter.getStr("Enter active service ID");
+        String serviceId = ConsoleInputter.getStrOrCancel("Enter active service ID");
+        if (serviceId == null) {
+            System.out.println("=> Booking creation cancelled.");
+            return;
+        }
         WashPackage service = context.washService.findServiceById(serviceId);
         if (service == null || !context.washService.isServiceActive(serviceId)) {
             System.out.println("=> Error: Select an existing ACTIVE service.");
@@ -466,8 +504,23 @@ public class Main {
 
         boolean selectingSchedule = true;
         while (selectingSchedule) {
-            String date = ConsoleInputter.getIsoDate("Enter booking date");
-            String period = selectPeriod();
+            printBookingWindow(customer, context.simulationService.getCurrentDateStr());
+            String date = ConsoleInputter.getIsoDateOrCancel("Enter booking date");
+            if (date == null) {
+                System.out.println("=> Booking creation cancelled.");
+                return;
+            }
+            String period = selectPeriodOrCancel();
+            if (period == null) {
+                System.out.println("=> Booking creation cancelled.");
+                return;
+            }
+
+            printBookingSummary(customer, vehicle, service, date, period);
+            if (!ConsoleInputter.getBoolean("Confirm this booking?")) {
+                System.out.println("=> Booking creation cancelled.");
+                return;
+            }
             boolean created = context.bookingService.createBooking(customer.getId(), vehicle.getId(),
                     service.getId(), date, period, context.customerService, context.vehicleService,
                     context.washService, context.simulationService);
@@ -499,15 +552,27 @@ public class Main {
                             context.customerService, context.vehicleService, context.washService);
                     break;
                 case 3:
-                    String date = ConsoleInputter.getIsoDate("Enter booking date");
-                    String period = selectPeriod();
+                    String date = ConsoleInputter.getIsoDateOrCancel("Enter booking date");
+                    if (date == null) {
+                        System.out.println("=> View future bookings cancelled.");
+                        break;
+                    }
+                    String period = selectPeriodOrCancel();
+                    if (period == null) {
+                        System.out.println("=> View future bookings cancelled.");
+                        break;
+                    }
                     context.bookingService.displayFutureBookings(date, period, context.customerService,
                             context.vehicleService, context.washService,
                             context.simulationService.getCurrentDateStr(),
                             context.simulationService.getCurrentPeriodStr());
                     break;
                 case 4:
-                    String customerId = ConsoleInputter.getStr("Enter customer ID");
+                    String customerId = ConsoleInputter.getStrOrCancel("Enter customer ID");
+                    if (customerId == null) {
+                        System.out.println("=> View active bookings cancelled.");
+                        break;
+                    }
                     context.bookingService.displayCustomerActiveBookings(customerId, context.customerService,
                             context.vehicleService, context.washService);
                     break;
@@ -553,7 +618,12 @@ public class Main {
         }
 
         Customer customer = result.getCustomer();
-        System.out.println("   Loyalty points: " + result.getPreviousPoints() + " -> " + customer.getPoints());
+        int visitDelta = customer.getVisitCount() - result.getPreviousVisitCount();
+        int pointsDelta = customer.getPoints() - result.getPreviousPoints();
+        System.out.println("   Wash visits   : " + result.getPreviousVisitCount() + " -> "
+                + customer.getVisitCount() + " (" + formatSignedNumber(visitDelta) + ")");
+        System.out.println("   Loyalty points: " + result.getPreviousPoints() + " -> " + customer.getPoints()
+                + " (" + formatSignedNumber(pointsDelta) + ")");
         System.out.println("   Membership tier: " + result.getPreviousTier()
                 + " -> " + customer.getMembershipLevel());
         for (int i = 0; i < result.getPromotedBookings().size(); i++) {
@@ -609,6 +679,110 @@ public class Main {
         if (choice == 1) return "MORNING";
         if (choice == 2) return "AFTERNOON";
         return "EVENING";
+    }
+
+    private static String selectPeriodOrCancel() {
+        int choice = ConsoleInputter.intMenuWithZero("SELECT PERIOD", "Cancel", "MORNING", "AFTERNOON", "EVENING");
+        if (choice == 1) return "MORNING";
+        if (choice == 2) return "AFTERNOON";
+        if (choice == 3) return "EVENING";
+        return null;
+    }
+
+    private static void printBookingSummary(Customer customer, Vehicle vehicle, WashPackage service,
+            String date, String period) {
+        System.out.println("\n--- BOOKING SUMMARY ---");
+        System.out.println("Customer : " + customer.getId() + " - " + customer.getName());
+        System.out.println("Vehicle  : " + vehicle.getLicensePlate());
+        System.out.println("Service  : " + service.getName() + " (" + String.format("%.0f", service.getPrice()) + " VND)");
+        System.out.println("Schedule : " + date + " " + period);
+        System.out.println("-----------------------");
+    }
+
+    private static void printBookingWindow(Customer customer, String currentDate) {
+        int allowedDays = bookingWindowDays(customer.getMembershipLevel());
+        if (currentDate == null) {
+            System.out.println("=> " + customer.getMembershipLevel() + " members can book up to "
+                    + allowedDays + " day(s) in advance. Set the simulation date first.");
+            return;
+        }
+        try {
+            LocalDate startDate = LocalDate.parse(currentDate);
+            LocalDate endDate = startDate.plusDays(allowedDays);
+            System.out.println("=> Booking window for " + customer.getMembershipLevel() + ": "
+                    + startDate + " to " + endDate + " (up to " + allowedDays + " day(s) ahead).");
+        } catch (DateTimeParseException exception) {
+            System.out.println("=> " + customer.getMembershipLevel() + " members can book up to "
+                    + allowedDays + " day(s) in advance.");
+        }
+    }
+
+    private static void runBookingManagement(AppContext context) {
+        boolean active = true;
+        while (active) {
+            printSimulationStatus(context);
+            int choice = ConsoleInputter.intMenuWithZero("MANAGE BOOKINGS", "Back to Admin Menu",
+                    "Create booking for customer",
+                    "Activate current service period",
+                    "View queues/bookings by period",
+                    "Process next booking",
+                    "Confirm payment",
+                    "Complete current booking",
+                    "Cancel booking");
+            switch (choice) {
+                case 1:
+                    String customerId = ConsoleInputter.getStrOrCancel("Enter customer ID");
+                    if (customerId == null) {
+                        System.out.println("=> Booking creation cancelled.");
+                    } else {
+                        createBookingForCustomer(context, customerId);
+                    }
+                    break;
+                case 2:
+                    PeriodActivationResult activationResult = context.simulationService.activateCurrentPeriod(
+                            context.bookingService, context.customerService, context.washService);
+                    System.out.println("=> " + activationResult.getMessage());
+                    break;
+                case 3:
+                    runQueueMonitoring(context);
+                    break;
+                case 4:
+                    BookingActionResult processingResult = context.bookingService.processNextBooking();
+                    System.out.println("=> " + processingResult.getMessage());
+                    break;
+                case 5:
+                    confirmPayment(context);
+                    break;
+                case 6:
+                    completeCurrentBooking(context);
+                    break;
+                case 7:
+                    String bookingId = ConsoleInputter.getStrOrCancel("Enter booking ID to cancel");
+                    if (bookingId == null) {
+                        System.out.println("=> Cancellation cancelled.");
+                    } else {
+                        printCancellationResult(context.cancellationService.cancelAsAdmin(bookingId));
+                    }
+                    break;
+                case 0:
+                    active = false;
+                    break;
+                default:
+                    System.out.println("=> Error: Please select a valid option.");
+            }
+        }
+    }
+
+    private static void printSimulationStatus(AppContext context) {
+        String date = context.simulationService.getCurrentDateStr();
+        String period = context.simulationService.getCurrentPeriodStr();
+        String status = context.simulationService.isCurrentPeriodActivated() ? "ACTIVATED" : "NOT ACTIVATED";
+        System.out.println("\n[ Current simulation: " + (date == null ? "NOT SET" : date)
+                + " | " + (period == null ? "NOT SET" : period) + " | " + status + " ]");
+    }
+
+    private static String formatSignedNumber(int value) {
+        return value > 0 ? "+" + value : String.valueOf(value);
     }
 
     private static int selectPeriodChoice() {

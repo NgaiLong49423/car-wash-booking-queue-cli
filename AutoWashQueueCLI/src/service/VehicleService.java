@@ -6,6 +6,7 @@ import model.Booking;
 import model.History;
 import model.Customer;
 import util.FileManager;
+import util.TablePrinter;
 
 public class VehicleService {
     private MyLinkedList<Vehicle> vehicleList;
@@ -15,38 +16,26 @@ public class VehicleService {
     }
 
     public void displayAllVehicles(CustomerService customerService) {
-        System.out.println("\n--- VEHICLE LIST ---");
         if (vehicleList.isEmpty()) {
             System.out.println("No vehicles found in the system!");
             return;
         }
-        int size = vehicleList.size();
-        for (int i = 0; i < size; i++) {
-            Vehicle v = vehicleList.get(i);
-            Customer c = customerService.findCustomerById(v.getCustomerId());
-            String ownerName = (c != null) ? c.getName() : "Unknown";
-            System.out.println(v.toString() + " | Owner Name: " + ownerName);
-        }
-        System.out.println("--------------------");
+        printVehicles("Vehicle List", vehicleList, customerService);
     }
 
     public void displayVehiclesByCustomer(String customerId, CustomerService customerService) {
-        System.out.println("\n--- VEHICLE LIST FOR CUSTOMER " + customerId + " ---");
-        Customer c = customerService.findCustomerById(customerId);
-        String ownerName = (c != null) ? c.getName() : "Unknown";
-        int size = vehicleList.size();
-        boolean found = false;
-        for (int i = 0; i < size; i++) {
+        MyLinkedList<Vehicle> vehicles = new MyLinkedList<>();
+        for (int i = 0; i < vehicleList.size(); i++) {
             Vehicle v = vehicleList.get(i);
             if (v.getCustomerId().equalsIgnoreCase(customerId)) {
-                System.out.println(v.toString() + " | Owner Name: " + ownerName);
-                found = true;
+                vehicles.addLast(v);
             }
         }
-        if (!found) {
+        if (vehicles.isEmpty()) {
             System.out.println("No vehicles associated with this customer!");
+            return;
         }
-        System.out.println("----------------------------------------");
+        printVehicles("Vehicle List for Customer " + customerId.toUpperCase(), vehicles, customerService);
     }
 
     public void addVehicle(String licensePlate, String customerId, CustomerService customerService) {
@@ -219,5 +208,17 @@ public class VehicleService {
 
     private String normalizeLicensePlate(String licensePlate) {
         return licensePlate == null ? "" : licensePlate.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+    }
+
+    private void printVehicles(String title, MyLinkedList<Vehicle> vehicles,
+            final CustomerService customerService) {
+        TablePrinter.printTable(title, vehicles,
+                new TablePrinter.Column<Vehicle>("ID", 6, Vehicle::getId),
+                new TablePrinter.Column<Vehicle>("LICENSE PLATE", 16, Vehicle::getLicensePlate),
+                new TablePrinter.Column<Vehicle>("OWNER ID", 10, Vehicle::getCustomerId),
+                new TablePrinter.Column<Vehicle>("OWNER NAME", 24, vehicle -> {
+                    Customer owner = customerService.findCustomerById(vehicle.getCustomerId());
+                    return owner == null ? "Unknown" : owner.getName();
+                }));
     }
 }

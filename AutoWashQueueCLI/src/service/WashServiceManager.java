@@ -5,6 +5,7 @@ import model.WashPackage;
 import model.Booking;
 import model.History;
 import util.FileManager;
+import util.TablePrinter;
 
 public class WashServiceManager {
     private MyLinkedList<WashPackage> serviceList;
@@ -14,13 +15,18 @@ public class WashServiceManager {
     }
 
     public void displayAllServices() {
-        System.out.println("\n--- SERVICE LIST ---");
         if (serviceList.isEmpty()) {
             System.out.println("No services found in the system!");
             return;
         }
-        serviceList.display();
-        System.out.println("--------------------");
+        TablePrinter.printTable("Service List", serviceList,
+                new TablePrinter.Column<WashPackage>("ID", 6, WashPackage::getId),
+                new TablePrinter.Column<WashPackage>("SERVICE", 28, WashPackage::getName),
+                new TablePrinter.Column<WashPackage>("PRICE (VND)", 14,
+                        service -> String.format("%.0f", service.getPrice())),
+                new TablePrinter.Column<WashPackage>("DURATION", 12,
+                        service -> service.getDuration() + " min"),
+                new TablePrinter.Column<WashPackage>("STATUS", 10, WashPackage::getStatus));
     }
 
     // Default legacy method for backward compatibility
@@ -92,25 +98,30 @@ public class WashServiceManager {
     }
 
     public void searchServices(String query) {
-        System.out.println("\n--- SEARCH RESULTS ---");
         if (query == null || query.trim().isEmpty()) {
             System.out.println("Search query cannot be empty!");
             return;
         }
-        int size = serviceList.size();
-        boolean found = false;
-        for (int i = 0; i < size; i++) {
+        MyLinkedList<WashPackage> matches = new MyLinkedList<>();
+        for (int i = 0; i < serviceList.size(); i++) {
             WashPackage ws = serviceList.get(i);
             if (ws.getId().equalsIgnoreCase(query) || 
                 ws.getName().toLowerCase().contains(query.toLowerCase())) {
-                System.out.println(ws.toString());
-                found = true;
+                matches.addLast(ws);
             }
         }
-        if (!found) {
+        if (matches.isEmpty()) {
             System.out.println("No matching services found!");
+            return;
         }
-        System.out.println("----------------------");
+        TablePrinter.printTable("Service Search Results", matches,
+                new TablePrinter.Column<WashPackage>("ID", 6, WashPackage::getId),
+                new TablePrinter.Column<WashPackage>("SERVICE", 28, WashPackage::getName),
+                new TablePrinter.Column<WashPackage>("PRICE (VND)", 14,
+                        service -> String.format("%.0f", service.getPrice())),
+                new TablePrinter.Column<WashPackage>("DURATION", 12,
+                        service -> service.getDuration() + " min"),
+                new TablePrinter.Column<WashPackage>("STATUS", 10, WashPackage::getStatus));
     }
 
     // Legacy update method for compatibility
