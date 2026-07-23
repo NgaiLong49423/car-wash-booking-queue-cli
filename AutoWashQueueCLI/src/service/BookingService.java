@@ -180,7 +180,7 @@ public class BookingService {
         if (isInWaitlist(booking.getBookingId())) {
             return "WAITLIST";
         }
-        return "FUTURE";
+        return "PENDING ACTIVATION";
     }
 
     private boolean isInWaitlist(String bookingId) {
