@@ -42,7 +42,7 @@ Built for the CSD201 Data Structures and Algorithms course, the application deli
 ```mermaid
 flowchart LR
     A[Create booking] --> B{Period active?}
-    B -- No --> C[Store as a future booking]
+    B -- No --> C["Store as a future booking"]
     B -- Yes --> D{Main queue has a slot\nand enough time?}
     D -- Yes --> E[Append to FIFO main queue]
     D -- No --> F{Waitlist has capacity?}
