@@ -51,12 +51,15 @@ The project should keep a simple and clear code organization.
 Recommended structure:
 
 ```text
-App/
-├── model/
-├── service/
-├── repository/
-├── util/
-└── main/
+AutoWashQueueCLI/
+├── src/
+│   ├── app/           # CLI entry point and menus
+│   ├── datastructure/ # Custom list, queue, heap, stack, map
+│   ├── model/
+│   ├── service/
+│   └── util/
+├── data/              # Pipe-delimited persistent files
+└── test/              # Reproducible benchmarks and tests
 ```
 
 Suggested responsibility:
@@ -65,9 +68,9 @@ Suggested responsibility:
 | --------------- | ------------------------------------------------------------------------------------ |
 | `model`         | Store domain objects such as Customer, Booking, Service, Queue, and related entities |
 | `service`       | Handle business rules and application logic                                          |
-| `repository`    | Handle reading and writing data from text files                                      |
+| `util`          | Handle file utilities, validation, formatting, and shared helpers                   |
 | `util`          | Store helper functions and shared utilities                                          |
-| `main`          | Start the CLI application and handle menu navigation                                 |
+| `app`           | Start the CLI application and handle menu navigation                                 |
 
 This structure is not a microservice or enterprise architecture. It is only a simple package organization to keep the code clean.
 

@@ -6,7 +6,6 @@
 
 ### Added
 
-* **Customer Loyalty Preview:** Added a customer-facing view that shows the points still required to reach the next membership tier and the reward unlocked at that tier.
 * **Performance Benchmark:** Added `PerformanceBenchmark` to reproducibly measure enqueue/dequeue operations for the custom FIFO queue and Max-Heap priority queue at multiple input sizes.
 * **Project Reports:** Added the completed Report 3, Report 4, and Report 5 deliverables, and updated the completed Report 1 and Report 2 documents.
 
@@ -23,7 +22,7 @@
 ### Added
 
 * **Booking Experience:** Improved the customer booking flow with simulated-time visibility, clearer booking status and queue-position feedback, creation confirmation, and safer cancel/back navigation.
-* **Loyalty Visibility:** Added customer-facing loyalty progress, wash-count, point-change, membership-tier, and booking-window entitlement information.
+* **Loyalty Visibility:** Added customer-facing loyalty progress, wash-count, point-change, membership-tier, booking-window entitlement, and a next-tier preview showing the remaining visits or points plus the unlocked booking-window reward.
 * **Sample Dataset:** Added a consistent 30-record sample dataset across customers, vehicles, services, bookings, periods, and history for repeatable CLI demonstrations.
 
 ### Changed

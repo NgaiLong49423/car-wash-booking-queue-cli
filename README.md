@@ -1,202 +1,299 @@
-# Car Wash Booking Queue CLI
+# AutoWash Priority Booking Engine
 
-![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
-![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
+![Java](https://img.shields.io/badge/Java-8%2B-ED8B00?logo=openjdk&logoColor=white)
+![Interface](https://img.shields.io/badge/interface-CLI-2F74C0)
+![Storage](https://img.shields.io/badge/storage-pipe--delimited%20files-4B8BBE)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-> Ghi chú: Danh sách badge trên thể hiện các công nghệ và công cụ chính đang được sử dụng trực tiếp trong dự án này.
+AutoWash Priority Booking Engine is a Java command-line application that models car-wash booking operations under limited service capacity. It combines FIFO service processing with membership-based waitlist priority, persistent file storage, loyalty recalculation, and one-step operational rollback.
 
-## 1. Giới Thiệu
+Built for the CSD201 Data Structures and Algorithms course, the application deliberately implements its core in-memory data structures instead of relying on Java collection classes or a database.
 
-**Car Wash Booking Queue CLI** là một ứng dụng giao diện dòng lệnh (**CLI - Command Line Interface**) chạy trên terminal mô phỏng hoạt động đặt lịch và điều phối xếp hàng rửa xe trong một tiệm rửa xe chuyên nghiệp.
+## Contents
 
-Dự án này phục vụ mục tiêu học tập môn **CSD201 - Cấu trúc dữ liệu và giải thuật** và được phát triển trong bối cảnh đồ án/bài tập lớn thực hành môn học. Trọng tâm của hệ thống là việc tự định nghĩa và cài đặt các cấu trúc dữ liệu cốt lõi (**Queue, Priority Queue, Stack, LinkedList, Map**) cùng các thuật toán tìm kiếm và sắp xếp cơ bản để giải quyết bài toán nghiệp vụ mà không cần sử dụng đến các thư viện ngoài hay hệ quản trị cơ sở dữ liệu (DBMS).
+- [Highlights](#highlights)
+- [How It Works](#how-it-works)
+- [Core Data Structures](#core-data-structures)
+- [Business Rules](#business-rules)
+- [Technology and Architecture](#technology-and-architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Using the Application](#using-the-application)
+- [Data Persistence](#data-persistence)
+- [Benchmark](#benchmark)
+- [Documentation](#documentation)
+- [Limitations](#limitations)
+- [Contributing](#contributing)
+- [Team](#team)
+- [License](#license)
 
-## 2. Mục Tiêu Dự Án
+## Highlights
 
-Hệ thống cần đạt được các mục tiêu cụ thể sau:
-- **Quản lý hàng chờ thông minh**: Điều phối lịch đặt rửa xe có giới hạn số slot và quỹ thời gian tối đa theo từng buổi phục vụ (Sáng, Chiều, Tối).
-- **Phân loại booking**: Tách biệt rõ ràng giữa các booking đặt ngay cho buổi hiện tại và các booking đặt trước cho các buổi trong tương lai.
-- **Cơ chế ưu tiên nâng cao**: Ưu tiên xếp chỗ và phục vụ cho các khách hàng có hạng thành viên cao hơn (`Platinum` > `Gold` > `Silver` > `Member`).
-- **Tự động hóa Loyalty**: Tự động tính toán tích lũy chi tiêu, số lần rửa, điểm tích lũy và xét duyệt nâng/hạ hạng thành viên ngay sau khi hoàn tất dịch vụ.
-- **Hỗ trợ hoàn tác (Undo)**: Cho phép nhân viên hoàn tác nhanh booking hoàn tất gần nhất trong trường hợp thao tác nhầm lẫn.
-- **Tối ưu lưu trữ dữ liệu**: Tải và lưu dữ liệu thông qua các tệp văn bản phẳng (flat text files) dùng dấu phân tách `|` để đảm bảo tính gọn nhẹ và toàn vẹn dữ liệu.
-- **Đạt yêu cầu môn học CSD201**: Rèn luyện kỹ năng cài đặt cấu trúc dữ liệu thuần bằng Java trong bộ nhớ RAM và tối ưu hóa giải thuật.
+- Customer, vehicle, and wash-package management with validation and generated IDs.
+- Booking creation for the current or a future service period, with booking-window, capacity, and service-duration checks.
+- A FIFO main queue for guaranteed service slots and a max-heap priority waitlist for overflow bookings.
+- Priority ordering by membership tier, then booking creation time.
+- Service-period activation, payment confirmation, completion, cancellation, waitlist promotion, history reporting, and undo of the latest completion.
+- Automatic loyalty recalculation from eligible completed bookings in the rolling 365-day period.
+- Pipe-delimited text-file persistence with automatic sample-data seeding when storage is empty.
 
-## 3. Chức Năng Chính
+## How It Works
 
-Hệ thống cung cấp các tính năng được phân cấp theo hai vai trò (Actor) chính:
+```mermaid
+flowchart LR
+    A[Create booking] --> B{Period active?}
+    B -- No --> C[Store as a future booking]
+    B -- Yes --> D{Main queue has a slot\nand enough time?}
+    D -- Yes --> E[Append to FIFO main queue]
+    D -- No --> F{Waitlist has capacity?}
+    F -- Yes --> G[Insert into max-heap waitlist]
+    F -- No --> H[Reject booking]
+    C --> I[Admin activates period]
+    I --> E
+    I --> G
+    E --> J[Serve, confirm payment, complete]
+    J --> K[Save history and recalculate loyalty]
+    K --> L[Promote fitting waitlisted booking(s)]
+```
 
-### 3.1 Khách hàng (Customer)
-*Khi đăng nhập tượng trưng bằng mã khách hàng hợp lệ:*
-- [x] **Xem danh sách dịch vụ**: Hiển thị các gói dịch vụ rửa xe hiện có kèm đơn giá và thời gian dự kiến.
-- [x] **Xem thông tin cá nhân**: Kiểm tra hạng thành viên hiện tại, điểm tích lũy, tổng chi tiêu và số lần đã rửa xe.
-- [x] **Tạo booking**: Đặt lịch rửa xe cho chính mình (chọn xe, dịch vụ, ngày và buổi cụ thể) tuân theo giới hạn booking window của hạng thành viên.
-- [x] **Xem booking cá nhân**: Xem danh sách các lịch đặt của mình đang ở trạng thái chờ (`WAITING`) hoặc đang thực hiện (`SERVING`).
-- [x] **Hủy booking**: Hủy lịch đặt của chính mình khi vẫn còn ở trạng thái `WAITING`.
-- [x] **Xem lịch sử rửa xe**: Xem danh sách các booking đã hoàn tất (`COMPLETED`) trong quá khứ.
+The application separates two operational ordering policies:
 
-### 3.2 Admin / Nhân viên vận hành
-*Truy cập trực tiếp để quản lý và vận hành tiệm:*
-- [x] **Quản lý khách hàng**: Xem danh sách, tìm kiếm, thêm mới, cập nhật thông tin và xóa khách hàng (chỉ cho phép xóa khi không có dữ liệu liên kết).
-- [x] **Quản lý xe**: Liên kết các phương tiện với tài khoản khách hàng, tìm kiếm và xem danh sách xe.
-- [x] **Quản lý dịch vụ**: Thêm mới, chỉnh sửa thông tin dịch vụ, sắp xếp danh sách dịch vụ theo đơn giá hoặc thời gian thực hiện.
-- [x] **Thiết lập ngày và buổi hiện tại**: Thay đổi ngày/buổi mô phỏng hệ thống để kiểm thử nghiệp vụ.
-- [x] **Tạo booking cho khách**: Tạo lịch đặt rửa xe cho bất kỳ khách hàng hợp lệ nào trong hệ thống.
-- [x] **Kích hoạt buổi rửa xe**: Duyệt toàn bộ booking tương lai của buổi đó, tự động xếp vào hàng chờ chính (Main slot) hoặc hàng chờ phụ (Waitlist) dựa trên độ ưu tiên.
-- [x] **Xem hàng chờ / booking**: Hiển thị trực quan danh sách xe trong hàng chờ chính, hàng chờ phụ và các booking tương lai.
-- [x] **Xử lý booking tiếp theo**: Chuyển đổi trạng thái xe ở đầu hàng chờ chính sang `SERVING` (hệ thống chỉ phục vụ tối đa 1 xe tại một thời điểm).
-- [x] **Xác nhận thanh toán**: Mô phỏng quá trình thanh toán trước khi hoàn tất dịch vụ.
-- [x] **Hoàn tất booking**: Đổi trạng thái sang `COMPLETED`, lưu lịch sử và tự động cập nhật loyalty của khách hàng.
-- [x] **Hủy booking bất kỳ**: Hủy booking đang ở trạng thái `WAITING` hoặc `SERVING` (hủy `SERVING` hoặc `WAITING` trong slot chính sẽ tự động đẩy booking ưu tiên nhất từ Waitlist lên thay thế).
-- [x] **Xem lịch sử hệ thống**: Đối soát toàn bộ các giao dịch đã hoàn tất.
-- [x] **Hoàn tác (Undo)**: Hoàn tác booking vừa hoàn tất gần nhất, khôi phục lại trạng thái cũ của booking và điểm loyalty của khách hàng tương ứng.
+- The **main queue** serves accepted bookings in first-in, first-out order.
+- The **waitlist** selects the highest membership tier first. For equal tiers, the earlier booking has priority.
 
-## 4. Công Nghệ Sử Dụng
+## Core Data Structures
 
-Dự án được phát triển hoàn toàn bằng Java thuần hướng đối tượng, tập trung vào cấu trúc dữ liệu tự định nghĩa:
+| Structure | Implementation | Purpose | Key operations |
+| --- | --- | --- | --- |
+| Linked list | `MyLinkedList<T>` | Stores customers, vehicles, packages, bookings, periods, and history. | Sequential traversal and CRUD |
+| Queue | `MyQueue<Booking>` | Holds guaranteed service bookings in FIFO order. | `enqueue` / `dequeue`: O(1) |
+| Priority queue | `MyPriorityQueue<WaitlistEntry>` | Orders the waitlist with a custom max heap. | `insert` / `poll`: O(log n) |
+| Stack | `MyStack<CompletionRecord>` | Supports rollback of the latest completed booking. | `push` / `pop`: O(1) |
+| Map | `MyMap<K, V>` | Stores tier-to-booking-window configuration. | Lookup |
 
-- **Ngôn ngữ lập trình**: Java (JDK 8)
-- **Kiến trúc**: Monolithic CLI Application (Ứng dụng Console chạy trực tiếp trên terminal)
-- **Lưu trữ dữ liệu (Database)**: Không sử dụng DBMS. Dữ liệu được lưu trong các file văn bản phẳng (`.txt`) ở thư mục `data/` với định dạng ngăn cách các trường bằng dấu `|`.
-- **Cấu trúc dữ liệu tự định nghĩa (RAM)**:
-  - `MyLinkedList`: Cài đặt danh sách liên kết đơn tự viết để quản lý Khách hàng, Xe, Dịch vụ và Lịch sử.
-  - `MyQueue`: Hàng chờ chính phục vụ theo nguyên lý FIFO (First In First Out).
-  - `MyPriorityQueue`: Hàng chờ phụ (Waitlist) và xếp lịch tương lai sử dụng cấu trúc **Max Heap** tự cài đặt (ưu tiên theo hạng thành viên và thời gian tạo).
-  - `MyStack`: Quản lý các booking hoàn tất phục vụ cho tính năng hoàn tác (Undo) theo nguyên lý LIFO (Last In First Out).
-  - `MyMap` hoặc mảng cấu trúc tra cứu: Lưu cấu hình Booking window để tra cứu nhanh giới hạn ngày đặt trước theo hạng thành viên.
-- **Thuật toán tự viết**:
-  - **Tìm kiếm**: Tìm kiếm tuyến tính (Linear Search) trên LinkedList.
-  - **Sắp xếp**: Thuật toán sắp xếp chọn (Selection Sort) hoặc sắp xếp chèn (Insertion Sort) hiển thị danh sách dịch vụ.
-- **IDE chính**: NetBeans IDE
+The service catalog can also be ordered by price or duration with a custom Selection Sort implementation.
 
-## 5. Cấu Trúc Thư Mục
+## Business Rules
 
-Dưới đây là cấu trúc tổ chức mã nguồn và tài liệu của repository:
+### Service periods
+
+| Period | Hours | Main queue slots | Waitlist slots | Available service time |
+| --- | --- | ---: | ---: | ---: |
+| `MORNING` | 07:00–12:00 | 10 | 3 | 300 minutes |
+| `AFTERNOON` | 13:00–17:00 | 10 | 3 | 240 minutes |
+| `EVENING` | 18:00–21:00 | 5 | 2 | 180 minutes |
+
+A booking is accepted only when the selected period has both capacity and enough remaining service time. During waitlist promotion, bookings that do not fit the remaining time may be skipped so another eligible booking can use the available capacity.
+
+### Membership and booking windows
+
+| Tier | Booking window | Qualification |
+| --- | ---: | --- |
+| `MEMBER` | 7 days | Default tier |
+| `SILVER` | 10 days | 5 visits **or** VND 2,000,000 spent |
+| `GOLD` | 12 days | 15 visits **or** VND 6,000,000 spent |
+| `PLATINUM` | 14 days | 30 visits **or** VND 15,000,000 spent |
+
+Loyalty points are earned at one point per VND 1,000 spent. The application recalculates visit count, spend, points, and tier from completed bookings within the latest 365 days.
+
+### Booking lifecycle
+
+```text
+WAITING -> SERVING -> PAID -> COMPLETED
+    |          |
+    +----------+-> CANCELLED (subject to actor permissions)
+```
+
+Only one booking may be `SERVING` at a time. A customer may cancel only their own `WAITING` booking; an administrator can cancel `WAITING` or `SERVING` bookings. Completion requires `SERVING` and `PAID` status.
+
+## Technology and Architecture
+
+- **Language:** Java 8+
+- **Application type:** Monolithic command-line application
+- **Build/project format:** Apache Ant / NetBeans project
+- **Persistence:** UTF-8, pipe-delimited (`|`) text files
+- **External runtime dependencies:** None
+- **Core packages:** `app`, `datastructure`, `model`, `service`, and `util`
+
+The CLI entry point is [`AutoWashQueueCLI/src/app/Main.java`](AutoWashQueueCLI/src/app/Main.java). At startup, it initializes the application context, loads persisted records, reconstructs operational queues from booking and period state, and exposes separate Customer and Admin menus.
+
+## Project Structure
 
 ```text
 .
-├── .agent/            # Cấu hình tác vụ tự động
-├── .github/           # Mẫu Issue và Pull Request của GitHub
-├── App/               # Thư mục mã nguồn chính Java của dự án
-│   ├── model/         # Chứa các lớp thực thể (Customer, Vehicle, Service, Booking...)
-│   ├── service/       # Xử lý quy tắc nghiệp vụ (booking, queue, loyalty, undo...)
-│   ├── repository/    # Xử lý đọc/ghi file phẳng trong thư mục data/
-│   ├── util/          # Chứa các cấu trúc dữ liệu tự định nghĩa (MyLinkedList, MyQueue, MyStack, MyPriorityQueue...)
-│   ├── main/          # Chứa class khởi chạy ứng dụng và điều hướng Menu CLI
-│   └── README.md      # Hướng dẫn chi tiết thư mục App
-├── data/              # Thư mục chứa các file văn bản phẳng lưu dữ liệu (được tự động sinh khi chạy)
-│   ├── customers.txt  # Dữ liệu khách hàng và loyalty
-│   ├── vehicles.txt   # Dữ liệu phương tiện
-│   ├── services.txt   # Dữ liệu dịch vụ
-│   ├── bookings.txt   # Dữ liệu booking hiện tại
-│   ├── periods.txt    # Trạng thái kích hoạt của các buổi
-│   └── history.txt    # Lịch sử dịch vụ hoàn tất
-├── docs/              # Tài liệu phân tích và đặc tả dự án
-│   ├── architecture/
-│   │   └── TECH_STACK.md # Quyết định kỹ thuật và kiến trúc của dự án
-│   ├── requirements/
-│   │   ├── PRD.md     # Tài liệu yêu cầu sản phẩm (Product Requirements Document)
-│   │   └── SRS.md     # Đặc tả yêu cầu phần mềm (Software Requirements Specification)
-│   └── README.md      # Hướng dẫn chi tiết thư mục docs
-├── CHANGELOG.md       # Nhật ký thay đổi và lịch sử cập nhật phiên bản
-├── CONTRIBUTING.md    # Hướng dẫn đóng góp mã nguồn và chuẩn Git
-├── LICENSE            # Giấy phép mã nguồn mở MIT
-└── README.md          # File giới thiệu dự án này
+├── AutoWashQueueCLI/
+│   ├── src/
+│   │   ├── app/             # CLI entry point and menu orchestration
+│   │   ├── datastructure/   # Custom linked list, queue, heap, stack, and map
+│   │   ├── model/           # Domain entities and operation result objects
+│   │   ├── service/         # Booking, queue, completion, cancellation, and CRUD logic
+│   │   └── util/            # Input, table formatting, seeding, and file handling
+│   ├── data/                # Persisted sample and application data
+│   ├── test/                # Queue versus priority-queue benchmark
+│   └── build.xml            # NetBeans/Ant build definition
+├── docs/
+│   ├── architecture/        # Technology decisions
+│   ├── requirements/        # PRD and canonical SRS
+│   └── reports/             # Course reports and delivery material
+├── CONTRIBUTING.md
+├── CHANGELOG.md
+└── LICENSE
 ```
 
-## 6. Tài Liệu Dự Án
+## Getting Started
 
-Các tài liệu đặc tả quan trọng liên quan đến dự án nằm trong thư mục `docs/`:
-- **Yêu cầu hệ thống**: Đặc tả chi tiết hành vi và quy tắc nghiệp vụ tại [SRS.md](docs/requirements/SRS.md) (đây là tài liệu nguồn gốc đáng tin cậy nhất) và tóm tắt sản phẩm tại [PRD.md](docs/requirements/PRD.md).
-- **Quyết định kỹ thuật**: Tham khảo chi tiết tại [TECH_STACK.md](docs/architecture/TECH_STACK.md) để hiểu lý do lựa chọn kiến trúc CLI đơn giản và các ràng buộc công nghệ.
-- **Sơ đồ ERD & Use Case**: Đang cập nhật.
+### Prerequisites
 
-## 7. Database / Lưu Trữ Dữ Liệu
+- JDK 8 or later (`java` and `javac` available on `PATH`)
+- Git
+- Optional: Apache NetBeans with Java support for the native project workflow
 
-Dự án không kết nối với bất kỳ hệ quản trị cơ sở dữ liệu nào. Dữ liệu được lưu trữ lâu dài trong thư mục `data/` dưới dạng các file phẳng:
-- Tải dữ liệu: Khi ứng dụng khởi động, toàn bộ dữ liệu từ 6 file văn bản phẳng trong thư mục `data/` được nạp vào bộ nhớ RAM và dựng lại thành các cấu trúc dữ liệu tự định nghĩa (`MyLinkedList`, `MyQueue`, `MyPriorityQueue`, `MyStack`).
-- Lưu trữ dữ liệu: Để tránh mất mát thông tin, dữ liệu trong RAM được tự động tuần tự hóa và ghi đè trực tiếp xuống các file `.txt` tương ứng ngay sau khi kết thúc một thao tác làm thay đổi trạng thái dữ liệu (thêm khách hàng, tạo booking, hoàn tất dịch vụ, hủy, undo...).
-- Khởi tạo dữ liệu mẫu (Seed Data): Nếu thư mục `data/` trống hoặc chưa tồn tại các file dữ liệu, hệ thống sẽ tự động tạo các file và chèn dữ liệu mẫu chuẩn hóa để hệ thống sẵn sàng demo ngay lập tức.
+### Clone the repository
 
-## 8. Cách Chạy Dự Án
+```bash
+git clone https://github.com/NgaiLong49423/autowash-priority-booking-engine.git
+cd autowash-priority-booking-engine
+```
 
-Để chạy dự án trên máy tính cá nhân, hãy thực hiện theo các bước hướng dẫn sau:
+### Run with NetBeans
 
-1. **Chuẩn bị môi trường**:
-   - Cài đặt Java SE Development Kit (JDK 8 trở lên).
-   - Cài đặt NetBeans IDE.
+1. Open `AutoWashQueueCLI` as an existing project.
+2. Ensure the project uses JDK 8 or later.
+3. Run the `AutoWashQueueCLI` project (the main class is `app.Main`).
 
-2. **Tải mã nguồn về máy**:
-   - Sử dụng lệnh `git clone` để tải repository:
-     ```bash
-     git clone https://github.com/NgaiLong49423/autowash-priority-booking-engine.git
-     ```
+### Run from the command line
 
-3. **Mở dự án trong NetBeans**:
-   - Khởi động NetBeans IDE.
-   - Chọn **File** -> **Open Project...** từ menu chính.
-   - Duyệt đến thư mục chứa mã nguồn (thư mục `App` trong thư mục repo vừa clone) và nhấn **Open Project**.
+Run these commands **from `AutoWashQueueCLI`**. The program uses `data/` relative to its working directory.
 
-4. **Chạy ứng dụng**:
-   - Nhấp chuột phải vào tên dự án trong tab *Projects* và chọn **Run** (hoặc nhấn `F6`).
-   - Ứng dụng CLI sẽ hiển thị giao diện menu chính trên Console/Terminal của NetBeans.
-   - Làm theo các hướng dẫn nhập liệu trên Console để trải nghiệm các tính năng của Khách hàng hoặc Admin.
+PowerShell:
 
-## 9. Quy Trình Làm Việc Với GitHub
+```powershell
+cd AutoWashQueueCLI
+$sources = Get-ChildItem -Recurse -Filter *.java src | Select-Object -ExpandProperty FullName
+javac -encoding UTF-8 -d out $sources
+java -cp out app.Main
+```
 
-Để đảm bảo lịch sử git và chất lượng mã nguồn luôn sạch sẽ, các thành viên tham gia phát triển cần tuân thủ quy trình sau:
-1. **Tạo Issue**: Tạo issue trên GitHub mô tả công việc (bug fix, new feature, docs...) để theo dõi tiến độ.
-2. **Tạo Branch**: Tạo branch mới từ branch chính (`main`) với tên chuẩn hóa theo quy ước tại [CONTRIBUTING.md](CONTRIBUTING.md) (ví dụ: `feature/booking-queue`).
-3. **Phát triển và Commit**: Thực hiện sửa đổi trên branch riêng và commit mã nguồn tuân thủ Conventional Commits.
-4. **Tạo Pull Request (PR)**: Đẩy branch lên GitHub và tạo Pull Request gộp vào `main`.
-5. **Kiểm tra và Merge**: Đánh giá code, kiểm thử cục bộ và tiến hành merge branch sau khi được phê duyệt.
+macOS/Linux shell:
 
-## 10. Quy Tắc Commit
+```bash
+cd AutoWashQueueCLI
+mkdir -p out
+javac -encoding UTF-8 -d out $(find src -name "*.java")
+java -cp out app.Main
+```
 
-Dự án áp dụng quy chuẩn **Conventional Commits** để ghi nhận lịch sử thay đổi một cách rõ ràng và chuyên nghiệp:
+The tracked `data/` directory already contains demonstration records. If the data files are missing or empty, the application creates seed data on startup.
 
-Cú pháp chuẩn:
+## Using the Application
+
+The main menu offers two flows:
+
 ```text
-<type>(<scope>): <description>
+1. Customer Menu
+2. Admin Menu
+0. Exit
 ```
 
-Các tiền tố `<type>` được chấp nhận bao gồm:
-- `feat`: Tính năng mới (ví dụ: `feat(booking): thêm kiểm tra booking window`)
-- `fix`: Sửa lỗi (ví dụ: `fix(queue): sửa lỗi tràn chỉ số trong heap`)
-- `docs`: Tài liệu (ví dụ: `docs: cập nhật README và hướng dẫn chạy`)
-- `refactor`: Tái cấu trúc mã nguồn mà không làm thay đổi hành vi hệ thống
-- `test`: Thêm hoặc chỉnh sửa các bộ kiểm thử
-- `chore`: Các tác vụ bảo trì, cấu hình hoặc nâng cấp công cụ
+![Main menu](<docs/image/Screenshot (385).PNG>)
 
-Tham khảo chi tiết quy ước tại file [CONTRIBUTING.md](CONTRIBUTING.md).
+*Main menu for entering the customer or administrator workflow.*
 
-## 11. Issue Và Label
+### Customer flow
 
-Repository được cấu hình sẵn các mẫu Issue (Issue Templates) trong thư mục `.github/ISSUE_TEMPLATE/` giúp chuẩn hóa việc báo cáo lỗi và yêu cầu tính năng:
-- **Bug Report**: Dành cho việc báo cáo lỗi phát sinh trong hệ thống.
-- **Feature Request**: Dành cho đề xuất phát triển thêm chức năng mới.
-- **Non-Functional Requirement**: Các yêu cầu về mặt phi chức năng (hiệu năng, bảo mật, khả năng bảo trì).
-- **Task**: Các đầu việc kỹ thuật hoặc bảo trì hệ thống.
+Customers identify themselves with a valid customer ID (for example, `C001`). The CLI allows up to three attempts and provides access to:
 
-Danh sách nhãn phân loại (Labels) chuẩn hóa được định nghĩa trong file `.github/labels.yml`.
+- Service catalog
+- Personal profile and loyalty progress
+- Booking creation for an owned vehicle
+- Active booking review and cancellation
+- Personal wash history
 
-## 12. Changelog
+![Customer menu](<docs/image/Screenshot (386).PNG>)
 
-Mọi thay đổi quan trọng, cập nhật phiên bản hoặc sửa lỗi lớn của hệ thống đều được ghi chép một cách chi tiết tại file [CHANGELOG.md](CHANGELOG.md). Vui lòng cập nhật nhật ký này mỗi khi thực hiện thay đổi ảnh hưởng lớn đến ứng dụng.
+*Customer menu for service browsing, profile review, booking, cancellation, and history.*
 
-## 13. License
+![Customer profile](<docs/image/Screenshot (387).PNG>)
 
-Dự án này được phân phối dưới giấy phép mã nguồn mở MIT. Xem chi tiết quyền và nghĩa vụ sử dụng mã nguồn tại file [LICENSE](LICENSE).
+*Customer profile showing membership tier, loyalty progress, and booking-window entitlement.*
 
-## 14. Thành Viên / Tác Giả
+### Administrator flow
 
-| Họ tên | GitHub |
-|---|---|
-| Ngô Gia Long | [NgaiLong49423](https://github.com/NgaiLong49423) |
-| Ngô Hoàng Thái Dương | [NgoHoangThaiDuong](https://github.com/NgoHoangThaiDuong) |
-| Nguyễn Anh Kiệt | [anhkiet150905-stack](https://github.com/anhkiet150905-stack) |
+The Admin menu is a simulation workflow rather than a real authentication system. It provides:
 
-## 15. Ghi Chú
+- Customer, vehicle, and service management
+- Booking creation and queue monitoring
+- Simulation-date and service-period configuration
+- Period activation and main-queue processing
+- Payment confirmation, booking completion, and history reporting
+- Cancellation with waitlist promotion
+- Undo of the most recent completion
 
-Tài liệu `README.md` này mô tả hiện trạng kỹ thuật và yêu cầu thực tế của dự án **Car Wash Booking Queue CLI**. Khi có bất kỳ cập nhật nào về cấu trúc thư mục của source code hoặc thay đổi về cách chạy/cấu hình dự án, vui lòng cập nhật lại tài liệu này để các thành viên khác trong nhóm và người chấm điểm có thể nắm bắt thông tin chính xác nhất.
+![Administrator menu](<docs/image/Screenshot (388).PNG>)
+
+*Administrator menu for data management and operational booking workflows.*
+
+## Data Persistence
+
+The application has no DBMS. It loads text records into memory at startup and saves affected collections after state-changing operations.
+
+| File | Record format |
+| --- | --- |
+| `customers.txt` | `id|name|phone|tier|points|totalSpent|visitCount` |
+| `vehicles.txt` | `id|licensePlate|customerId` |
+| `services.txt` | `id|name|price|duration|status` |
+| `bookings.txt` | `id|customerId|vehicleId|serviceId|date|period|bookingStatus|paymentStatus|paymentMethod|createdAt` |
+| `periods.txt` | `date|period|activationStatus` |
+| `history.txt` | `bookingId|customerId|customerName|plate|service|completedTime|amountPaid|pointsEarned` |
+
+These files are application state, not temporary fixtures. Back them up before manually editing or resetting them.
+
+## Benchmark
+
+[`PerformanceBenchmark.java`](AutoWashQueueCLI/test/PerformanceBenchmark.java) compares FIFO queue operations with max-heap priority-queue operations for input sizes from 100 to 10,000 entries. It performs warm-up iterations and nine measured runs per size.
+
+After compiling the project, compile and run the benchmark from `AutoWashQueueCLI`:
+
+```powershell
+javac -encoding UTF-8 -cp out -d out test\PerformanceBenchmark.java
+java -cp out test.PerformanceBenchmark
+```
+
+The benchmark is intended for coursework analysis, not as a production performance certification. The project documentation records that FIFO operations are faster for this workload, while the heap is required to enforce membership-based waitlist priority.
+
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [SRS](docs/requirements/SRS.md) | Canonical functional requirements, use cases, and business rules. |
+| [PRD](docs/requirements/PRD.md) | Product-level problem statement and scope. |
+| [Technical decisions](docs/architecture/TECH_STACK.md) | Stack, architecture, and implementation constraints. |
+| [Project reports](docs/reports/README.md) | CSD201 analysis, design, benchmark, and final-submission reports. |
+| [Changelog](CHANGELOG.md) | Project change history. |
+| [Contributing guide](CONTRIBUTING.md) | Branch, commit, pull-request, and documentation conventions. |
+
+If the PRD and SRS differ, the SRS is the source of truth.
+
+## Limitations
+
+This is an academic CLI project. It intentionally does not provide:
+
+- Real user authentication or authorization
+- Web, mobile, or graphical interfaces
+- A relational database or multi-user concurrency controls
+- Live payment processing, refunds, email/SMS notifications, or license-plate recognition
+- A comprehensive automated functional-test suite
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing. The repository follows small, reviewable changes, conventional commits, and one focused branch/pull request per work item.
+
+## Team
+
+- [Ngô Gia Long](https://github.com/NgaiLong49423)
+- [Ngô Hoàng Thái Dương](https://github.com/NgoHoangThaiDuong)
+- [Nguyễn Anh Kiệt](https://github.com/anhkiet150905-stack)
+
+## License
+
+This project is available under the [MIT License](LICENSE).

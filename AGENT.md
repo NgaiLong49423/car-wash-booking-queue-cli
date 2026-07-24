@@ -19,15 +19,15 @@ If `PRD.md` and `SRS.md` conflict, treat `docs/requirements/SRS.md` as the sourc
 Important paths:
 
 - `.agent/skills/` — local agent skills for this repository.
-- `.agent/report/` — generated analysis reports and issue drafts.
-- `.agent/report/github-issue-drafts/` — default output directory for drafted GitHub Issues.
+- `.agent/output/report/` — generated analysis reports and issue drafts.
+- `.agent/output/report/github-issue-drafts/` — default output directory for drafted GitHub Issues.
 - `.github/labels.yml` — allowed GitHub labels.
 - `.github/ISSUE_TEMPLATE/` — GitHub Issue templates.
 - `.github/pull_request_template.md` — Pull Request template.
 - `docs/requirements/` — product and requirements documents.
 - `docs/reports/` — project reports.
-- `docs/diagrams/` — diagrams and visual documentation.
-- `App/` — application source code.
+- `docs/architecture/` — technical decisions and architecture documentation.
+- `AutoWashQueueCLI/` — application source code, data, and tests.
 
 ## General Agent Rules
 
@@ -60,8 +60,8 @@ When drafting issues:
 - Read `docs/requirements/PRD.md` and `docs/requirements/SRS.md`.
 - Read `.github/labels.yml` before assigning labels.
 - Read `.github/ISSUE_TEMPLATE/*.yml` before drafting issue bodies.
-- Write issue drafts to `.agent/report/github-issue-drafts/`.
-- Create or update `.agent/report/github-issue-drafts/ISSUE_INDEX.md`.
+- Write issue drafts to `.agent/output/report/github-issue-drafts/`.
+- Create or update `.agent/output/report/github-issue-drafts/ISSUE_INDEX.md`.
 - Group issues by module or domain.
 - Each issue must trace back to the source document, such as FR, UC, business rule, NFR, or PRD section.
 - Issue titles must be written in professional English.
