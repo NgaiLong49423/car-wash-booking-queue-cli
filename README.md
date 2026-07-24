@@ -53,7 +53,7 @@ flowchart LR
     I --> G
     E --> J[Serve, confirm payment, complete]
     J --> K[Save history and recalculate loyalty]
-    K --> L[Promote fitting waitlisted booking(s)]
+    K --> L["Promote fitting waitlisted booking(s)"]
 ```
 
 The application separates two operational ordering policies:
